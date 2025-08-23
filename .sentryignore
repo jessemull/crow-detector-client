@@ -1,0 +1,7 @@
+# Ignore build artifacts and dependencies
+node_modules/
+.next/
+out/
+coverage/
+*.log
+.env*

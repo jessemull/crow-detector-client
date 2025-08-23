@@ -1,0 +1,63 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - dev
+          - prod
+      backup_timestamp:
+        description: 'Backup timestamp to restore (YYYYMMDD-HHMMSS)'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Rollback to selected backup
+        run: |
+          export BUCKET_NAME="crow-detector-client"
+          export BACKUP_BUCKET="crow-detector-client-backup-${{ inputs.environment }}"
+          export BACKUP_TIMESTAMP="${{ inputs.backup_timestamp }}"
+
+          # Verify backup exists
+          if ! aws s3 ls s3://$BACKUP_BUCKET/$BACKUP_TIMESTAMP/ > /dev/null 2>&1; then
+            echo "Backup $BACKUP_TIMESTAMP not found in s3://$BACKUP_BUCKET/"
+            exit 1
+          fi
+
+          # Restore from backup
+          echo "Restoring from backup: $BACKUP_TIMESTAMP"
+          aws s3 sync s3://$BACKUP_BUCKET/$BACKUP_TIMESTAMP/ s3://$BUCKET_NAME-${{ inputs.environment }} --delete
+
+          echo "Rollback complete"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          if [ "${{ inputs.environment }}" = "prod" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }} --paths "/*"
+          else
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_DEV }} --paths "/*"
+          fi
+
+      - name: Rollback complete
+        run: |
+          echo "Rollback to ${{ inputs.backup_timestamp }} complete!"
+          echo "Website URL: https://${{ inputs.environment == 'prod' && 'www.crittercanteen.com' || 'dev.crittercanteen.com' }}"

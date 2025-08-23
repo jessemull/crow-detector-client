@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Build Next.js
+        run: |
+          export NODE_ENV=${{ inputs.environment }}
+          npm run build
+
+      - name: Backup S3
+        run: |
+          export NODE_ENV=${{ inputs.environment }}
+          export BUCKET_NAME="crow-detector-client"
+          export BACKUP_BUCKET="crow-detector-client-backup-${{ inputs.environment }}"
+          export TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+          # Create backup
+          aws s3 sync s3://$BUCKET_NAME-${{ inputs.environment }} s3://$BACKUP_BUCKET/$TIMESTAMP/ --delete
+
+          echo "Backup created at s3://$BACKUP_BUCKET/$TIMESTAMP/"
+
+      - name: Deploy to S3
+        run: |
+          export NODE_ENV=${{ inputs.environment }}
+          export BUCKET_NAME="crow-detector-client"
+
+          # Sync build output to S3
+          aws s3 sync out/ s3://$BUCKET_NAME-${{ inputs.environment }} --delete
+
+          # Invalidate CloudFront cache
+          if [ "${{ inputs.environment }}" = "prod" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }} --paths "/*"
+          else
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_DEV }} --paths "/*"
+          fi
+
+      - name: Deploy complete
+        run: |
+          echo "Deployment to ${{ inputs.environment }} environment complete!"
+          echo "Website URL: https://${{ inputs.environment == 'prod' && 'www.crittercanteen.com' || 'dev.crittercanteen.com' }}"

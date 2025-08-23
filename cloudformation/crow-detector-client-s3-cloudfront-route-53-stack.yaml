@@ -1,0 +1,241 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: The name of the S3 bucket for static website hosting.
+  ACMCertificateArn:
+    Type: String
+    Description: The ARN of the ACM certificate for the CloudFront distribution.
+  HostedZoneId:
+    Type: String
+    Description: The ID of the Route 53 hosted zone.
+  CloudFrontHostedZoneId:
+    Type: String
+    Description: The Hosted Zone ID for CloudFront alias record.
+  Environment:
+    Type: String
+    Default: "dev"
+    Description: "The environment for the deployment (dev or prod)."
+    AllowedValues:
+      - dev
+      - prod
+    ConstraintDescription: "Must be either 'dev' or 'prod'."
+  CreateDNSRecords:
+    Type: String
+    Default: "true"
+    Description: "Set to 'true' to create Route 53 DNS records. Set to 'false' to skip."
+    AllowedValues:
+      - "true"
+      - "false"
+  EnableSignedCookiesCheck:
+    Type: String
+    Description: "Set to 'true' to enable signed cookies check, 'false' to disable."
+    AllowedValues:
+      - "true"
+      - "false"
+  CloudFrontKeyGroupId:
+    Type: String
+    Description: "The ID of an existing CloudFront Key Group to use for signed cookies."
+    Default: ""
+
+Resources:
+  StaticWebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${BucketName}-${Environment}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: true
+
+  BackupBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${BucketName}-backup-${Environment}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldBackups
+            Status: Enabled
+            ExpirationInDays: 30
+            Prefix: ""
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "CloudFront Origin Access Identity for the Crow Detector Client - ${Environment}"
+
+  StaticWebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref StaticWebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}"
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${BucketName}-${Environment}/*"
+
+  CompressionCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub "CompressionCachePolicyCrowDetectorClient-${Environment}"
+        DefaultTTL: 31536000
+        MinTTL: 86400
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub "CloudFront distribution for Crow Detector Client - ${Environment}"
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt StaticWebsiteBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: !Ref CompressionCachePolicy
+          Compress: true
+          TrustedKeyGroups:
+            Fn::If:
+              - EnableSignedCookiesCheckCondition
+              - [!Ref CloudFrontKeyGroupId]
+              - !Ref "AWS::NoValue"
+          AllowedMethods:
+            - GET
+            - HEAD
+        CacheBehaviors:
+          - PathPattern: "/*"
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: !Ref CompressionCachePolicy
+            Compress: true
+            TrustedKeyGroups:
+              Fn::If:
+                - EnableSignedCookiesCheckCondition
+                - [!Ref CloudFrontKeyGroupId]
+                - !Ref "AWS::NoValue"
+            AllowedMethods:
+              - GET
+              - HEAD
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /403.html
+            ErrorCachingMinTTL: 0
+        Aliases:
+          - !If
+            - IsProd
+            - "www.crittercanteen.com"
+            - "dev.crittercanteen.com"
+        ViewerCertificate:
+          AcmCertificateArn: !Ref ACMCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+
+  # Route 53 DNS Records
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNSRecordTrue
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !If
+        - IsProd
+        - "www.crittercanteen.com"
+        - "dev.crittercanteen.com"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: !Ref CloudFrontHostedZoneId
+
+  # Root domain redirect (for prod only)
+  RootDomainRedirect:
+    Type: AWS::Route53::RecordSet
+    Condition: IsProd
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: "crittercanteen.com"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: !Ref CloudFrontHostedZoneId
+
+  # www subdomain redirect (for prod only)
+  WWWSubdomainRedirect:
+    Type: AWS::Route53::RecordSet
+    Condition: IsProd
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: "www.dev.crittercanteen.com"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: !Ref CloudFrontHostedZoneId
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+  CreateDNSRecordTrue: !Equals [!Ref CreateDNSRecords, "true"]
+  EnableSignedCookiesCheckCondition: !Equals [!Ref EnableSignedCookiesCheck, "true"]
+
+Outputs:
+  CloudFrontDistributionId:
+    Description: "CloudFront Distribution ID"
+    Value: !Ref CloudFrontDistribution
+    Export:
+      Name: !Sub "${AWS::StackName}-CloudFrontDistributionId"
+
+  CloudFrontDistributionDomainName:
+    Description: "CloudFront Distribution Domain Name"
+    Value: !GetAtt CloudFrontDistribution.DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-CloudFrontDistributionDomainName"
+
+  S3BucketName:
+    Description: "S3 Bucket Name"
+    Value: !Ref StaticWebsiteBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-S3BucketName"
+
+  BackupBucketName:
+    Description: "Backup S3 Bucket Name"
+    Value: !Ref BackupBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-BackupBucketName"
+
+  WebsiteURL:
+    Description: "Website URL"
+    Value: !If
+      - IsProd
+      - "https://www.crittercanteen.com"
+      - "https://dev.crittercanteen.com"
+    Export:
+      Name: !Sub "${AWS::StackName}-WebsiteURL"

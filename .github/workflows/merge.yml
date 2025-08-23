@@ -1,0 +1,92 @@
+name: Deploy on Merge
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Build Next.js
+        run: |
+          export NODE_ENV=prod
+          npm run build
+
+      - name: Backup S3
+        run: |
+          export BUCKET_NAME="crow-detector-client"
+          export BACKUP_BUCKET="crow-detector-client-backup-prod"
+          export TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+          # Create backup
+          aws s3 sync s3://$BUCKET_NAME-prod s3://$BACKUP_BUCKET/$TIMESTAMP/ --delete
+
+          echo "Backup created at s3://$BACKUP_BUCKET/$TIMESTAMP/"
+
+      - name: Deploy to S3
+        run: |
+          export BUCKET_NAME="crow-detector-client"
+
+          # Sync build output to S3
+          aws s3 sync out/ s3://$BUCKET_NAME-prod --delete
+
+          # Invalidate CloudFront cache
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }} --paths "/*"
+
+      - name: Start local server for testing
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000
+
+      - name: Run E2E tests
+        run: npm run e2e
+
+      - name: Run Lighthouse tests
+        run: npm run lighthouse
+
+      - name: Rollback if tests fail
+        if: failure()
+        run: |
+          export BUCKET_NAME="crow-detector-client"
+          export BACKUP_BUCKET="crow-detector-client-backup-prod"
+          export TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+          # Find the most recent backup
+          LATEST_BACKUP=$(aws s3 ls s3://$BACKUP_BUCKET/ | sort | tail -n 1 | awk '{print $2}' | sed 's/\///')
+
+          if [ ! -z "$LATEST_BACKUP" ]; then
+            echo "Rolling back to backup: $LATEST_BACKUP"
+            aws s3 sync s3://$BACKUP_BUCKET/$LATEST_BACKUP s3://$BUCKET_NAME-prod --delete
+            
+            # Invalidate CloudFront cache
+            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }} --paths "/*"
+            
+            echo "Rollback complete"
+          else
+            echo "No backup found for rollback"
+            exit 1
+          fi
