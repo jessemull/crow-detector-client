@@ -6,7 +6,7 @@ import { Footer } from '@components/Footer';
 export const metadata: Metadata = {
   title: 'Critter Canteen - Crow Feeding Station',
   description:
-    'Automated crow feeding and imaging station. Watch our feathered friends enjoy their meals and view captured images in real-time.',
+    'Automated crow feeding and imaging station. Watch our feathered friends enjoy their meals and view captured images in real-time!',
   keywords:
     'crow feeding, automated feeder, wildlife camera, bird watching, IoT',
   authors: [{ name: 'Jesse Mull' }],
@@ -17,14 +17,23 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Critter Canteen - Crow Feeding Station',
-    description: 'Automated crow feeding and imaging station',
+    description: 'Automated crow feeding and imaging station.',
     type: 'website',
     locale: 'en_US',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Critter Canteen - Automated Crow Feeding & Imaging Station.',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Critter Canteen - Crow Feeding Station',
-    description: 'Automated crow feeding and imaging station',
+    description: 'Automated crow feeding and imaging station.',
+    images: ['/og-image.png'],
   },
 };
 
