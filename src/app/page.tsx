@@ -1,9 +1,5 @@
 import HomePage from '@components/HomePage';
 
-const Page = () => (
-  <>
-    <HomePage />
-  </>
-);
-
-export default Page;
+export default function Home() {
+  return <HomePage />;
+}

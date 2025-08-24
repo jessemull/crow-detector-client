@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@sentry/nextjs": "^9.28.1",
+    "lucide-react": "^0.541.0",
     "next": "^15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -66,10 +67,11 @@
   "name": "crow-detector-client",
   "private": true,
   "scripts": {
+    "bastion": "node ./scripts/connect.js",
     "build": "ENABLE_SOURCE_MAPS=false NODE_ENV=${NODE_ENV:-test} next build",
     "commit": "git-cz",
     "coverage:open": "open ./coverage/lcov-report/index.html",
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "e2e": "cypress run",
     "export": "next export",
     "format": "prettier --write .",

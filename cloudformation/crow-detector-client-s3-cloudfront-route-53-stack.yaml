@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 
 Parameters:
   BucketName:
@@ -15,35 +15,35 @@ Parameters:
     Description: The Hosted Zone ID for CloudFront alias record.
   Environment:
     Type: String
-    Default: "dev"
-    Description: "The environment for the deployment (dev or prod)."
+    Default: 'dev'
+    Description: 'The environment for the deployment (dev or prod).'
     AllowedValues:
       - dev
       - prod
     ConstraintDescription: "Must be either 'dev' or 'prod'."
   CreateDNSRecords:
     Type: String
-    Default: "true"
+    Default: 'true'
     Description: "Set to 'true' to create Route 53 DNS records. Set to 'false' to skip."
     AllowedValues:
-      - "true"
-      - "false"
+      - 'true'
+      - 'false'
   EnableSignedCookiesCheck:
     Type: String
     Description: "Set to 'true' to enable signed cookies check, 'false' to disable."
     AllowedValues:
-      - "true"
-      - "false"
+      - 'true'
+      - 'false'
   CloudFrontKeyGroupId:
     Type: String
-    Description: "The ID of an existing CloudFront Key Group to use for signed cookies."
-    Default: ""
+    Description: 'The ID of an existing CloudFront Key Group to use for signed cookies.'
+    Default: ''
 
 Resources:
   StaticWebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${BucketName}-${Environment}"
+      BucketName: !Sub '${BucketName}-${Environment}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
@@ -53,7 +53,7 @@ Resources:
   BackupBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${BucketName}-backup-${Environment}"
+      BucketName: !Sub '${BucketName}-backup-${Environment}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
@@ -64,13 +64,13 @@ Resources:
           - Id: ExpireOldBackups
             Status: Enabled
             ExpirationInDays: 30
-            Prefix: ""
+            Prefix: ''
 
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub "CloudFront Origin Access Identity for the Crow Detector Client - ${Environment}"
+        Comment: !Sub 'CloudFront Origin Access Identity for the Crow Detector Client - ${Environment}'
 
   StaticWebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -81,15 +81,15 @@ Resources:
           - Sid: AllowCloudFrontAccess
             Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}"
-            Action: "s3:GetObject"
-            Resource: !Sub "arn:aws:s3:::${BucketName}-${Environment}/*"
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}'
+            Action: 's3:GetObject'
+            Resource: !Sub 'arn:aws:s3:::${BucketName}-${Environment}/*'
 
   CompressionCachePolicy:
     Type: AWS::CloudFront::CachePolicy
     Properties:
       CachePolicyConfig:
-        Name: !Sub "CompressionCachePolicyCrowDetectorClient-${Environment}"
+        Name: !Sub 'CompressionCachePolicyCrowDetectorClient-${Environment}'
         DefaultTTL: 31536000
         MinTTL: 86400
         MaxTTL: 31536000
@@ -107,7 +107,7 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
-        Comment: !Sub "CloudFront distribution for Crow Detector Client - ${Environment}"
+        Comment: !Sub 'CloudFront distribution for Crow Detector Client - ${Environment}'
         Enabled: true
         DefaultRootObject: index.html
         HttpVersion: http2
@@ -116,7 +116,7 @@ Resources:
           - Id: S3Origin
             DomainName: !GetAtt StaticWebsiteBucket.RegionalDomainName
             S3OriginConfig:
-              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           ViewerProtocolPolicy: redirect-to-https
@@ -126,12 +126,12 @@ Resources:
             Fn::If:
               - EnableSignedCookiesCheckCondition
               - [!Ref CloudFrontKeyGroupId]
-              - !Ref "AWS::NoValue"
+              - !Ref 'AWS::NoValue'
           AllowedMethods:
             - GET
             - HEAD
         CacheBehaviors:
-          - PathPattern: "/*"
+          - PathPattern: '/*'
             TargetOriginId: S3Origin
             ViewerProtocolPolicy: redirect-to-https
             CachePolicyId: !Ref CompressionCachePolicy
@@ -140,7 +140,7 @@ Resources:
               Fn::If:
                 - EnableSignedCookiesCheckCondition
                 - [!Ref CloudFrontKeyGroupId]
-                - !Ref "AWS::NoValue"
+                - !Ref 'AWS::NoValue'
             AllowedMethods:
               - GET
               - HEAD
@@ -155,8 +155,8 @@ Resources:
         Aliases:
           - !If
             - IsProd
-            - "www.crittercanteen.com"
-            - "dev.crittercanteen.com"
+            - 'www.crittercanteen.com'
+            - 'dev.crittercanteen.com'
         ViewerCertificate:
           AcmCertificateArn: !Ref ACMCertificateArn
           SslSupportMethod: sni-only
@@ -170,8 +170,8 @@ Resources:
       HostedZoneId: !Ref HostedZoneId
       Name: !If
         - IsProd
-        - "www.crittercanteen.com"
-        - "dev.crittercanteen.com"
+        - 'www.crittercanteen.com'
+        - 'dev.crittercanteen.com'
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
@@ -183,7 +183,7 @@ Resources:
     Condition: IsProd
     Properties:
       HostedZoneId: !Ref HostedZoneId
-      Name: "crittercanteen.com"
+      Name: 'crittercanteen.com'
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
@@ -195,47 +195,48 @@ Resources:
     Condition: IsProd
     Properties:
       HostedZoneId: !Ref HostedZoneId
-      Name: "www.dev.crittercanteen.com"
+      Name: 'www.dev.crittercanteen.com'
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
         HostedZoneId: !Ref CloudFrontHostedZoneId
 
 Conditions:
-  IsProd: !Equals [!Ref Environment, "prod"]
-  CreateDNSRecordTrue: !Equals [!Ref CreateDNSRecords, "true"]
-  EnableSignedCookiesCheckCondition: !Equals [!Ref EnableSignedCookiesCheck, "true"]
+  IsProd: !Equals [!Ref Environment, 'prod']
+  CreateDNSRecordTrue: !Equals [!Ref CreateDNSRecords, 'true']
+  EnableSignedCookiesCheckCondition:
+    !Equals [!Ref EnableSignedCookiesCheck, 'true']
 
 Outputs:
   CloudFrontDistributionId:
-    Description: "CloudFront Distribution ID"
+    Description: 'CloudFront Distribution ID'
     Value: !Ref CloudFrontDistribution
     Export:
-      Name: !Sub "${AWS::StackName}-CloudFrontDistributionId"
+      Name: !Sub '${AWS::StackName}-CloudFrontDistributionId'
 
   CloudFrontDistributionDomainName:
-    Description: "CloudFront Distribution Domain Name"
+    Description: 'CloudFront Distribution Domain Name'
     Value: !GetAtt CloudFrontDistribution.DomainName
     Export:
-      Name: !Sub "${AWS::StackName}-CloudFrontDistributionDomainName"
+      Name: !Sub '${AWS::StackName}-CloudFrontDistributionDomainName'
 
   S3BucketName:
-    Description: "S3 Bucket Name"
+    Description: 'S3 Bucket Name'
     Value: !Ref StaticWebsiteBucket
     Export:
-      Name: !Sub "${AWS::StackName}-S3BucketName"
+      Name: !Sub '${AWS::StackName}-S3BucketName'
 
   BackupBucketName:
-    Description: "Backup S3 Bucket Name"
+    Description: 'Backup S3 Bucket Name'
     Value: !Ref BackupBucket
     Export:
-      Name: !Sub "${AWS::StackName}-BackupBucketName"
+      Name: !Sub '${AWS::StackName}-BackupBucketName'
 
   WebsiteURL:
-    Description: "Website URL"
+    Description: 'Website URL'
     Value: !If
       - IsProd
-      - "https://www.crittercanteen.com"
-      - "https://dev.crittercanteen.com"
+      - 'https://www.crittercanteen.com'
+      - 'https://dev.crittercanteen.com'
     Export:
-      Name: !Sub "${AWS::StackName}-WebsiteURL"
+      Name: !Sub '${AWS::StackName}-WebsiteURL'

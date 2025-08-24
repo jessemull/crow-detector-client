@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Header } from '@components/Header';
 
 export const metadata: Metadata = {
   title: 'Critter Canteen - Crow Feeding Station',
@@ -28,7 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body>
+        <Header />
+        {children}
+      </body>
     </html>
   );
 }
