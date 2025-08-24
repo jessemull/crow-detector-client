@@ -27,6 +27,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
     "aws-sdk": "^2.1692.0",
     "commitizen": "^4.3.1",
     "cookie-parser": "^1.4.7",

@@ -1,92 +1,256 @@
-name: Deploy on Merge
+name: Merge
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build:
+    name: Build Next.js
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
-
-      - name: Run unit tests
-        run: npm run test
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
 
       - name: Build Next.js
         run: |
-          export NODE_ENV=prod
-          npm run build
+          echo "Deploying to development environment"
+          NODE_ENV=test npm run build
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          NEXT_PUBLIC_GA_TRACKING_ID: ${{ secrets.GA_TRACKING_ID_DEV }}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ secrets.SENTRY_ENVIRONMENT_TEST }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN_SOURCE_MAPS: ${{ secrets.SENTRY_AUTH_TOKEN_SOURCE_MAPS }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+
+      - name: Copy Sitemap and Robots Files
+        run: |
+          cp public/sitemap.xml out/
+          cp public/robots.txt out/
+          cp public/sitemap-0.xml out/
+
+      - name: Archive Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: out
+          retention-days: 1
+    
+        # Sentry does not support source maps for static NextJS builds.
+        # The source maps must be uploaded manually.
+        # NextJS does not support generating source maps independently.
+        # To avoid uploading source maps in production NextJS must be built twice, once for each use case.
+
+      - name: Generate & Upload Sentry Source Maps
+        run: |
+          echo "Uploading source maps to Sentry.io..."
+          NODE_ENV=test npm run source-maps
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          NEXT_PUBLIC_GA_TRACKING_ID: ${{ secrets.GA_TRACKING_ID_DEV }}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ secrets.SENTRY_ENVIRONMENT_TEST }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN_SOURCE_MAPS: ${{ secrets.SENTRY_AUTH_TOKEN_SOURCE_MAPS }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+
+  test:
+    name: Run Unit Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Jest Tests
+        run: npm run test
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          retention-days: 7
+
+      - name: Coverage Threshold Check
+        run: |
+          if [[ $(grep "Statements" coverage/lcov-report/index.html | awk '{print $4}' | tr -d '%') -lt 80 ]]; then
+            echo "Code coverage is below threshold. Please update test coverage and try again."
+            exit 1
+          fi
+
+  backup_s3:
+    name: Backup S3
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Generate Timestamp
+        id: timestamp
+        run: echo "BACKUP_DIR=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
 
       - name: Backup S3
         run: |
-          export BUCKET_NAME="crow-detector-client"
-          export BACKUP_BUCKET="crow-detector-client-backup-prod"
-          export TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          aws s3 sync s3://$AWS_S3_BUCKET s3://$AWS_S3_BACKUP_BUCKET/$BACKUP_DIR/ --exact-timestamps
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET_DEV }}
+          AWS_S3_BACKUP_BUCKET: ${{ secrets.AWS_S3_BUCKET_BACKUP_DEV }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
 
-          # Create backup
-          aws s3 sync s3://$BUCKET_NAME-prod s3://$BACKUP_BUCKET/$TIMESTAMP/ --delete
+      - name: Save Backup Directory
+        run: echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
 
-          echo "Backup created at s3://$BACKUP_BUCKET/$TIMESTAMP/"
+  deploy_to_s3:
+    name: Deploy to S3
+    needs: backup_s3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Download Build Output
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: next-build
 
       - name: Deploy to S3
+        uses: jakejarvis/s3-sync-action@v0.5.0
+        with:
+          args: --delete --exclude "data/*"
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET_DEV }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: 'next-build'
+
+      - name: Invalidate CloudFront Cache
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          DISTRIBUTION: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV }}
+          PATHS: "/*"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+  e2e_tests:
+    name: Run E2E Tests
+    needs: deploy_to_s3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Start Proxy Server
         run: |
-          export BUCKET_NAME="crow-detector-client"
+          NODE_ENV=test nohup npm run proxy &
+          npx wait-on http://localhost:8080/healthcheck
+        env:
+          CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}
+          CLOUDFRONT_KEY_PAIR_ID: ${{ secrets.CLOUDFRONT_KEY_PAIR_ID }}
+          CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
 
-          # Sync build output to S3
-          aws s3 sync out/ s3://$BUCKET_NAME-prod --delete
+      - name: Run Cypress Tests
+        run: NODE_ENV=test npm run e2e
 
-          # Invalidate CloudFront cache
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }} --paths "/*"
+  lighthouse_tests:
+    name: Run Lighthouse Tests
+    needs: deploy_to_s3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Start local server for testing
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Start Proxy Server
         run: |
-          npm run start &
-          npx wait-on http://localhost:3000
+          NODE_ENV=test nohup npm run proxy &
+          npx wait-on http://localhost:8080/healthcheck
+        env:
+          CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}
+          CLOUDFRONT_KEY_PAIR_ID: ${{ secrets.CLOUDFRONT_KEY_PAIR_ID }}
+          CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
 
-      - name: Run E2E tests
-        run: npm run e2e
+      - name: Warm Up Proxy
+        run: curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/
 
-      - name: Run Lighthouse tests
-        run: npm run lighthouse
-
-      - name: Rollback if tests fail
-        if: failure()
+      - name: Run Lighthouse Tests
+        id: lighthouse
         run: |
-          export BUCKET_NAME="crow-detector-client"
-          export BACKUP_BUCKET="crow-detector-client-backup-prod"
-          export TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          NODE_ENV=test npx lhci autorun --chrome-flags="--headless --disable-gpu --no-sandbox"
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
-          # Find the most recent backup
-          LATEST_BACKUP=$(aws s3 ls s3://$BACKUP_BUCKET/ | sort | tail -n 1 | awk '{print $2}' | sed 's/\///')
+  rollback:
+    name: Revert S3 Deployment
+    needs: lighthouse_tests
+    if: ${{ needs.lighthouse_tests.result == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore Latest Backup
+        run: |
+          echo "Lighthouse tests failed. Reverting S3 deployment from backup directory: $BACKUP_DIR."
+          aws s3 sync s3://$AWS_S3_BACKUP_BUCKET/$BACKUP_DIR/ s3://$AWS_S3_BUCKET --delete --exclude "data/*"
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET_DEV }}
+          AWS_S3_BACKUP_BUCKET: ${{ secrets.AWS_S3_BUCKET_BACKUP_DEV }}
+          BACKUP_DIR: ${{ env.BACKUP_DIR }}
 
-          if [ ! -z "$LATEST_BACKUP" ]; then
-            echo "Rolling back to backup: $LATEST_BACKUP"
-            aws s3 sync s3://$BACKUP_BUCKET/$LATEST_BACKUP s3://$BUCKET_NAME-prod --delete
-            
-            # Invalidate CloudFront cache
-            aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }} --paths "/*"
-            
-            echo "Rollback complete"
-          else
-            echo "No backup found for rollback"
-            exit 1
-          fi
+      - name: Invalidate CloudFront Cache
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          DISTRIBUTION: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV }}
+          PATHS: "/*"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
