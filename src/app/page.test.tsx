@@ -7,9 +7,7 @@ describe('Home Page', () => {
     render(<Home />);
     const heading = screen.getByRole('heading', { name: 'Critter Canteen' });
     expect(heading).toBeTruthy();
-    const subHeading = screen.getByRole('heading', {
-      name: 'Automated Crow Feeding & Imaging',
-    });
-    expect(subHeading).toBeTruthy();
+    const button = screen.getByRole('button', { name: 'Feed the Crows' });
+    expect(button).toBeTruthy();
   });
 });

@@ -44,9 +44,6 @@ const About: React.FC = () => {
           </div>
         </div>
       </div>
-      <footer className="text-center py-4 mt-auto">
-        <p className="text-gray-500 text-xs">DATA UPDATED DAILY • © 2024</p>
-      </footer>
     </div>
   );
 };

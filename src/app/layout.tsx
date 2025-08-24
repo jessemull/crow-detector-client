@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@components/Header';
+import { Footer } from '@components/Footer';
 
 export const metadata: Metadata = {
   title: 'Critter Canteen - Crow Feeding Station',
@@ -9,6 +10,11 @@ export const metadata: Metadata = {
   keywords:
     'crow feeding, automated feeder, wildlife camera, bird watching, IoT',
   authors: [{ name: 'Jesse Mull' }],
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
   openGraph: {
     title: 'Critter Canteen - Crow Feeding Station',
     description: 'Automated crow feeding and imaging station',
@@ -29,9 +35,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="flex flex-col min-h-screen">
         <Header />
-        {children}
+        <main className="flex-1">{children}</main>
+        <Footer />
       </body>
     </html>
   );

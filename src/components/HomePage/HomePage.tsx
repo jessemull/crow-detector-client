@@ -19,60 +19,34 @@ const HomePage: React.FC = () => {
           </p>
         </div>
 
-        {/* Sub Header */}
-        <div className="mb-2 md:mb-0 text-center">
-          <h2 className="text-base md:text-lg font-normal text-white mb-1">
-            Automated Crow Feeding & Imaging
-          </h2>
-          <p className="text-gray-300 text-xs md:text-sm font-light mb-3">
-            Click the button below to dispense food and capture images of
-            visiting crows.
-          </p>
+        {/* Feed Button Section */}
+        <div className="text-center mb-8">
+          <button className="bg-stone-800 text-amber-400 border border-amber-400 font-medium py-3 px-8 rounded-lg hover:bg-stone-700 transition-colors">
+            Feed the Crows
+          </button>
         </div>
 
-        {/* Main Content */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-8 max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            <div className="text-center" data-testid="feeder-status">
-              <div className="w-24 h-24 bg-emerald-100/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-300/30">
-                <span className="text-4xl">🟢</span>
-              </div>
-              <h3 className="text-xl font-medium text-white mb-2">
+        {/* Status Indicators */}
+        <div className="flex justify-center items-center gap-8 mb-6">
+          <div className="flex items-start gap-2" data-testid="feeder-status">
+            <span className="text-sm mt-0.5">🟢</span>
+            <div className="text-left">
+              <h3 className="text-sm font-medium text-white mb-1">
                 Feeder Status
               </h3>
-              <p className="text-gray-300">Online & Ready</p>
+              <p className="text-gray-300 text-xs">Online & Ready</p>
             </div>
+          </div>
 
-            <div className="text-center" data-testid="camera-status">
-              <div className="w-24 h-24 bg-amber-100/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-300/30">
-                <span className="text-4xl">📷</span>
-              </div>
-              <h3 className="text-xl font-medium text-white mb-2">
+          <div className="flex items-start gap-2" data-testid="camera-status">
+            <span className="text-lg -mt-1">📷</span>
+            <div className="text-left">
+              <h3 className="text-sm font-medium text-white mb-1">
                 Camera Status
               </h3>
-              <p className="text-gray-300">Active & Monitoring</p>
+              <p className="text-gray-300 text-xs">Active & Monitoring</p>
             </div>
           </div>
-
-          <div className="bg-white/5 rounded-lg p-6 border border-white/10">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              🎯 Ready to Feed?
-            </h3>
-            <p className="text-gray-300 mb-4">
-              Push the button below to dispense food for our crow friends.
-              Images will be captured and uploaded automatically.
-            </p>
-            <button className="bg-stone-800 text-amber-400 border border-amber-400 font-medium py-3 px-8 rounded-lg hover:bg-stone-700 transition-colors">
-              🍽️ Feed the Crows
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-12 text-center">
-          <p className="text-gray-400 text-xs">
-            🚧 This is a placeholder interface. The actual feeding and imaging
-            functionality will be implemented soon.
-          </p>
         </div>
       </div>
     </div>
