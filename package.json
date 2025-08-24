@@ -71,7 +71,7 @@
     "build": "ENABLE_SOURCE_MAPS=false NODE_ENV=${NODE_ENV:-test} next build",
     "commit": "git-cz",
     "coverage:open": "open ./coverage/lcov-report/index.html",
-    "dev": "next dev -p 3001",
+    "dev": "next dev",
     "e2e": "cypress run",
     "export": "next export",
     "format": "prettier --write .",

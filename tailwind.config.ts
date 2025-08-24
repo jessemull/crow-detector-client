@@ -48,10 +48,6 @@ const config: Config = {
           900: '#78350f',
           950: '#451a03',
         },
-        background: {
-          start: '#111827',
-          end: '#1f2937',
-        },
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
