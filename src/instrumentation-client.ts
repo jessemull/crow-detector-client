@@ -10,3 +10,9 @@ export async function register() {
     });
   }
 }
+
+// Add required Sentry hooks
+export const onRouterTransitionStart = (context: any) => {
+  const Sentry = require('@sentry/nextjs');
+  Sentry.captureRouterTransitionStart(context);
+};
