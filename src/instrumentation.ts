@@ -9,7 +9,6 @@ export async function register() {
   }
 }
 
-// Add required Sentry hooks
 export const onRequestError = (error: Error) => {
   const Sentry = require('@sentry/nextjs');
   Sentry.captureRequestError(error);

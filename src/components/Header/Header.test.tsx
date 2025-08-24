@@ -2,7 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Header from './Header';
 
-// Mock Next.js components
 jest.mock('next/link', () => {
   const MockLink = ({ children, href, ...props }: any) => {
     return (
@@ -35,7 +34,6 @@ jest.mock('next/image', () => {
 
 describe('Header', () => {
   beforeEach(() => {
-    // Reset any previous state
     jest.clearAllMocks();
   });
 
@@ -76,17 +74,13 @@ describe('Header', () => {
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
 
-    // Menu should be closed initially
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
 
-    // Click to open menu
     fireEvent.click(menuButton);
 
-    // Menu should now be open
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
     expect(closeButton).toBeTruthy();
 
-    // Menu should contain navigation items
     const mobileNav = screen.getByLabelText('Mobile navigation');
     expect(mobileNav.querySelector('a[href="/"]')).toBeTruthy();
     expect(mobileNav.querySelector('a[href="/about"]')).toBeTruthy();
@@ -97,15 +91,12 @@ describe('Header', () => {
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
 
-    // Open menu
     fireEvent.click(menuButton);
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
 
-    // Close menu
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
     fireEvent.click(closeButton);
 
-    // Menu should be closed
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
@@ -114,11 +105,9 @@ describe('Header', () => {
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
 
-    // Open menu
     fireEvent.click(menuButton);
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
 
-    // Click on mobile Home link specifically
     const mobileNav = screen.getByLabelText('Mobile navigation');
     const mobileHomeLink = mobileNav.querySelector('a[href="/"]');
     expect(mobileHomeLink).toBeTruthy();
@@ -127,7 +116,6 @@ describe('Header', () => {
       fireEvent.click(mobileHomeLink);
     }
 
-    // Menu should be closed
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
@@ -136,11 +124,9 @@ describe('Header', () => {
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
 
-    // Open menu
     fireEvent.click(menuButton);
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
 
-    // Click on mobile About link specifically
     const mobileNav = screen.getByLabelText('Mobile navigation');
     const mobileAboutLink = mobileNav.querySelector('a[href="/about"]');
     expect(mobileAboutLink).toBeTruthy();
@@ -149,7 +135,6 @@ describe('Header', () => {
       fireEvent.click(mobileAboutLink);
     }
 
-    // Menu should be closed
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
@@ -159,11 +144,9 @@ describe('Header', () => {
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
     fireEvent.click(menuButton);
 
-    // Check mobile menu container
     const mobileMenu = screen.getByLabelText('Mobile navigation');
     expect(mobileMenu).toBeTruthy();
 
-    // Check mobile menu items have icons
     const mobileNav = screen.getByLabelText('Mobile navigation');
     const homeLink = mobileNav.querySelector('a[href="/"]');
     const aboutLink = mobileNav.querySelector('a[href="/about"]');

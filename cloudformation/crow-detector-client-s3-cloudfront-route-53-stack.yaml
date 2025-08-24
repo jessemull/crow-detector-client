@@ -156,14 +156,13 @@ Resources:
           - !If
             - IsProd
             - 'www.crittercanteen.com'
-            - 'dev.crittercanteen.com'
+            - 'www.dev.crittercanteen.com'
         ViewerCertificate:
           AcmCertificateArn: !Ref ACMCertificateArn
           SslSupportMethod: sni-only
           MinimumProtocolVersion: TLSv1.2_2021
 
-  # Route 53 DNS Records
-  DNSRecord:
+  MainSiteRecord:
     Type: AWS::Route53::RecordSet
     Condition: CreateDNSRecordTrue
     Properties:
@@ -171,31 +170,21 @@ Resources:
       Name: !If
         - IsProd
         - 'www.crittercanteen.com'
-        - 'dev.crittercanteen.com'
+        - 'www.dev.crittercanteen.com'
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
         HostedZoneId: !Ref CloudFrontHostedZoneId
 
-  # Root domain redirect (for prod only)
   RootDomainRedirect:
     Type: AWS::Route53::RecordSet
-    Condition: IsProd
+    Condition: CreateDNSRecordTrue
     Properties:
       HostedZoneId: !Ref HostedZoneId
-      Name: 'crittercanteen.com'
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt CloudFrontDistribution.DomainName
-        HostedZoneId: !Ref CloudFrontHostedZoneId
-
-  # www subdomain redirect (for prod only)
-  WWWSubdomainRedirect:
-    Type: AWS::Route53::RecordSet
-    Condition: IsProd
-    Properties:
-      HostedZoneId: !Ref HostedZoneId
-      Name: 'www.dev.crittercanteen.com'
+      Name: !If
+        - IsProd
+        - 'crittercanteen.com'
+        - 'dev.crittercanteen.com'
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
@@ -237,6 +226,6 @@ Outputs:
     Value: !If
       - IsProd
       - 'https://www.crittercanteen.com'
-      - 'https://dev.crittercanteen.com'
+      - 'https://www.dev.crittercanteen.com'
     Export:
       Name: !Sub '${AWS::StackName}-WebsiteURL'
