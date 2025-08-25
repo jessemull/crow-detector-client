@@ -16,6 +16,11 @@ const HomePage: React.FC = () => {
             real-time.
           </p>
         </div>
+        <div className="text-center mb-6">
+          <h2 className="text-lg md:text-xl font-medium text-white mb-4">
+            System Status
+          </h2>
+        </div>
         <div className="text-center mb-8">
           <button className="bg-stone-800 text-amber-400 border border-amber-400 font-medium py-3 px-8 rounded-lg hover:bg-stone-700 transition-colors">
             Feed the Crows

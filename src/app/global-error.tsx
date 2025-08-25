@@ -24,9 +24,9 @@ const GlobalError: React.FC<Props> = ({ error }) => {
               className="w-[20vw] h-[20vw] max-w-[160px] max-h-[160px]"
             />
           </div>
-          <h1 className="text-xl md:text-2xl font-light text-accent-500 mb-4 tracking-wide">
+          <h2 className="text-xl md:text-2xl font-light text-accent-500 mb-4 tracking-wide">
             Something Went Wrong!
-          </h1>
+          </h2>
           <p className="text-md md:text-lg font-light text-white mb-6">
             We&apos;ve logged the issue. Please refresh to try again.
           </p>

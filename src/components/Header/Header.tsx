@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
+import React, { useState } from 'react';
 import { Menu, X, Home, Info } from 'lucide-react';
 
 interface HeaderProps {}
@@ -13,6 +13,7 @@ const Header: React.FC<HeaderProps> = () => {
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
   return (
     <header className="sticky top-0 z-20 bg-stone-900 backdrop-blur-sm border-b border-amber-400/30 relative">
       <div className="max-w-6xl py-3 md:py-4 pl-3 md:pl-6">
