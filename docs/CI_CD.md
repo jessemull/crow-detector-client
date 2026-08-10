@@ -6,12 +6,12 @@
 
 ## Workflows
 
-| Workflow                             | Trigger                               | Role                                                                                           |
-| ------------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `.github/workflows/pull-request.yml` | PR → `main`                           | Build, lint, typecheck, unit tests (≥80% via Jest), Cypress + Lighthouse on local `dev`        |
-| `.github/workflows/merge.yml`        | Push → `main`                         | Build → lint → typecheck → tests → S3 backup → deploy → E2E → Lighthouse → rollback on LH fail |
-| `.github/workflows/deploy.yml`       | `workflow_dispatch` (test/production) | Manual deploy with same post-deploy e2e/LH rollback pattern                                    |
-| `.github/workflows/rollback.yml`     | `workflow_dispatch`                   | Restore named S3 backup + CloudFront invalidate                                                |
+| Workflow                             | Trigger                               | Role                                                                                               |
+| ------------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `.github/workflows/pull-request.yml` | PR → `main`                           | Build, lint, typecheck, unit tests (≥80% via Jest), Cypress + Lighthouse on local `dev`            |
+| `.github/workflows/merge.yml`        | Push → `main`                         | Build → lint → typecheck → tests → S3 backup → deploy → E2E → Lighthouse → rollback on E2E/LH fail |
+| `.github/workflows/deploy.yml`       | `workflow_dispatch` (test/production) | Manual deploy with same post-deploy e2e/LH rollback pattern                                        |
+| `.github/workflows/rollback.yml`     | `workflow_dispatch`                   | Restore named S3 backup + CloudFront invalidate                                                    |
 
 Do **not** rewrite these lightly. Document changes in the PR and treat as human-review required (`docs/GOVERNANCE.md`).
 
@@ -33,7 +33,7 @@ Do **not** rewrite these lightly. Document changes in the PR and treat as human-
 | Sentry source maps              | Uploaded on merge/deploy only; release = `${env}-${github.sha}`              |
 | S3 backup                       | Pre-deploy backup; `backup_dir` job output feeds rollback                    |
 | Deploy                          | `aws s3 sync` of `out/` + CloudFront invalidation (`data/*` preserved)       |
-| E2E                             | Via proxy against deployed/test URL as configured                            |
+| E2E                             | Via proxy against deployed/test URL; failure triggers S3 rollback            |
 | Lighthouse                      | Failure triggers S3 rollback on merge/deploy                                 |
 | Revert                          | Restores named backup + AWS creds + CloudFront invalidate; excludes `data/*` |
 

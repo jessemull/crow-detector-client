@@ -1,8 +1,16 @@
 import './globals.css';
 import Script from 'next/script';
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import { Footer } from '@components/Footer';
 import { Header } from '@components/Header';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 const NEXT_PUBLIC_GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
 
@@ -52,8 +60,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="flex flex-col min-h-screen">
+    <html lang="en" className={inter.variable}>
+      <body className="flex flex-col min-h-screen font-sans">
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

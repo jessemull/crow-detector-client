@@ -173,12 +173,57 @@ describe('Header', () => {
     expect(aboutLink).toBeTruthy();
 
     aboutLink?.focus();
+    expect(aboutLink).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(closeButton).toHaveFocus();
 
     closeButton.focus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
     expect(aboutLink).toHaveFocus();
+  });
+
+  it('wraps Tab from the last menu item back to the close button', () => {
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+
+    const closeButton = screen.getByRole('button', { name: 'Close menu' });
+    const mobileNav = screen.getByLabelText('Mobile navigation');
+    const aboutLink = mobileNav.querySelector(
+      'a[href="/about"]'
+    ) as HTMLAnchorElement;
+
+    aboutLink.focus();
+    expect(document.activeElement).toBe(aboutLink);
+
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: false });
+    expect(document.activeElement).toBe(closeButton);
+  });
+
+  it('marks background content inert while the mobile menu is open', () => {
+    const main = document.createElement('main');
+    const footer = document.createElement('footer');
+    document.body.append(main, footer);
+
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+
+    const chrome = screen.getByRole('banner').querySelector(':scope > div');
+    expect(chrome).toHaveAttribute('inert');
+    expect(main).toHaveAttribute('inert');
+    expect(footer).toHaveAttribute('inert');
+    expect(
+      screen.getByRole('dialog', { name: 'Mobile menu' })
+    ).not.toHaveAttribute('inert');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+    expect(chrome).not.toHaveAttribute('inert');
+    expect(main).not.toHaveAttribute('inert');
+    expect(footer).not.toHaveAttribute('inert');
+
+    main.remove();
+    footer.remove();
   });
 
   it('ignores non-Tab keys while the menu is open', () => {

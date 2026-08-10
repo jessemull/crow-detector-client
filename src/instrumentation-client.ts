@@ -1,11 +1,14 @@
 import * as Sentry from '@sentry/nextjs';
 
+const environment = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? '';
+const isProduction = environment === 'production' || environment === 'prod';
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
+  environment,
   release: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
-  tracesSampleRate: 1.0,
-  replaysSessionSampleRate: 0.1,
+  tracesSampleRate: isProduction ? 0.1 : 1.0,
+  replaysSessionSampleRate: isProduction ? 0.05 : 0.1,
   replaysOnErrorSampleRate: 1.0,
 });
 

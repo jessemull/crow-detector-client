@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 const SSH_HOST = process.env.SSH_HOST;
 const SSH_PRIVATE_KEY_PATH = process.env.SSH_PRIVATE_KEY_PATH;
@@ -11,7 +11,7 @@ if (!SSH_HOST || !SSH_PRIVATE_KEY_PATH || !SSH_USER) {
 }
 
 try {
-  execSync(`ssh -i ${SSH_PRIVATE_KEY_PATH} ${SSH_USER}@${SSH_HOST}`, {
+  execFileSync('ssh', ['-i', SSH_PRIVATE_KEY_PATH, `${SSH_USER}@${SSH_HOST}`], {
     stdio: 'inherit',
   });
 } catch (error) {

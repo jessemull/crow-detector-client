@@ -27,6 +27,7 @@ describe('HomePage', () => {
     render(<HomePage />);
     expect(screen.getByTestId('feeder-status')).toBeTruthy();
     expect(screen.getByTestId('camera-status')).toBeTruthy();
+    expect(screen.getAllByText('Status unknown')).toHaveLength(2);
   });
 
   it('has no accessibility violations', async () => {
