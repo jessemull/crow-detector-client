@@ -23,9 +23,13 @@ require('dotenv').config({ path, quiet: true });
     process.env;
 
   if (!SENTRY_AUTH_TOKEN_SOURCE_MAPS || !SENTRY_ORG || !SENTRY_PROJECT) {
-    console.warn(
-      'Sentry upload skipped due to missing environment variables...'
-    );
+    const message =
+      'Sentry upload skipped due to missing environment variables...';
+    if (process.env.CI) {
+      console.error(message);
+      process.exit(1);
+    }
+    console.warn(message);
     return;
   }
 

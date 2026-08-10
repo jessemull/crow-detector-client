@@ -21,6 +21,9 @@ const Header: React.FC = () => {
       wasMenuOpenRef.current = true;
       closeButtonRef.current?.focus();
 
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
       const onKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
           setIsMenuOpen(false);
@@ -54,7 +57,10 @@ const Header: React.FC = () => {
       };
 
       document.addEventListener('keydown', onKeyDown);
-      return () => document.removeEventListener('keydown', onKeyDown);
+      return () => {
+        document.removeEventListener('keydown', onKeyDown);
+        document.body.style.overflow = previousOverflow;
+      };
     }
 
     if (wasMenuOpenRef.current) {

@@ -34,7 +34,9 @@ const HomePage: React.FC = () => {
         </div>
         <div className="flex justify-center items-center gap-8 mb-6">
           <div className="flex items-start gap-2" data-testid="feeder-status">
-            <span className="text-sm mt-0.5">🟢</span>
+            <span className="text-sm mt-0.5" aria-hidden="true">
+              🟢
+            </span>
             <div className="text-left">
               <h3 className="text-sm font-medium text-white mb-1">
                 Feeder Status
@@ -43,7 +45,9 @@ const HomePage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-start gap-2" data-testid="camera-status">
-            <span className="text-lg -mt-1">📷</span>
+            <span className="text-lg -mt-1" aria-hidden="true">
+              📷
+            </span>
             <div className="text-left">
               <h3 className="text-sm font-medium text-white mb-1">
                 Camera Status

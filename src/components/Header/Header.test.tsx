@@ -181,6 +181,45 @@ describe('Header', () => {
     expect(aboutLink).toHaveFocus();
   });
 
+  it('ignores non-Tab keys while the menu is open', () => {
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const closeButton = screen.getByRole('button', { name: 'Close menu' });
+    closeButton.focus();
+
+    fireEvent.keyDown(document, { key: 'a' });
+    expect(closeButton).toHaveFocus();
+    expect(screen.getByRole('dialog', { name: 'Mobile menu' })).toBeTruthy();
+  });
+
+  it('ignores Tab when the dialog has no focusable elements', () => {
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
+    const spy = jest
+      .spyOn(dialog, 'querySelectorAll')
+      .mockReturnValue([] as unknown as NodeListOf<Element>);
+
+    expect(() => {
+      fireEvent.keyDown(document, { key: 'Tab' });
+    }).not.toThrow();
+
+    spy.mockRestore();
+  });
+
+  it('locks background scroll while the mobile menu is open', () => {
+    render(<Header />);
+
+    expect(document.body.style.overflow).toBe('');
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    expect(document.body.style.overflow).toBe('hidden');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+    expect(document.body.style.overflow).toBe('');
+  });
+
   it('exposes visible focus styles on the menu toggle', () => {
     render(<Header />);
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });

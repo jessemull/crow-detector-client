@@ -37,7 +37,7 @@ const About: React.FC = () => {
           <div className="text-center">
             <Link
               href="/"
-              className="inline-flex items-center px-4 md:px-6 py-2 md:py-3 bg-stone-800 text-amber-400 border border-amber-400 font-medium text-sm md:text-base rounded-lg hover:bg-stone-700 transition-colors"
+              className="inline-flex items-center px-4 md:px-6 py-2 md:py-3 bg-stone-800 text-amber-400 border border-amber-400 font-medium text-sm md:text-base rounded-lg hover:bg-stone-700 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
             >
               Back to Home
             </Link>

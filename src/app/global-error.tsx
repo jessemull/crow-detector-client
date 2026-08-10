@@ -32,7 +32,7 @@ const GlobalError: React.FC<Props> = ({ error }) => {
           </p>
           <Link
             href="/"
-            className="text-amber-500 text-2xl hover:text-white transition-colors"
+            className="text-amber-500 text-2xl hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
             Home
           </Link>
