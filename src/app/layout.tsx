@@ -62,8 +62,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="flex flex-col min-h-screen font-sans">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:bg-stone-900 focus:px-4 focus:py-2 focus:text-amber-400 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-amber-400"
+        >
+          Skip to content
+        </a>
         <Header />
-        <main className="flex-1">{children}</main>
+        <main id="main-content" className="flex-1" tabIndex={-1}>
+          {children}
+        </main>
         <Footer />
         {NEXT_PUBLIC_GA_TRACKING_ID ? (
           <Script id="gtag-load" strategy="afterInteractive">

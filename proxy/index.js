@@ -59,11 +59,12 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const [baseUrl, queryString] = req.originalUrl.split('?');
   const queryParams = queryString ? `?${queryString}` : '';
+  const pathOnly = baseUrl.replace(/\/+$/, '') || '/';
 
-  if (baseUrl === '/') {
+  if (pathOnly === '/') {
     req.url = '/index.html' + queryParams;
-  } else if (!baseUrl.match(/\.[a-zA-Z0-9]+$/)) {
-    req.url = baseUrl + '.html' + queryParams;
+  } else if (!pathOnly.match(/\.[a-zA-Z0-9]+$/)) {
+    req.url = pathOnly + '.html' + queryParams;
   }
   next();
 });
