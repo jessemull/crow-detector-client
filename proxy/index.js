@@ -9,7 +9,14 @@ const app = express();
 const PORT = 8080;
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN;
 const COOKIE_TTL = 60 * 60 * 1000;
-console.log(CLOUDFRONT_DOMAIN);
+
+if (!CLOUDFRONT_DOMAIN) {
+  console.error(
+    'CLOUDFRONT_DOMAIN is required. Set it in .env.local before starting the proxy.'
+  );
+  process.exit(1);
+}
+
 app.get('/healthcheck', (req, res) => {
   res.status(200).send('OK');
 });
@@ -18,9 +25,17 @@ app.use(cookieParser());
 
 app.use((req, res, next) => {
   if (!req.cookies['CloudFront-Policy']) {
-    const signedCookies = getSignedCookies();
+    let signedCookies;
+    try {
+      signedCookies = getSignedCookies();
+    } catch (error) {
+      console.error('Failed to sign CloudFront cookies: ', error);
+      return res.status(500).send('CloudFront cookie signing misconfigured');
+    }
 
     Object.entries(signedCookies).forEach(([name, value]) => {
+      // httpOnly must stay false: Cypress/LH and local debugging read these
+      // CloudFront signed cookies from document.cookie via the localhost proxy.
       res.cookie(name, value, {
         httpOnly: false,
         secure: true,
@@ -42,11 +57,13 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  const baseUrl = req.originalUrl.split('?')[0];
+  const [baseUrl, queryString] = req.originalUrl.split('?');
+  const queryParams = queryString ? `?${queryString}` : '';
+
   if (baseUrl === '/') {
-    req.url = '/index.html';
+    req.url = '/index.html' + queryParams;
   } else if (!baseUrl.match(/\.[a-zA-Z0-9]+$/)) {
-    req.url += '.html';
+    req.url = baseUrl + '.html' + queryParams;
   }
   next();
 });
@@ -57,7 +74,7 @@ app.use(
     changeOrigin: true,
     http2: true,
     target: `https://${CLOUDFRONT_DOMAIN}`,
-    onProxyReq: (proxyReq, req, res) => {
+    onProxyReq: (proxyReq, req, _res) => {
       if (req.headers.cookie) {
         proxyReq.setHeader('Cookie', req.headers.cookie);
       }
