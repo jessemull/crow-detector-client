@@ -6,6 +6,7 @@ describe('About Page', () => {
   it('renders the about page component', () => {
     render(<AboutPage />);
     const heading = screen.getByRole('heading', {
+      level: 1,
       name: 'About Critter Canteen',
     });
     expect(heading).toBeTruthy();

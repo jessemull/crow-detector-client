@@ -66,7 +66,10 @@ describe('Header', () => {
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
     expect(menuButton).toBeTruthy();
+    expect(menuButton).toHaveAttribute('type', 'button');
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
     expect(menuButton.className).toContain('lg:hidden');
+    expect(menuButton.className).toContain('cursor-pointer');
   });
 
   it('toggles mobile menu when button is clicked', () => {
@@ -78,12 +81,27 @@ describe('Header', () => {
 
     fireEvent.click(menuButton);
 
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
     expect(closeButton).toBeTruthy();
+    expect(closeButton).toHaveAttribute('type', 'button');
 
     const mobileNav = screen.getByLabelText('Mobile navigation');
+    expect(mobileNav).toHaveAttribute('id', 'mobile-navigation');
     expect(mobileNav.querySelector('a[href="/"]')).toBeTruthy();
     expect(mobileNav.querySelector('a[href="/about"]')).toBeTruthy();
+  });
+
+  it('supports keyboard activation of the menu toggle', () => {
+    render(<Header />);
+
+    const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
+    menuButton.focus();
+    fireEvent.keyDown(menuButton, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(menuButton);
+
+    expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
+    expect(screen.getByLabelText('Mobile navigation')).toBeTruthy();
   });
 
   it('closes mobile menu when close button is clicked', () => {

@@ -19,9 +19,12 @@ const Header: React.FC<HeaderProps> = () => {
       <div className="max-w-6xl py-3 md:py-4 pl-3 md:pl-6">
         <div className="flex items-center relative">
           <button
+            type="button"
             onClick={toggleMenu}
-            className="lg:hidden absolute md:-left-2 focus:outline-none"
+            className="lg:hidden absolute md:-left-2 cursor-pointer focus:outline-none"
             aria-label="Toggle menu"
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-navigation"
           >
             <Menu className="w-6 h-6 md:w-8 md:h-8 text-white" />
           </button>
@@ -76,14 +79,16 @@ const Header: React.FC<HeaderProps> = () => {
                 </span>
               </div>
               <button
+                type="button"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-white hover:text-gray-300"
+                className="text-white hover:text-gray-300 cursor-pointer"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </div>
             <nav
+              id="mobile-navigation"
               className="flex flex-col space-y-0"
               aria-label="Mobile navigation"
             >
