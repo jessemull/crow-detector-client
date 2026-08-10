@@ -15,7 +15,7 @@ const GlobalError: React.FC<Props> = ({ error }) => {
   }, [error]);
   return (
     <html lang="en">
-      <body className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background-start via-background-end to-background-start px-4 text-center font-sans">
+      <body className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-900 via-neutral-800 to-stone-900 px-4 text-center font-sans">
         <div className="flex flex-col items-center max-w-xl w-full">
           <div className="text-white mb-6 flex justify-center">
             <Bird
@@ -24,7 +24,7 @@ const GlobalError: React.FC<Props> = ({ error }) => {
               className="w-[20vw] h-[20vw] max-w-[160px] max-h-[160px]"
             />
           </div>
-          <h2 className="text-xl md:text-2xl font-light text-accent-500 mb-4 tracking-wide">
+          <h2 className="text-xl md:text-2xl font-light text-amber-500 mb-4 tracking-wide">
             Something Went Wrong!
           </h2>
           <p className="text-md md:text-lg font-light text-white mb-6">
@@ -32,7 +32,7 @@ const GlobalError: React.FC<Props> = ({ error }) => {
           </p>
           <Link
             href="/"
-            className="text-accent-500 text-2xl hover:text-white transition-colors"
+            className="text-amber-500 text-2xl hover:text-white transition-colors"
           >
             Home
           </Link>

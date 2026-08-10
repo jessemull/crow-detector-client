@@ -16,7 +16,6 @@ const customJestConfig = {
     'src/app/global-error.tsx',
     'src/types/.*',
   ],
-  coverageProvider: 'v8',
   coverageReporters: ['json', 'lcov', 'text', 'clover'],
   coverageThreshold: {
     global: {
@@ -28,11 +27,25 @@ const customJestConfig = {
   },
   moduleNameMapper: {
     '^@components/(.*)$': '<rootDir>/src/components/$1',
+    '^@constants/(.*)$': '<rootDir>/src/constants/$1',
+    '^@hooks/(.*)$': '<rootDir>/src/hooks/$1',
+    '^@types/(.*)$': '<rootDir>/src/types/$1',
+    '^@utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@pages/(.*)$': '<rootDir>/src/app/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testEnvironment: 'jest-environment-jsdom',
   testPathIgnorePatterns: ['/node_modules/', '/.next/', 'temp-original'],
 };
 
-module.exports = createJestConfig(customJestConfig);
+module.exports = async () => {
+  const nextJestConfig = await createJestConfig(customJestConfig)();
+
+  nextJestConfig.transformIgnorePatterns = [
+    '/node_modules/(?!(@faker-js/faker)/)',
+    '^.+\\.module\\.(css|sass|scss)$',
+  ];
+
+  return nextJestConfig;
+};

@@ -1,4 +1,4 @@
-// Proxy server with signed cookie for accessing https://www.dev.blockbusterindex.com at http://localhost:8080...
+// Lighthouse CI: production URL or local signed-cookie proxy at http://localhost:8080
 
 const urls = {
   production: 'https://www.crittercanteen.com',
@@ -17,7 +17,7 @@ const assertions = {
     'categories:accessibility': ['error', { minScore: 0.9 }],
     'categories:seo': ['error', { minScore: 0.9 }],
     'categories:best-practices': ['error', { minScore: 0.9 }],
-  }
+  },
 };
 
 const settings = {
@@ -27,7 +27,7 @@ const settings = {
       rttMs: 40,
       throughputKbps: 10240,
       cpuSlowdownMultiplier: 1,
-    }
+    },
   },
   test: {
     throttlingMethod: 'devtools',
@@ -35,8 +35,8 @@ const settings = {
       rttMs: 100,
       throughputKbps: 5120,
       cpuSlowdownMultiplier: 1,
-    }
-  }
+    },
+  },
 };
 
 module.exports = {
