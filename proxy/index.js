@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env.local', quiet: true });
 const cookieParser = require('cookie-parser');
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');

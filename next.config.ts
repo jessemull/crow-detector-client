@@ -15,8 +15,8 @@ const withAnalyzer = withBundleAnalyzer({
 });
 
 export default withSentryConfig(withAnalyzer(baseConfig), {
-  org: 'jessemull',
-  project: 'crow-detector-client',
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,
   widenClientFileUpload: true,
   sourcemaps: { disable: process.env.ENABLE_SOURCE_MAPS !== 'true' },

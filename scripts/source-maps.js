@@ -14,7 +14,7 @@ switch (process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT) {
     break;
 }
 
-require('dotenv').config({ path });
+require('dotenv').config({ path, quiet: true });
 
 (async () => {
   const env = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT;
@@ -36,24 +36,27 @@ require('dotenv').config({ path });
     `Uploading source maps for release ${release} in ${env} environment...`
   );
 
-  try {
-    const tokenFlag = `--auth-token ${SENTRY_AUTH_TOKEN_SOURCE_MAPS}`;
+  const cliEnv = {
+    ...process.env,
+    SENTRY_AUTH_TOKEN: SENTRY_AUTH_TOKEN_SOURCE_MAPS,
+  };
 
+  try {
     execSync(
-      `npx sentry-cli ${tokenFlag} releases --org ${SENTRY_ORG} --project ${SENTRY_PROJECT} new ${release}`,
-      { stdio: 'inherit' }
+      `npx sentry-cli releases --org ${SENTRY_ORG} --project ${SENTRY_PROJECT} new ${release}`,
+      { stdio: 'inherit', env: cliEnv }
     );
     execSync(
-      `npx sentry-cli ${tokenFlag} releases --org ${SENTRY_ORG} --project ${SENTRY_PROJECT} files ${release} upload-sourcemaps .next --url-prefix "~/_next" --validate --ignore-file .sentryignore`,
-      { stdio: 'inherit' }
+      `npx sentry-cli releases --org ${SENTRY_ORG} --project ${SENTRY_PROJECT} files ${release} upload-sourcemaps .next --url-prefix "~/_next" --validate --ignore-file .sentryignore`,
+      { stdio: 'inherit', env: cliEnv }
     );
     execSync(
-      `npx sentry-cli ${tokenFlag} releases --org ${SENTRY_ORG} --project ${SENTRY_PROJECT} finalize ${release}`,
-      { stdio: 'inherit' }
+      `npx sentry-cli releases --org ${SENTRY_ORG} --project ${SENTRY_PROJECT} finalize ${release}`,
+      { stdio: 'inherit', env: cliEnv }
     );
     execSync(
-      `npx sentry-cli ${tokenFlag} releases --org ${SENTRY_ORG} --project ${SENTRY_PROJECT} deploys ${release} new --env ${env}`,
-      { stdio: 'inherit' }
+      `npx sentry-cli releases --org ${SENTRY_ORG} --project ${SENTRY_PROJECT} deploys ${release} new --env ${env}`,
+      { stdio: 'inherit', env: cliEnv }
     );
 
     console.log('Sentry source maps uploaded.');

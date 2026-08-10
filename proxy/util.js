@@ -1,6 +1,13 @@
 const crypto = require('crypto');
 const fs = require('fs');
 
+const toCloudFrontBase64 = (value) =>
+  Buffer.from(value)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/=/g, '_')
+    .replace(/\//g, '~');
+
 const getSignedCookies = () => {
   try {
     const domain = process.env.CLOUDFRONT_DOMAIN;
@@ -30,12 +37,12 @@ const getSignedCookies = () => {
     };
 
     const policyJson = JSON.stringify(policy);
-    const policyBase64 = Buffer.from(policyJson).toString('base64');
+    const policyBase64 = toCloudFrontBase64(policyJson);
 
     const signer = crypto.createSign('sha1');
     signer.update(policyJson);
     const signature = signer.sign(privateKey);
-    const signatureBase64 = signature.toString('base64');
+    const signatureBase64 = toCloudFrontBase64(signature);
 
     return {
       'CloudFront-Policy': policyBase64,
@@ -48,4 +55,4 @@ const getSignedCookies = () => {
   }
 };
 
-module.exports = { getSignedCookies };
+module.exports = { getSignedCookies, toCloudFrontBase64 };
