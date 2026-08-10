@@ -155,6 +155,39 @@ describe('Header', () => {
     expect(menuButton).toHaveFocus();
   });
 
+  it('traps tab focus inside the mobile menu dialog', () => {
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+
+    const closeButton = screen.getByRole('button', { name: 'Close menu' });
+    const mobileNav = screen.getByLabelText('Mobile navigation');
+    const homeLink = mobileNav.querySelector(
+      'a[href="/"]'
+    ) as HTMLAnchorElement | null;
+    const aboutLink = mobileNav.querySelector(
+      'a[href="/about"]'
+    ) as HTMLAnchorElement | null;
+
+    expect(homeLink).toBeTruthy();
+    expect(aboutLink).toBeTruthy();
+
+    aboutLink?.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(closeButton).toHaveFocus();
+
+    closeButton.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(aboutLink).toHaveFocus();
+  });
+
+  it('exposes visible focus styles on the menu toggle', () => {
+    render(<Header />);
+    const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
+    expect(menuButton.className).toContain('focus-visible:outline');
+    expect(menuButton.className).not.toContain('focus:outline-none');
+  });
+
   it('has no accessibility violations when the mobile menu is open', async () => {
     const { container } = render(<Header />);
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));

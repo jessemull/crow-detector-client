@@ -24,7 +24,7 @@ jobs:
       - name: Restore Selected Backup
         run: |
           echo "Rolling back to ${{ inputs.backup_s3_key }}..."
-          aws s3 sync s3://$AWS_S3_BUCKET_BACKUP/${{ inputs.backup_s3_key }}/ s3://$AWS_S3_BUCKET --delete
+          aws s3 sync s3://$AWS_S3_BUCKET_BACKUP/${{ inputs.backup_s3_key }}/ s3://$AWS_S3_BUCKET --delete --exclude "data/*"
         env:
           AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || secrets.AWS_S3_BUCKET_PROD }}
           AWS_S3_BUCKET_BACKUP: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_BACKUP_DEV || secrets.AWS_S3_BUCKET_BACKUP_PROD }}

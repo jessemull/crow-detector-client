@@ -39,6 +39,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || secrets.GA_TRACKING_ID_PROD }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          NEXT_PUBLIC_SENTRY_RELEASE: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}-${{ github.sha }}
           NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}
           SENTRY_AUTH_TOKEN_SOURCE_MAPS: ${{ secrets.SENTRY_AUTH_TOKEN_SOURCE_MAPS }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -72,6 +73,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || secrets.GA_TRACKING_ID_PROD }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          NEXT_PUBLIC_SENTRY_RELEASE: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}-${{ github.sha }}
           NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}
           SENTRY_AUTH_TOKEN_SOURCE_MAPS: ${{ secrets.SENTRY_AUTH_TOKEN_SOURCE_MAPS }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -142,12 +144,6 @@ jobs:
           path: coverage
           retention-days: 7
 
-      - name: Coverage Threshold Check
-        run: |
-          if [[ $(grep "Statements" coverage/lcov-report/index.html | awk '{print $4}' | tr -d '%') -lt 80 ]]; then
-            echo "Code coverage is below threshold. Please update test coverage and try again."
-            exit 1
-          fi
 
   backup_s3:
     name: Backup S3

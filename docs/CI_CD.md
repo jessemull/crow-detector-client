@@ -19,22 +19,23 @@ Do **not** rewrite these lightly. Document changes in the PR and treat as human-
 
 | Job              | Blocking? | Notes                                                                |
 | ---------------- | --------- | -------------------------------------------------------------------- |
-| Build            | Yes       | Static export + optional Sentry source maps                          |
+| Build            | Yes       | Static export; bakes `NEXT_PUBLIC_SENTRY_*` (no source-map upload)   |
 | Lint             | Yes       | `npm run lint`                                                       |
 | Typecheck        | Yes       | `npm run typecheck`                                                  |
-| Unit tests       | Yes       | Jest + ≥80% coverage (`jest.config` thresholds)                      |
+| Unit tests       | Yes       | Jest + ≥80% coverage (`jest.config` thresholds; authoritative gate)  |
 | E2E & Lighthouse | Soft LH   | Cypress blocking; **LH may `continue-on-error` on PR** (intentional) |
 
 ### Merge / deploy
 
-| Job                             | Notes                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| Build + lint + typecheck + unit | Required before deploy                                                   |
-| S3 backup                       | Pre-deploy backup; `backup_dir` job output feeds rollback                |
-| Deploy                          | `aws s3 sync` of `out/` + CloudFront invalidation                        |
-| E2E                             | Via proxy against deployed/test URL as configured                        |
-| Lighthouse                      | Failure triggers S3 rollback on merge/deploy                             |
-| Revert                          | Restores named backup via job output + AWS creds + CloudFront invalidate |
+| Job                             | Notes                                                                        |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| Build + lint + typecheck + unit | Required before deploy                                                       |
+| Sentry source maps              | Uploaded on merge/deploy only; release = `${env}-${github.sha}`              |
+| S3 backup                       | Pre-deploy backup; `backup_dir` job output feeds rollback                    |
+| Deploy                          | `aws s3 sync` of `out/` + CloudFront invalidation (`data/*` preserved)       |
+| E2E                             | Via proxy against deployed/test URL as configured                            |
+| Lighthouse                      | Failure triggers S3 rollback on merge/deploy                                 |
+| Revert                          | Restores named backup + AWS creds + CloudFront invalidate; excludes `data/*` |
 
 Node **26** (`.nvmrc`, `engines.node`, `actions/setup-node`).
 
@@ -59,4 +60,5 @@ Local preflight and CI both require **typecheck**. Keep both green.
 - Skipping hooks with `--no-verify` / `HUSKY=0` without explicit human request
 - Weakening coverage or LH assertions to “make CI green”
 - Deploying without backup / invalidation steps
-- Rollback without a propagated `backup_dir` output or AWS credentials on restore
+- Rollback without a propagated `backup_dir` output, AWS credentials on restore, or `data/*` exclude
+- Swallowing Sentry source-map upload failures on merge/deploy

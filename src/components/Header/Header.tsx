@@ -5,12 +5,11 @@ import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
 import { Menu, X, Home, Info } from 'lucide-react';
 
-interface HeaderProps {}
-
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const wasMenuOpenRef = useRef(false);
 
   const toggleMenu = () => {
@@ -25,6 +24,32 @@ const Header: React.FC<HeaderProps> = () => {
       const onKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
           setIsMenuOpen(false);
+          return;
+        }
+
+        if (event.key !== 'Tab' || !dialogRef.current) {
+          return;
+        }
+
+        const focusable = Array.from(
+          dialogRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href]'
+          )
+        );
+
+        if (focusable.length === 0) {
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
         }
       };
 
@@ -46,7 +71,7 @@ const Header: React.FC<HeaderProps> = () => {
             ref={menuButtonRef}
             type="button"
             onClick={toggleMenu}
-            className="lg:hidden absolute md:-left-2 cursor-pointer focus:outline-none"
+            className="lg:hidden absolute md:-left-2 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
             aria-label="Toggle menu"
             aria-expanded={isMenuOpen}
             aria-controls="mobile-navigation"
@@ -56,7 +81,7 @@ const Header: React.FC<HeaderProps> = () => {
           <div className="flex items-center space-x-3 w-full lg:w-auto justify-center lg:justify-start">
             <Link
               href="/"
-              className="flex items-center space-x-3 text-white hover:text-gray-400 transition-colors"
+              className="flex items-center space-x-3 text-white hover:text-gray-400 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
             >
               <Image
                 src="/favicon.png"
@@ -76,13 +101,13 @@ const Header: React.FC<HeaderProps> = () => {
           >
             <Link
               href="/"
-              className="text-gray-200 hover:text-gray-400 transition-colors font-light"
+              className="text-gray-200 hover:text-gray-400 transition-colors font-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
             >
               Home
             </Link>
             <Link
               href="/about"
-              className="text-gray-200 hover:text-gray-400 transition-colors font-light"
+              className="text-gray-200 hover:text-gray-400 transition-colors font-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
             >
               About
             </Link>
@@ -90,6 +115,7 @@ const Header: React.FC<HeaderProps> = () => {
         </div>
         {isMenuOpen && (
           <div
+            ref={dialogRef}
             className="lg:hidden min-h-screen absolute top-0 left-0 bg-stone-900 border-r border-white/30 shadow-lg z-50 min-w-72"
             role="dialog"
             aria-modal="true"
@@ -112,7 +138,7 @@ const Header: React.FC<HeaderProps> = () => {
                 ref={closeButtonRef}
                 type="button"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-white hover:text-gray-300 cursor-pointer"
+                className="text-white hover:text-gray-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5 md:w-6 md:h-6" />
@@ -125,7 +151,7 @@ const Header: React.FC<HeaderProps> = () => {
             >
               <Link
                 href="/"
-                className="text-white hover:text-gray-400 transition-colors font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 border-t border-b border-white/30"
+                className="text-white hover:text-gray-400 transition-colors font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 border-t border-b border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <Home className="w-4 h-4 md:w-5 md:h-5" />
@@ -133,7 +159,7 @@ const Header: React.FC<HeaderProps> = () => {
               </Link>
               <Link
                 href="/about"
-                className="text-white hover:text-gray-400 transition-colors font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 border-b border-white/30"
+                className="text-white hover:text-gray-400 transition-colors font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 border-b border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <Info className="w-4 h-4 md:w-5 md:h-5" />

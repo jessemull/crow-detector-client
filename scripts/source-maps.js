@@ -16,7 +16,7 @@ switch (process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT) {
 
 require('dotenv').config({ path, quiet: true });
 
-(async () => {
+(() => {
   const env = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT;
 
   const { SENTRY_AUTH_TOKEN_SOURCE_MAPS, SENTRY_ORG, SENTRY_PROJECT } =
@@ -30,7 +30,8 @@ require('dotenv').config({ path, quiet: true });
   }
 
   const commitHash = execSync('git rev-parse HEAD').toString().trim();
-  const release = `${env}-${commitHash}`;
+  const release =
+    process.env.NEXT_PUBLIC_SENTRY_RELEASE || `${env}-${commitHash}`;
 
   console.log(
     `Uploading source maps for release ${release} in ${env} environment...`
@@ -62,5 +63,6 @@ require('dotenv').config({ path, quiet: true });
     console.log('Sentry source maps uploaded.');
   } catch (err) {
     console.error('Sentry source map upload failed: ', err.message);
+    process.exit(1);
   }
 })();
