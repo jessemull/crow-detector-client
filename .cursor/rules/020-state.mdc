@@ -1,0 +1,14 @@
+---
+description: "React state rules for the Critter Canteen client."
+globs:
+  - "src/hooks/**/*"
+  - "src/components/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# State
+
+- Local `useState` for UI-only state is fine (e.g. mobile menu)
+- No Redux/Zustand/MobX without governance approval
+- Do not introduce Cognito AuthProvider / SWR contexts unless product adds those surfaces
+- See `docs/ARCHITECTURE.md`

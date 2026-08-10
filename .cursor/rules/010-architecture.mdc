@@ -1,0 +1,14 @@
+---
+description: "Architecture boundaries for the Next.js static-export Critter Canteen client."
+globs:
+  - "src/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Architecture
+
+- Layers: `app` routes → feature components → hooks/utils/constants
+- Shared chrome: Header, Footer
+- Static pages only; CloudFront signed-cookie access via `proxy/` for test CDN
+- Keep product surface small (Home / About) — no Cognito/SWR/admin without product approval
+- See `docs/ARCHITECTURE.md`

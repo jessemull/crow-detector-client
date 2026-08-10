@@ -1,0 +1,16 @@
+---
+description: "Secrets, proxy, and client bundle safety."
+globs:
+  - "src/**/*.{ts,tsx}"
+  - "proxy/**/*"
+  - "scripts/**/*"
+alwaysApply: false
+---
+
+# Security
+
+- No secrets in source or client bundle
+- Env-only CloudFront / AWS / Sentry credentials for scripts and proxy
+- Proxy must fail closed when CloudFront signing config is missing
+- Do not log tokens or PII carelessly
+- See `docs/SECURITY.md`

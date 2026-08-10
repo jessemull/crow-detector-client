@@ -1,0 +1,13 @@
+---
+description: "React component composition rules."
+globs:
+  - "src/components/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Components
+
+- Prefer shared Header / Footer
+- `'use client'` only when required
+- Buttons need `type="button"` unless submitting forms; prefer `next/link` for nav
+- See `docs/ARCHITECTURE.md`, `docs/ACCESSIBILITY.md`
