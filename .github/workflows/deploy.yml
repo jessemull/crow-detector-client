@@ -39,12 +39,6 @@ jobs:
           NEXT_PUBLIC_SENTRY_RELEASE: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}-${{ github.sha }}
           NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}
 
-      - name: Copy Sitemap and Robots Files
-        run: |
-          cp public/sitemap.xml out/
-          cp public/robots.txt out/
-          cp public/sitemap-0.xml out/
-
       - name: Archive Build Output
         uses: actions/upload-artifact@v7
         with:
@@ -254,7 +248,7 @@ jobs:
       - name: Run Lighthouse Tests
         id: lighthouse
         run: |
-          NODE_ENV=${{ inputs.environment }} npx lhci autorun
+          NODE_ENV=${{ inputs.environment }} npx lhci autorun --chrome-flags="--headless --disable-gpu --no-sandbox"
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}

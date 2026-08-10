@@ -16,7 +16,7 @@ const PageShell: React.FC<PageShellProps> = ({
 }) => {
   return (
     <div
-      className={`min-h-screen bg-gradient-to-br from-stone-900 via-neutral-800 to-stone-900 ${className}`.trim()}
+      className={`relative min-h-screen bg-gradient-to-br from-stone-900 via-neutral-800 to-stone-900 ${className}`.trim()}
     >
       <div
         className={`absolute inset-0 ${DOT_GRID_BACKGROUND} opacity-30`}

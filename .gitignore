@@ -43,7 +43,7 @@ next-env.d.ts
 # lighthouse
 .lighthouseci/
 
-# static data for next export and seo files
+# legacy public SEO outputs (next-sitemap now writes to out/)
 public/robots.txt
 public/sitemap-0.xml
 public/sitemap.xml

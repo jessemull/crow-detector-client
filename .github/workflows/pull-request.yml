@@ -32,12 +32,6 @@ jobs:
           NEXT_PUBLIC_SENTRY_RELEASE: ${{ secrets.SENTRY_ENVIRONMENT_TEST }}-${{ github.sha }}
           NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ secrets.SENTRY_ENVIRONMENT_TEST }}
 
-      - name: Copy Sitemap and Robots Files
-        run: |
-          cp public/sitemap.xml out/
-          cp public/robots.txt out/
-          cp public/sitemap-0.xml out/
-
       - name: Archive Build Output
         uses: actions/upload-artifact@v7
         with:
