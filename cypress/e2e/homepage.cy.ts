@@ -25,3 +25,17 @@ describe('Homepage', () => {
     cy.get('button').should('contain', 'Feed the Crows');
   });
 });
+
+describe('About page', () => {
+  beforeEach(() => {
+    cy.visit('/about');
+  });
+
+  it('should display the about heading', () => {
+    cy.get('h1').should('contain', 'About Critter Canteen');
+  });
+
+  it('should link back home', () => {
+    cy.get('a').contains('Back to Home').should('have.attr', 'href', '/');
+  });
+});

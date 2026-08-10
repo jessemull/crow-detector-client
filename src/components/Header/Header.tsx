@@ -108,6 +108,7 @@ const Header: React.FC = () => {
                 alt=""
                 width={32}
                 height={32}
+                priority
                 className="w-6 h-6 md:w-8 md:h-8"
               />
               <span className="font-light text-base md:text-lg tracking-wide">
