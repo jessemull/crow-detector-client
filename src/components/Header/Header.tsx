@@ -2,17 +2,35 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Menu, X, Home, Info } from 'lucide-react';
 
 interface HeaderProps {}
 
 const Header: React.FC<HeaderProps> = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+
+    closeButtonRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isMenuOpen]);
 
   return (
     <header className="sticky top-0 z-20 bg-stone-900 backdrop-blur-sm border-b border-amber-400/30 relative">
@@ -64,7 +82,12 @@ const Header: React.FC<HeaderProps> = () => {
           </nav>
         </div>
         {isMenuOpen && (
-          <div className="lg:hidden min-h-screen absolute top-0 left-0 bg-stone-900 border-r border-white/30 shadow-lg z-50 min-w-72">
+          <div
+            className="lg:hidden min-h-screen absolute top-0 left-0 bg-stone-900 border-r border-white/30 shadow-lg z-50 min-w-72"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile menu"
+          >
             <div className="flex justify-between items-center p-4">
               <div className="flex items-center space-x-3">
                 <Image
@@ -79,6 +102,7 @@ const Header: React.FC<HeaderProps> = () => {
                 </span>
               </div>
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={() => setIsMenuOpen(false)}
                 className="text-white hover:text-gray-300 cursor-pointer"

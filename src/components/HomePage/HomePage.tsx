@@ -24,7 +24,8 @@ const HomePage: React.FC = () => {
         <div className="text-center mb-8">
           <button
             type="button"
-            className="bg-stone-800 text-amber-400 border border-amber-400 font-medium py-3 px-8 rounded-lg hover:bg-stone-700 transition-colors cursor-pointer"
+            disabled
+            className="bg-stone-800 text-amber-400 border border-amber-400 font-medium py-3 px-8 rounded-lg opacity-70 cursor-not-allowed"
             aria-disabled="true"
             title="Feeding controls are not connected yet"
           >

@@ -1,6 +1,9 @@
 import HomePage from './HomePage';
 import React from 'react';
+import { axe, toHaveNoViolations } from 'jest-axe';
 import { render, screen } from '@testing-library/react';
+
+expect.extend(toHaveNoViolations);
 
 describe('HomePage', () => {
   it('renders the main heading', () => {
@@ -12,18 +15,22 @@ describe('HomePage', () => {
     expect(heading).toBeTruthy();
   });
 
-  it('renders the feed button as an inert control', () => {
+  it('renders the feed button as a disabled control', () => {
     render(<HomePage />);
     const button = screen.getByRole('button', { name: 'Feed the Crows' });
-    expect(button).toBeTruthy();
+    expect(button).toBeDisabled();
     expect(button).toHaveAttribute('type', 'button');
     expect(button).toHaveAttribute('aria-disabled', 'true');
-    expect(button.className).toContain('cursor-pointer');
   });
 
   it('renders feeder and camera status indicators', () => {
     render(<HomePage />);
     expect(screen.getByTestId('feeder-status')).toBeTruthy();
     expect(screen.getByTestId('camera-status')).toBeTruthy();
+  });
+
+  it('has no accessibility violations', async () => {
+    const { container } = render(<HomePage />);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

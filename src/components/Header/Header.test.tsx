@@ -1,6 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { axe, toHaveNoViolations } from 'jest-axe';
 import Header from './Header';
+
+expect.extend(toHaveNoViolations);
 
 jest.mock('next/link', () => {
   const MockLink = ({ children, href, ...props }: any) => {
@@ -102,6 +105,22 @@ describe('Header', () => {
 
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
     expect(screen.getByLabelText('Mobile navigation')).toBeTruthy();
+  });
+
+  it('closes the mobile menu on Escape', () => {
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
+  });
+
+  it('has no accessibility violations when the mobile menu is open', async () => {
+    const { container } = render(<Header />);
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('closes mobile menu when close button is clicked', () => {

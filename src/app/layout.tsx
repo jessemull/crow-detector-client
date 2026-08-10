@@ -53,24 +53,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" href="/favicon.png" type="image/svg+xml" />
-        <link rel="canonical" href="https://www.crittercanteen.com/" />
-        <meta
-          name="description"
-          content="Automated crow feeding and imaging station. Watch our feathered friends enjoy their meals and view captured images in real-time!"
-        />
-        <meta
-          property="og:title"
-          content="Critter Canteen - Crow Feeding Station"
-        />
-        <meta property="og:image" content="/og-image.png" />
-      </head>
       <body className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
-        <>
+        {NEXT_PUBLIC_GA_TRACKING_ID ? (
           <Script id="gtag-load" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
@@ -88,7 +75,7 @@ export default function RootLayout({
               });
             `}
           </Script>
-        </>
+        ) : null}
       </body>
     </html>
   );
