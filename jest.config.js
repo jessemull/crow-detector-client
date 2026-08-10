@@ -9,7 +9,6 @@ const customJestConfig = {
   collectCoverageFrom: ['src/**/*.{ts,tsx}'],
   coveragePathIgnorePatterns: [
     '/src/app/layout.tsx',
-    '/src/components/index.ts',
     '/src/components/.*/index.ts',
     'src/instrumentation-client.ts',
     'src/instrumentation.ts',
@@ -29,7 +28,7 @@ const customJestConfig = {
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@constants/(.*)$': '<rootDir>/src/constants/$1',
     '^@hooks/(.*)$': '<rootDir>/src/hooks/$1',
-    '^@types/(.*)$': '<rootDir>/src/types/$1',
+    '^@ts-types/(.*)$': '<rootDir>/src/types/$1',
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@pages/(.*)$': '<rootDir>/src/app/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -39,13 +38,4 @@ const customJestConfig = {
   testPathIgnorePatterns: ['/node_modules/', '/.next/', 'temp-original'],
 };
 
-module.exports = async () => {
-  const nextJestConfig = await createJestConfig(customJestConfig)();
-
-  nextJestConfig.transformIgnorePatterns = [
-    '/node_modules/(?!(@faker-js/faker)/)',
-    '^.+\\.module\\.(css|sass|scss)$',
-  ];
-
-  return nextJestConfig;
-};
+module.exports = createJestConfig(customJestConfig);

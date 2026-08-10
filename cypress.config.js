@@ -1,4 +1,4 @@
-// Proxy server with signed cookie for accessing https://www.dev.blockbusterindex.com at http://localhost:8080...
+// Cypress baseUrl by NODE_ENV: production site, local proxy (:8080), or Next dev (:3000).
 
 const urls = {
   production: 'https://www.crittercanteen.com',

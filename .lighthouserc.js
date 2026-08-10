@@ -1,4 +1,4 @@
-// Lighthouse CI: production URL or local signed-cookie proxy at http://localhost:8080
+// Lighthouse CI for Critter Canteen (production URL or local signed-cookie proxy).
 
 const urls = {
   production: 'https://www.crittercanteen.com',
@@ -39,6 +39,11 @@ const settings = {
   },
 };
 
+const isTest = process.env.NODE_ENV === 'test';
+const skipServerStart =
+  process.env.LHCI_NO_SERVER === 'true' ||
+  process.env.NODE_ENV === 'production';
+
 module.exports = {
   ci: {
     assert: {
@@ -47,16 +52,13 @@ module.exports = {
     collect: {
       numberOfRuns: 3,
       settings: settings[process.env.NODE_ENV] || settings.test,
-      startServer: async () => {
-        if (process.env.NODE_ENV === 'test') {
-          const execa = await import('execa');
-          await execa('npm', ['run', 'proxy'], { stdio: 'inherit' });
-        } else {
-          const execa = await import('execa');
-          await execa('npm', ['run', 'dev'], { stdio: 'inherit' });
-        }
-      },
       url: urls[process.env.NODE_ENV] || 'http://localhost:3000',
+      ...(skipServerStart
+        ? {}
+        : {
+            startServerCommand: isTest ? 'npm run proxy' : 'npm run dev',
+            startServerReadyPattern: isTest ? 'Proxy server running' : 'Ready',
+          }),
     },
     upload: {
       target: 'temporary-public-storage',

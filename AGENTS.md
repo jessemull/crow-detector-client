@@ -49,11 +49,9 @@ Use these instead of deep relative imports (see `tsconfig.json`):
 | `@constants/*`  | `src/constants/*`  |
 | `@hooks/*`      | `src/hooks/*`      |
 | `@pages/*`      | `src/app/*`        |
-| `@types/*`      | `src/types/*`      |
+| `@ts-types/*`   | `src/types/*`      |
 | `@utils/*`      | `src/utils/*`      |
 | `@/*`           | `src/*`            |
-
-Note: the `@types/*` path alias collides with DefinitelyTyped package names. `tsconfig.json` sets `"types": ["jest", "node"]` and `src/types/jest-dom.d.ts` pulls in Testing Library matchers so `tsc --noEmit` still works.
 
 ---
 

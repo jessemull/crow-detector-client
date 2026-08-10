@@ -12,11 +12,9 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@axe-core/react": "^4.12.1",
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
     "@eslint/eslintrc": "^3",
-    "@faker-js/faker": "^10.5.0",
     "@lhci/cli": "^0.15.1",
     "@next/bundle-analyzer": "^16.3.0",
     "@tailwindcss/postcss": "^4.3.3",
@@ -45,7 +43,6 @@
     "express": "^5.2.1",
     "http-proxy-middleware": "^4.2.0",
     "husky": "^9.1.7",
-    "identity-obj-proxy": "^3.0.0",
     "jest": "^30.4.2",
     "jest-axe": "^11.0.0",
     "jest-environment-jsdom": "^30.4.1",

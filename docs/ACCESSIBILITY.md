@@ -7,7 +7,7 @@
 ## Requirements
 
 - `eslint-plugin-jsx-a11y` recommended rules
-- jest-axe for interactive UI where established
+- jest-axe for interactive UI (Header menu, HomePage)
 - Lighthouse accessibility score ≥ **0.9**
 
 ---

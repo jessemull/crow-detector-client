@@ -7,6 +7,6 @@ alwaysApply: false
 
 # Imports & boundaries
 
-- Use path aliases (`@components`, `@hooks`, `@constants`, `@types`, `@utils`, `@pages`, `@/*`)
+- Use path aliases (`@components`, `@hooks`, `@constants`, `@ts-types`, `@utils`, `@pages`, `@/*`)
 - Avoid deep relative imports across feature folders
 - See `AGENTS.md`

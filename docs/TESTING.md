@@ -7,7 +7,7 @@
 ## Stack
 
 - Unit/component: Jest + Testing Library
-- Accessibility: jest-axe where UI a11y matters; eslint-plugin-jsx-a11y
+- Accessibility: jest-axe on interactive UI; eslint-plugin-jsx-a11y
 - E2E: Cypress (`make e2e` / `npm run e2e`)
 - Perf/a11y gates: Lighthouse CI (`make lighthouse`)
 
