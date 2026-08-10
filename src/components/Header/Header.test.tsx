@@ -1,4 +1,8 @@
-import React from 'react';
+import React, {
+  AnchorHTMLAttributes,
+  ImgHTMLAttributes,
+  ReactNode,
+} from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import Header from './Header';
@@ -6,7 +10,14 @@ import Header from './Header';
 expect.extend(toHaveNoViolations);
 
 jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: any) => {
+  const MockLink = ({
+    children,
+    href,
+    ...props
+  }: AnchorHTMLAttributes<HTMLAnchorElement> & {
+    href: string;
+    children?: ReactNode;
+  }) => {
     return (
       <a href={href} {...props}>
         {children}
@@ -18,7 +29,22 @@ jest.mock('next/link', () => {
 });
 
 jest.mock('next/image', () => {
-  const MockImage = ({ src, alt, width, height, className, ...props }: any) => {
+  type MockImageProps = Pick<
+    ImgHTMLAttributes<HTMLImageElement>,
+    'alt' | 'className'
+  > & {
+    src: string;
+    width?: number | `${number}`;
+    height?: number | `${number}`;
+  };
+
+  const MockImage = ({
+    src,
+    alt,
+    width,
+    height,
+    className,
+  }: MockImageProps) => {
     return (
       <div
         data-testid="mock-image"
@@ -27,7 +53,6 @@ jest.mock('next/image', () => {
         data-width={width}
         data-height={height}
         className={className}
-        {...props}
       />
     );
   };
@@ -110,11 +135,24 @@ describe('Header', () => {
   it('closes the mobile menu on Escape', () => {
     render(<Header />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
+    fireEvent.click(menuButton);
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
 
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
+    expect(menuButton).toHaveFocus();
+  });
+
+  it('restores focus to the menu toggle when the close button is clicked', () => {
+    render(<Header />);
+
+    const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
+    fireEvent.click(menuButton);
+    fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+
+    expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
+    expect(menuButton).toHaveFocus();
   });
 
   it('has no accessibility violations when the mobile menu is open', async () => {

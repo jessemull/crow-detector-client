@@ -9,27 +9,33 @@ interface HeaderProps {}
 
 const Header: React.FC<HeaderProps> = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const wasMenuOpenRef = useRef(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   useEffect(() => {
-    if (!isMenuOpen) {
-      return;
+    if (isMenuOpen) {
+      wasMenuOpenRef.current = true;
+      closeButtonRef.current?.focus();
+
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setIsMenuOpen(false);
+        }
+      };
+
+      document.addEventListener('keydown', onKeyDown);
+      return () => document.removeEventListener('keydown', onKeyDown);
     }
 
-    closeButtonRef.current?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    if (wasMenuOpenRef.current) {
+      wasMenuOpenRef.current = false;
+      menuButtonRef.current?.focus();
+    }
   }, [isMenuOpen]);
 
   return (
@@ -37,6 +43,7 @@ const Header: React.FC<HeaderProps> = () => {
       <div className="max-w-6xl py-3 md:py-4 pl-3 md:pl-6">
         <div className="flex items-center relative">
           <button
+            ref={menuButtonRef}
             type="button"
             onClick={toggleMenu}
             className="lg:hidden absolute md:-left-2 cursor-pointer focus:outline-none"
