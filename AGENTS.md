@@ -70,7 +70,7 @@ Prefer **`make`** targets (see `make help`). Equivalents use npm.
 
 | Command           | Description                     |
 | ----------------- | ------------------------------- |
-| `make lint`       | ESLint with `--fix`             |
+| `make lint`       | ESLint check                    |
 | `make typecheck`  | `tsc --noEmit`                  |
 | `make format`     | Prettier write                  |
 | `make test`       | Jest with coverage              |

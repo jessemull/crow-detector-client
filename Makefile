@@ -16,10 +16,11 @@ help: ## Help@show targets
 
 # ── Quality ────────────────────────────────────────────────────────
 
-lint: ## Quality@ESLint with --fix
+lint: ## Quality@ESLint check
 	npm run lint
 
-lint-fix: lint ## Quality@alias for lint (auto-fix)
+lint-fix: ## Quality@ESLint with --fix
+	npm run lint:fix
 
 format: ## Quality@Prettier write
 	npm run format

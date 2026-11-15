@@ -81,7 +81,7 @@ Before considering work complete, agents MUST ensure:
 
 | Gate                  | Command                                      |
 | --------------------- | -------------------------------------------- |
-| Lint (auto-fix)       | `make lint` or `npm run lint`                |
+| Lint                  | `make lint` or `npm run lint`                |
 | Typecheck             | `make typecheck` or `npm run typecheck`      |
 | Format                | `make format` or `npm run format`            |
 | Unit tests + coverage | `make test` or `npm test`                    |

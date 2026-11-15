@@ -12,7 +12,7 @@ Do NOT duplicate governance from AGENTS.md or docs/ here. This file exists only 
 
 - Install: `npm install`
 - Preflight: `make preflight`
-- Lint (auto-fix): `make lint`
+- Lint: `make lint`
 - Test: `make test`
 - Build: `make build`
 - Dev: `make dev`
