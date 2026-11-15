@@ -3,7 +3,7 @@ import React, {
   ImgHTMLAttributes,
   ReactNode,
 } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import Header from './Header';
 
@@ -116,7 +116,7 @@ describe('Header', () => {
     const homeLink = desktopNav.querySelector('a[href="/"]');
     const shelterLink = desktopNav.querySelector('a[href="/porch"]');
     const aboutLink = desktopNav.querySelector('a[href="/about"]');
-    const feeder = desktopNav.querySelector('[aria-disabled="true"]');
+    const feeder = within(desktopNav).getByRole('button', { name: 'Feeder' });
 
     expect(homeLink).toBeTruthy();
     expect(shelterLink).toBeTruthy();
@@ -124,7 +124,7 @@ describe('Header', () => {
     expect(homeLink?.textContent).toBe('Home');
     expect(shelterLink?.textContent).toBe('Shelter Cam');
     expect(aboutLink?.textContent).toBe('About');
-    expect(feeder?.textContent).toBe('Feeder');
+    expect(feeder).toBeDisabled();
     expect(desktopNav.querySelector('a[href="/feeder"]')).toBeNull();
   });
 
@@ -159,8 +159,8 @@ describe('Header', () => {
     expect(mobileNav.querySelector('a[href="/porch"]')).toBeTruthy();
     expect(mobileNav.querySelector('a[href="/about"]')).toBeTruthy();
     expect(
-      mobileNav.querySelector('[aria-disabled="true"]')?.textContent
-    ).toContain('Feeder');
+      within(mobileNav).getByRole('button', { name: 'Feeder' })
+    ).toBeDisabled();
   });
 
   it('supports keyboard activation of the menu toggle', () => {
@@ -204,27 +204,26 @@ describe('Header', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
-    const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
     const mobileNav = screen.getByLabelText('Mobile navigation');
     const homeLink = mobileNav.querySelector(
       'a[href="/"]'
     ) as HTMLAnchorElement | null;
-    const contactButton = Array.from(dialog.querySelectorAll('button')).find(
-      (button) => button.textContent === 'Contact'
-    ) as HTMLButtonElement;
+    // About is the last focusable control (Contact/Feeder are disabled).
+    const aboutLink = mobileNav.querySelector(
+      'a[href="/about"]'
+    ) as HTMLAnchorElement | null;
 
     expect(homeLink).toBeTruthy();
-    expect(contactButton).toBeTruthy();
+    expect(aboutLink).toBeTruthy();
 
-    // Contact is the last focusable control in the mobile drawer.
-    contactButton.focus();
-    expect(contactButton).toHaveFocus();
+    aboutLink!.focus();
+    expect(aboutLink).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(closeButton).toHaveFocus();
 
     closeButton.focus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
-    expect(contactButton).toHaveFocus();
+    expect(aboutLink).toHaveFocus();
   });
 
   it('wraps Tab from the last menu item back to the close button', () => {
@@ -233,13 +232,13 @@ describe('Header', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
-    const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
-    const contactButton = Array.from(dialog.querySelectorAll('button')).find(
-      (button) => button.textContent === 'Contact'
-    ) as HTMLButtonElement;
+    const mobileNav = screen.getByLabelText('Mobile navigation');
+    const aboutLink = mobileNav.querySelector(
+      'a[href="/about"]'
+    ) as HTMLAnchorElement;
 
-    contactButton.focus();
-    expect(document.activeElement).toBe(contactButton);
+    aboutLink.focus();
+    expect(document.activeElement).toBe(aboutLink);
 
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: false });
     expect(document.activeElement).toBe(closeButton);
@@ -388,12 +387,13 @@ describe('Header', () => {
     const homeLink = mobileNav.querySelector('a[href="/"]');
     const shelterLink = mobileNav.querySelector('a[href="/porch"]');
     const aboutLink = mobileNav.querySelector('a[href="/about"]');
-    const feeder = mobileNav.querySelector('[aria-disabled="true"]');
+    const feeder = within(mobileNav).getByRole('button', { name: 'Feeder' });
 
     expect(homeLink?.querySelector('svg')).toBeTruthy();
     expect(shelterLink?.querySelector('svg')).toBeTruthy();
     expect(aboutLink?.querySelector('svg')).toBeTruthy();
-    expect(feeder?.querySelector('svg')).toBeTruthy();
+    expect(feeder.querySelector('svg')).toBeTruthy();
+    expect(feeder).toBeDisabled();
   });
 
   it('closes mobile menu when Shelter Cam is clicked', () => {
@@ -428,11 +428,12 @@ describe('Header', () => {
     expect(homeLink).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders a no-op Contact button matching Earthon yellow CTA', () => {
+  it('renders a disabled Contact button matching Earthon yellow CTA', () => {
     render(<Header />);
 
     const contact = screen.getByRole('button', { name: 'Contact' });
     expect(contact).toHaveAttribute('type', 'button');
+    expect(contact).toBeDisabled();
     expect(contact.className).toContain('bg-cc-yellow');
     expect(contact.className).toContain('rounded-[50px]');
   });

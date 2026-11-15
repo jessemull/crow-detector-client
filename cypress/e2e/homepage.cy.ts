@@ -9,20 +9,19 @@ describe('Homepage', () => {
     cy.get('h1').should('contain', 'Critter Canteen');
   });
 
-  it('should display the description text', () => {
+  it('should describe the feeder and shelter', () => {
     cy.get('p').should(
       'contain',
-      'IoT-powered crow feeding and imaging station'
+      'Crows eat from an automated feeder. A heated shelter stays open for whoever else stops by.'
     );
   });
 
-  it('should show feeder and camera status indicators', () => {
-    cy.get('[data-testid="feeder-status"]').should('exist');
-    cy.get('[data-testid="camera-status"]').should('exist');
+  it('should show a disabled Feeder control', () => {
+    cy.get('button').contains('Feeder').should('be.disabled');
   });
 
-  it('should display the feed button', () => {
-    cy.get('button').should('contain', 'Feed the Crows');
+  it('should link to Shelter Cam', () => {
+    cy.get('a').contains('Shelter Cam').should('have.attr', 'href', '/porch');
   });
 });
 
@@ -32,7 +31,7 @@ describe('About page', () => {
   });
 
   it('should display the about heading', () => {
-    cy.get('h1').should('contain', 'About Critter Canteen');
+    cy.get('h1').should('contain', 'Wildlife care, engineered end to end.');
   });
 
   it('should link back home', () => {

@@ -109,6 +109,7 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
   return (
     <div ref={containerRef} className="bg-black">
       <video
+        key={src}
         className="aspect-video w-full bg-black"
         controls
         playsInline
@@ -136,6 +137,8 @@ const PorchClips: React.FC = () => {
   const [clips, setClips] = useState<PorchClip[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Background poll failed while an older list is still on screen. */
+  const [refreshWarning, setRefreshWarning] = useState<string | null>(null);
 
   const loadClips = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
@@ -143,6 +146,7 @@ const PorchClips: React.FC = () => {
     if (!apiBaseUrl) {
       setError('Shelter Cam is not configured for this build.');
       setClips([]);
+      setRefreshWarning(null);
       setLoading(false);
       return;
     }
@@ -150,6 +154,7 @@ const PorchClips: React.FC = () => {
     if (!silent) {
       setLoading(true);
       setError(null);
+      setRefreshWarning(null);
     }
 
     try {
@@ -163,6 +168,7 @@ const PorchClips: React.FC = () => {
         silent ? mergeClipsForPlayback(previous, next, Date.now()) : next
       );
       setError(null);
+      setRefreshWarning(null);
     } catch (loadError) {
       // Keep the last good list on background polls so the page does not flash empty.
       if (!silent) {
@@ -171,6 +177,11 @@ const PorchClips: React.FC = () => {
           loadError instanceof Error
             ? loadError.message
             : 'Could not load Shelter Cam visits'
+        );
+        setRefreshWarning(null);
+      } else {
+        setRefreshWarning(
+          'Could not refresh visits. Showing the last loaded list.'
         );
       }
     } finally {
@@ -238,6 +249,15 @@ const PorchClips: React.FC = () => {
         >
           {loading ? 'Loading…' : error ? 'Unavailable' : clipCountLabel}
         </p>
+
+        {!loading && !error && refreshWarning ? (
+          <p
+            className="mb-6 text-center font-urbanist text-sm font-medium tracking-[-0.28px] text-cc-ink/55"
+            role="status"
+          >
+            {refreshWarning}
+          </p>
+        ) : null}
 
         {loading ? (
           <div

@@ -24,7 +24,10 @@ const navDisabledClassName =
   'inline-flex cursor-not-allowed items-center justify-center rounded-[137px] px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-cc-ink/60';
 
 const contactClassName =
-  'hidden lg:inline-flex h-11 items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink';
+  'hidden lg:inline-flex h-11 cursor-not-allowed items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink opacity-70';
+
+const mobileContactClassName =
+  'mx-4 mt-4 inline-flex h-11 cursor-not-allowed items-center justify-center rounded-[50px] bg-cc-yellow px-6 text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink opacity-70';
 
 const mobileNavLinkClassName =
   'flex items-center space-x-3 px-4 py-2.5 font-urbanist text-[16px] font-medium tracking-[-0.32px] text-cc-ink transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink md:py-3';
@@ -152,13 +155,14 @@ const Header: React.FC = () => {
           >
             Home
           </Link>
-          <span
+          <button
+            type="button"
             className={navDisabledClassName}
-            aria-disabled="true"
+            disabled
             title="Feeding controls are not connected yet"
           >
             Feeder
-          </span>
+          </button>
           <Link
             href="/porch"
             className={isPorch ? navActiveClassName : navIdleClassName}
@@ -178,6 +182,7 @@ const Header: React.FC = () => {
         <button
           type="button"
           className={contactClassName}
+          disabled
           title="Contact form coming soon"
         >
           Contact
@@ -222,14 +227,15 @@ const Header: React.FC = () => {
               <Home className="h-4 w-4" />
               <span>Home</span>
             </Link>
-            <span
+            <button
+              type="button"
               className={mobileDisabledNavClassName}
-              aria-disabled="true"
+              disabled
               title="Feeding controls are not connected yet"
             >
               <Bird className="h-4 w-4" aria-hidden="true" />
               <span>Feeder</span>
-            </span>
+            </button>
             <Link
               href="/porch"
               className={mobileNavLinkClassName}
@@ -248,7 +254,8 @@ const Header: React.FC = () => {
             </Link>
             <button
               type="button"
-              className="mx-4 mt-4 inline-flex h-11 items-center justify-center rounded-[50px] bg-cc-yellow px-6 text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink"
+              className={mobileContactClassName}
+              disabled
               title="Contact form coming soon"
             >
               Contact

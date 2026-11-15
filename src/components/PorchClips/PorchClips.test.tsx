@@ -218,6 +218,46 @@ describe('PorchClips', () => {
     ).toHaveAttribute('src', firstUrl);
   });
 
+  it('keeps clips and shows a refresh warning when a silent poll fails', async () => {
+    jest.useFakeTimers();
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: 'https://cdn.example.com/clip-1.mp4',
+            expiresAt: '2099-01-01T00:00:00.000Z',
+          },
+        ],
+      })
+      .mockRejectedValueOnce(new Error('network down'));
+
+    render(<PorchClips />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(recordedLabel)).toBeTruthy();
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Could not refresh visits. Showing the last loaded list.'
+        )
+      ).toBeTruthy();
+    });
+    expect(screen.getByText(recordedLabel)).toBeTruthy();
+  });
+
   it('does not preload video bytes until playback is requested', async () => {
     render(<PorchClips />);
 
