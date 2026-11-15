@@ -1,61 +1,58 @@
 import React from 'react';
-import { PageShell } from '@components/PageShell';
+import Image from 'next/image';
+import Link from 'next/link';
+import { getActiveHero } from '@constants/heroes';
 
 const HomePage: React.FC = () => {
+  const hero = getActiveHero();
+
   return (
-    <PageShell>
-      <div className="text-center mb-6 lg:mb-8">
-        <h1 className="text-xl md:text-2xl lg:text-4xl font-light text-amber-400 mb-3 tracking-wide">
-          Critter Canteen
-        </h1>
-        <p className="text-xs md:text-sm text-white max-w-3xl mx-auto leading-relaxed font-light">
-          An innovative IoT-powered crow feeding and imaging station that
-          combines wildlife observation with cutting-edge technology. Watch our
-          feathered friends enjoy their meals and view captured images in
-          real-time.
-        </p>
-      </div>
-      <div className="text-center mb-6">
-        <h2 className="text-lg md:text-xl font-medium text-white mb-4">
-          System Status
-        </h2>
-      </div>
-      <div className="text-center mb-8">
-        <button
-          type="button"
-          disabled
-          className="bg-stone-800 text-amber-400 border border-amber-400 font-medium py-3 px-8 rounded-lg opacity-70 cursor-not-allowed"
-          aria-disabled="true"
-          title="Feeding controls are not connected yet"
-        >
-          Feed the Crows
-        </button>
-      </div>
-      <div className="flex justify-center items-center gap-8 mb-6">
-        <div className="flex items-start gap-2" data-testid="feeder-status">
-          <span className="text-sm mt-0.5" aria-hidden="true">
-            ⚪
-          </span>
-          <div className="text-left">
-            <h3 className="text-sm font-medium text-white mb-1">
-              Feeder Status
-            </h3>
-            <p className="text-gray-300 text-xs">Status unknown</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-2" data-testid="camera-status">
-          <span className="text-lg -mt-1" aria-hidden="true">
-            📷
-          </span>
-          <div className="text-left">
-            <h3 className="text-sm font-medium text-white mb-1">
-              Camera Status
-            </h3>
-            <p className="text-gray-300 text-xs">Status unknown</p>
+    <section className="relative isolate min-h-[calc(100vh+4.5rem)] overflow-hidden bg-stone-950">
+      <Image
+        src={hero.src}
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover !-top-[25%] !bottom-auto !h-[125%]"
+        style={{ objectPosition: hero.objectPosition }}
+      />
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/35 to-stone-950/25"
+        aria-hidden="true"
+      />
+      <div className="relative z-10 flex min-h-screen flex-col justify-end px-6 pb-16 pt-28 md:px-10 md:pb-24 lg:px-16">
+        <div className="max-w-3xl">
+          <p className="mb-3 font-urbanist text-[0.7rem] font-medium uppercase tracking-[0.35em] text-white/70 md:text-xs">
+            Neighborhood wildlife station
+          </p>
+          <h1 className="mb-4 font-urbanist text-4xl font-medium tracking-[-0.04em] text-white md:text-6xl md:leading-[1.05] lg:text-7xl">
+            Critter Canteen
+          </h1>
+          <p className="mb-8 max-w-xl font-urbanist text-sm font-medium leading-relaxed tracking-[-0.32px] text-white/85 md:text-base">
+            Crows eat from an automated feeder. A heated shelter stays open for
+            whoever else stops by.
+          </p>
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              disabled
+              className="inline-flex h-12 cursor-not-allowed items-center justify-center rounded-[50px] border border-white/35 bg-white/10 px-8 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-white/75 opacity-80 backdrop-blur-sm"
+              aria-disabled="true"
+              title="Feeding controls are not connected yet"
+            >
+              Feeder
+            </button>
+            <Link
+              href="/porch"
+              className="inline-flex h-12 items-center justify-center rounded-[50px] bg-cc-yellow px-8 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              Shelter Cam
+            </Link>
           </div>
         </div>
       </div>
-    </PageShell>
+    </section>
   );
 };
 

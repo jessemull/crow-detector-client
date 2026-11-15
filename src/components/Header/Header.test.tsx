@@ -3,11 +3,17 @@ import React, {
   ImgHTMLAttributes,
   ReactNode,
 } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import Header from './Header';
 
 expect.extend(toHaveNoViolations);
+
+const mockPathname = jest.fn(() => '/');
+
+jest.mock('next/navigation', () => ({
+  usePathname: () => mockPathname(),
+}));
 
 jest.mock('next/link', () => {
   const MockLink = ({
@@ -63,17 +69,44 @@ jest.mock('next/image', () => {
 describe('Header', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPathname.mockReturnValue('/');
   });
 
-  it('renders the header with logo and title', () => {
+  it('renders the header with mark and title', () => {
     render(<Header />);
 
-    const logo = screen.getByTestId('mock-image');
+    const mark = screen.getByTestId('header-mark');
     const title = screen.getByText('Critter Canteen');
 
-    expect(logo).toBeTruthy();
+    expect(mark).toBeTruthy();
+    expect(mark.getAttribute('data-mark')).toBe('crow-4');
     expect(title).toBeTruthy();
-    expect(logo.getAttribute('data-src')).toBe('/favicon.png');
+  });
+
+  it('keeps a dark brand mark on every page', () => {
+    mockPathname.mockReturnValue('/missing-route');
+    render(<Header />);
+
+    const logoLink = screen.getByRole('link', { name: /Critter Canteen/ });
+    expect(logoLink.className).toContain('text-cc-ink');
+  });
+
+  it('marks About as the active desktop tab', () => {
+    mockPathname.mockReturnValue('/about');
+    render(<Header />);
+
+    const aboutLink = screen.getByRole('link', { name: 'About' });
+    expect(aboutLink.className).toContain('bg-cc-ink');
+    expect(aboutLink).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('marks Shelter Cam as the active desktop tab', () => {
+    mockPathname.mockReturnValue('/porch');
+    render(<Header />);
+
+    const shelterLink = screen.getByRole('link', { name: 'Shelter Cam' });
+    expect(shelterLink.className).toContain('bg-cc-ink');
+    expect(shelterLink).toHaveAttribute('aria-current', 'page');
   });
 
   it('renders desktop navigation links', () => {
@@ -81,12 +114,18 @@ describe('Header', () => {
 
     const desktopNav = screen.getByLabelText('Desktop navigation');
     const homeLink = desktopNav.querySelector('a[href="/"]');
+    const shelterLink = desktopNav.querySelector('a[href="/porch"]');
     const aboutLink = desktopNav.querySelector('a[href="/about"]');
+    const feeder = within(desktopNav).getByRole('button', { name: 'Feeder' });
 
     expect(homeLink).toBeTruthy();
+    expect(shelterLink).toBeTruthy();
     expect(aboutLink).toBeTruthy();
     expect(homeLink?.textContent).toBe('Home');
+    expect(shelterLink?.textContent).toBe('Shelter Cam');
     expect(aboutLink?.textContent).toBe('About');
+    expect(feeder).toBeDisabled();
+    expect(desktopNav.querySelector('a[href="/feeder"]')).toBeNull();
   });
 
   it('renders mobile menu toggle button', () => {
@@ -117,7 +156,11 @@ describe('Header', () => {
     const mobileNav = screen.getByLabelText('Mobile navigation');
     expect(mobileNav).toHaveAttribute('id', 'mobile-navigation');
     expect(mobileNav.querySelector('a[href="/"]')).toBeTruthy();
+    expect(mobileNav.querySelector('a[href="/porch"]')).toBeTruthy();
     expect(mobileNav.querySelector('a[href="/about"]')).toBeTruthy();
+    expect(
+      within(mobileNav).getByRole('button', { name: 'Feeder' })
+    ).toBeDisabled();
   });
 
   it('supports keyboard activation of the menu toggle', () => {
@@ -165,6 +208,7 @@ describe('Header', () => {
     const homeLink = mobileNav.querySelector(
       'a[href="/"]'
     ) as HTMLAnchorElement | null;
+    // About is the last focusable control (Contact/Feeder are disabled).
     const aboutLink = mobileNav.querySelector(
       'a[href="/about"]'
     ) as HTMLAnchorElement | null;
@@ -172,7 +216,7 @@ describe('Header', () => {
     expect(homeLink).toBeTruthy();
     expect(aboutLink).toBeTruthy();
 
-    aboutLink?.focus();
+    aboutLink!.focus();
     expect(aboutLink).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(closeButton).toHaveFocus();
@@ -209,7 +253,7 @@ describe('Header', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
-    const chrome = screen.getByRole('banner').querySelector(':scope > div');
+    const chrome = screen.getByLabelText('Primary');
     expect(chrome).toHaveAttribute('inert');
     expect(main).toHaveAttribute('inert');
     expect(footer).toHaveAttribute('inert');
@@ -341,20 +385,57 @@ describe('Header', () => {
 
     const mobileNav = screen.getByLabelText('Mobile navigation');
     const homeLink = mobileNav.querySelector('a[href="/"]');
+    const shelterLink = mobileNav.querySelector('a[href="/porch"]');
     const aboutLink = mobileNav.querySelector('a[href="/about"]');
+    const feeder = within(mobileNav).getByRole('button', { name: 'Feeder' });
 
     expect(homeLink?.querySelector('svg')).toBeTruthy();
+    expect(shelterLink?.querySelector('svg')).toBeTruthy();
     expect(aboutLink?.querySelector('svg')).toBeTruthy();
+    expect(feeder.querySelector('svg')).toBeTruthy();
+    expect(feeder).toBeDisabled();
   });
 
-  it('renders header with correct CSS classes', () => {
+  it('closes mobile menu when Shelter Cam is clicked', () => {
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const mobileNav = screen.getByLabelText('Mobile navigation');
+    const shelterLink = mobileNav.querySelector('a[href="/porch"]');
+    expect(shelterLink).toBeTruthy();
+
+    if (shelterLink) {
+      fireEvent.click(shelterLink);
+    }
+
+    expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
+  });
+
+  it('renders Earthon-style floating header with light menu pill and no brown bar', () => {
     render(<Header />);
 
     const header = screen.getByRole('banner');
-    expect(header.className).toContain('sticky');
-    expect(header.className).toContain('top-0');
-    expect(header.className).toContain('z-20');
-    expect(header.className).toContain('bg-stone-900');
+    expect(header.className).toContain('absolute');
+    expect(header.className).toContain('bg-transparent');
+    expect(header.className).not.toContain('bg-stone');
+
+    const desktopNav = screen.getByLabelText('Desktop navigation');
+    expect(desktopNav.className).toContain('bg-cc-canvas');
+    expect(desktopNav.className).toContain('rounded-[244px]');
+
+    const homeLink = desktopNav.querySelector('a[href="/"]');
+    expect(homeLink?.className).toContain('bg-cc-ink');
+    expect(homeLink).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('renders a disabled Contact button matching Earthon yellow CTA', () => {
+    render(<Header />);
+
+    const contact = screen.getByRole('button', { name: 'Contact' });
+    expect(contact).toHaveAttribute('type', 'button');
+    expect(contact).toBeDisabled();
+    expect(contact.className).toContain('bg-cc-yellow');
+    expect(contact.className).toContain('rounded-[50px]');
   });
 
   it('renders logo link with correct href', () => {

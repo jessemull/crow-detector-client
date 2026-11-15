@@ -4,9 +4,21 @@
 
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-urbanist:
+    var(--font-urbanist-family), ui-sans-serif, system-ui, sans-serif;
+  --color-cc-canvas: #f5f5f5;
+  --color-cc-ink: #0e0e0e;
+  --color-cc-yellow: #fff017;
+}
+
+:root {
+  --cc-page-bg: var(--color-cc-canvas);
+  --cc-page-fg: var(--color-cc-ink);
 }
 
 body {
   font-family: var(--font-sans);
   margin: 0;
+  background-color: var(--cc-page-bg);
+  color: var(--cc-page-fg);
 }

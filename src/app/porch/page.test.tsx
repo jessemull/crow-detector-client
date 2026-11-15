@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import PorchPage from './page';
 
 jest.mock('@components/PorchClips', () => {
-  const MockPorchClips = () => <div>Porch clips page</div>;
+  const MockPorchClips = () => <div>Shelter Cam page</div>;
   return {
     __esModule: true,
     default: MockPorchClips,
@@ -11,10 +11,10 @@ jest.mock('@components/PorchClips', () => {
 });
 
 describe('Porch page', () => {
-  it('renders the porch clips feature', async () => {
+  it('renders the Shelter Cam feature', async () => {
     render(<PorchPage />);
     await waitFor(() => {
-      expect(screen.getByText('Porch clips page')).toBeTruthy();
+      expect(screen.getByText('Shelter Cam page')).toBeTruthy();
     });
   });
 });

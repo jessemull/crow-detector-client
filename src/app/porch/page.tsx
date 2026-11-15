@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import PorchClips from '@components/PorchClips';
 
 const PORCH_DESCRIPTION =
-  'Short porch-camera visits from Critter Canteen. Playback links expire after a few minutes.';
+  'Shelter Cam at Critter Canteen — short visits to the heated porch shelter. Playback links expire after a few minutes.';
 
 export const metadata: Metadata = {
-  title: 'Porch Clips - Critter Canteen',
+  title: 'Shelter Cam - Critter Canteen',
   description: PORCH_DESCRIPTION,
   robots: {
     index: false,
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     canonical: 'https://www.crittercanteen.com/porch',
   },
   openGraph: {
-    title: 'Porch Clips - Critter Canteen',
+    title: 'Shelter Cam - Critter Canteen',
     description: PORCH_DESCRIPTION,
     url: 'https://www.crittercanteen.com/porch',
   },
