@@ -15,6 +15,12 @@ const POLL_INTERVAL_MS = 45_000;
 /** Refresh a still-visible clip’s signed URL before CloudFront rejects it. */
 const URL_REFRESH_BUFFER_MS = 60_000;
 
+const clipCardClassName =
+  'overflow-hidden rounded-[24px] bg-white shadow-[0_12px_40px_-16px_rgba(0,0,0,0.18)]';
+
+const clipCardMetaClassName =
+  'flex items-baseline justify-between gap-3 px-5 py-4 md:px-6 md:py-5';
+
 const getApiBaseUrl = (): string =>
   (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
 
@@ -115,6 +121,16 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
     </div>
   );
 };
+
+/** Same footprint as a loaded visit card so the list does not jump. */
+const ClipCardSkeleton: React.FC = () => (
+  <article className={clipCardClassName} aria-hidden="true">
+    <div className="aspect-video w-full animate-pulse bg-black/[0.06]" />
+    <div className={clipCardMetaClassName}>
+      <div className="h-5 w-44 animate-pulse rounded-md bg-black/[0.06] md:h-6 md:w-52" />
+    </div>
+  </article>
+);
 
 const PorchClips: React.FC = () => {
   const [clips, setClips] = useState<PorchClip[]>([]);
@@ -225,16 +241,16 @@ const PorchClips: React.FC = () => {
 
         {loading ? (
           <div
-            className="flex min-h-[12rem] items-center justify-center rounded-[24px] border border-dashed border-black/10 bg-white/70"
+            className="space-y-8 md:space-y-10"
             role="status"
+            aria-label="Loading Shelter Cam"
           >
-            <p className="font-urbanist text-sm font-medium text-[#0e0e0e]/50">
-              Loading Shelter Cam…
-            </p>
+            <ClipCardSkeleton />
+            <ClipCardSkeleton />
           </div>
         ) : null}
 
-        {error ? (
+        {!loading && error ? (
           <div
             className="rounded-[24px] border border-red-200 bg-white px-5 py-8 text-center shadow-[0_12px_40px_-16px_rgba(0,0,0,0.12)]"
             role="alert"
@@ -265,13 +281,13 @@ const PorchClips: React.FC = () => {
               const recordedLabel = formatRecordedAt(clip.recordedAt);
               return (
                 <li key={`${clip.name}-${clip.recordedAt}`}>
-                  <article className="overflow-hidden rounded-[24px] bg-white shadow-[0_12px_40px_-16px_rgba(0,0,0,0.18)]">
+                  <article className={clipCardClassName}>
                     <LazyClipVideo
                       src={clip.playbackUrl}
                       ariaLabel={`Shelter visit recorded ${recordedLabel}`}
                       eager={index === 0}
                     />
-                    <div className="flex items-baseline justify-between gap-3 px-5 py-4 md:px-6 md:py-5">
+                    <div className={clipCardMetaClassName}>
                       <h2 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-[#0e0e0e] md:text-lg">
                         {recordedLabel}
                       </h2>

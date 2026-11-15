@@ -65,6 +65,45 @@ describe('PorchClips', () => {
     expect(screen.getByRole('article').className).toContain('bg-white');
   });
 
+  it('shows visit-sized skeleton cards while loading', async () => {
+    let resolveFetch: ((value: unknown) => void) | undefined;
+    fetchMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        })
+    );
+
+    render(<PorchClips />);
+
+    const status = await screen.findByRole('status', {
+      name: 'Loading Shelter Cam',
+    });
+    expect(status.querySelectorAll('article')).toHaveLength(2);
+    expect(status.querySelector('.aspect-video')).toBeTruthy();
+    expect(screen.getByText('Loading…')).toBeTruthy();
+
+    await act(async () => {
+      resolveFetch?.({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: 'https://cdn.example.com/clip-1.mp4?sig=1',
+            expiresAt: '2026-11-14T20:05:00.000Z',
+          },
+        ],
+      });
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { level: 2, name: recordedLabel })
+      ).toBeTruthy();
+    });
+  });
+
   it('shows a configuration error when the API base is missing', async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     render(<PorchClips />);

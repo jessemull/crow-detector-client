@@ -40,11 +40,11 @@ const About: React.FC = () => {
 
         <Link
           href="/"
-          className="inline-flex items-center gap-4 rounded-[50px] bg-white py-2.5 pl-6 pr-2.5 font-urbanist text-lg font-semibold tracking-[-0.4px] text-[#0e0e0e] transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="inline-flex h-12 items-center gap-3 rounded-[50px] bg-white pl-6 pr-2 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-[#0e0e0e] transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           Back to Home
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#fff017] text-[#0e0e0e]">
-            <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff017] text-[#0e0e0e]">
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </span>
         </Link>
       </div>
