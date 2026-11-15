@@ -15,7 +15,7 @@ const About: React.FC = () => {
         fill
         priority
         sizes="100vw"
-        className="object-cover"
+        className="object-cover !-top-[20%] !bottom-auto !h-[120%]"
         style={{ objectPosition: aboutImage.objectPosition }}
       />
       <div

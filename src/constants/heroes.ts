@@ -78,7 +78,7 @@ export const HERO_CANDIDATES: HeroCandidate[] = [
 export const ACTIVE_HERO_ID = 'spencer';
 
 /** Secondary splash for About; own framing from the same set. */
-export const ABOUT_IMAGE_ID = 'mia';
+export const ABOUT_IMAGE_ID = 'narubono';
 
 const POSITION_PRESETS: Record<string, string> = {
   left: '20% 50%',

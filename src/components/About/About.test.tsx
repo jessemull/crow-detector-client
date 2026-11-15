@@ -1,9 +1,30 @@
-import React, { ImgHTMLAttributes } from 'react';
+import React, {
+  AnchorHTMLAttributes,
+  ImgHTMLAttributes,
+  ReactNode,
+} from 'react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { render, screen } from '@testing-library/react';
 import About from './About';
 
 expect.extend(toHaveNoViolations);
+
+jest.mock('next/link', () => {
+  const MockLink = ({
+    children,
+    href,
+    ...props
+  }: AnchorHTMLAttributes<HTMLAnchorElement> & {
+    href: string;
+    children?: ReactNode;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  );
+  MockLink.displayName = 'MockLink';
+  return MockLink;
+});
 
 jest.mock('next/image', () => {
   type MockImageProps = Pick<
@@ -43,12 +64,12 @@ describe('About', () => {
     ).toBeTruthy();
   });
 
-  it('renders the about splash image', () => {
+  it('renders the locked about splash image', () => {
     render(<About />);
-    expect(screen.getByTestId('about-image')).toHaveAttribute(
-      'src',
-      '/images/hero/mia.jpg'
-    );
+    const image = screen.getByTestId('about-image');
+    expect(image).toHaveAttribute('src', '/images/hero/narubono.jpg');
+    expect(image.className).toContain('!-top-[20%]');
+    expect(image.className).toContain('!h-[120%]');
   });
 
   it('describes the station and the tech stack', () => {

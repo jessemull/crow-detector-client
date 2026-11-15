@@ -13,7 +13,7 @@ describe('heroes', () => {
   });
 
   it('resolves about image separately', () => {
-    expect(getAboutImage().id).toBe('mia');
+    expect(getAboutImage().id).toBe('narubono');
   });
 
   it('resolves hero by id, index, and next/prev', () => {
