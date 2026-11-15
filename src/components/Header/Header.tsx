@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { Menu, X, Home, Info, Camera, Bird } from 'lucide-react';
+import HeaderMark from './HeaderMark';
 
 /** Earthon Menu List pill: rgb(245,245,245), radius 244px, padding 5px */
 const menuListClassName =
@@ -139,16 +139,9 @@ const Header: React.FC = () => {
 
         <Link
           href="/"
-          className={`relative z-10 flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e] max-lg:mx-auto ${brandClassName}`}
+          className={`relative z-10 flex items-center gap-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e] max-lg:mx-auto ${brandClassName}`}
         >
-          <Image
-            src="/favicon.png"
-            alt=""
-            width={27}
-            height={27}
-            priority
-            className="h-[27px] w-[27px]"
-          />
+          <HeaderMark className="h-[27px] w-[27px] shrink-0" />
           <span className="text-[16px] font-medium leading-[22.4px] tracking-[-0.32px]">
             Critter Canteen
           </span>
@@ -203,15 +196,9 @@ const Header: React.FC = () => {
           aria-label="Mobile menu"
         >
           <div className="flex items-center justify-between border-b border-stone-200 p-4">
-            <div className="flex items-center gap-1">
-              <Image
-                src="/favicon.png"
-                alt=""
-                width={27}
-                height={27}
-                className="h-5 w-5"
-              />
-              <span className="text-base font-medium tracking-[-0.32px] text-[#0e0e0e]">
+            <div className="flex items-center gap-1.5 text-[#0e0e0e]">
+              <HeaderMark className="h-[27px] w-[27px] shrink-0" />
+              <span className="text-base font-medium tracking-[-0.32px]">
                 Critter Canteen
               </span>
             </div>

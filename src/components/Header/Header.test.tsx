@@ -69,15 +69,15 @@ describe('Header', () => {
     jest.clearAllMocks();
   });
 
-  it('renders the header with logo and title', () => {
+  it('renders the header with mark and title', () => {
     render(<Header />);
 
-    const logo = screen.getByTestId('mock-image');
+    const mark = screen.getByTestId('header-mark');
     const title = screen.getByText('Critter Canteen');
 
-    expect(logo).toBeTruthy();
+    expect(mark).toBeTruthy();
+    expect(mark.getAttribute('data-mark')).toBe('crow-4');
     expect(title).toBeTruthy();
-    expect(logo.getAttribute('data-src')).toBe('/favicon.png');
   });
 
   it('renders desktop navigation links', () => {
