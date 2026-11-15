@@ -2,11 +2,17 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import Footer from './Footer';
 
+const mockPathname = jest.fn(() => '/');
+
 jest.mock('next/navigation', () => ({
-  usePathname: () => '/',
+  usePathname: () => mockPathname(),
 }));
 
 describe('Footer', () => {
+  beforeEach(() => {
+    mockPathname.mockReturnValue('/');
+  });
+
   it('renders the current year copyright', () => {
     render(<Footer />);
     const year = new Date().getFullYear();
@@ -22,5 +28,14 @@ describe('Footer', () => {
     expect(footer.className).toContain('-mt-[4.5rem]');
     expect(footer.className).not.toContain('bg-stone-950');
     expect(footer.className).not.toContain('fixed');
+  });
+
+  it('uses a light footer on Shelter Cam', () => {
+    mockPathname.mockReturnValue('/porch');
+    render(<Footer />);
+    const footer = screen.getByRole('contentinfo');
+    expect(footer.className).toContain('bg-[#f5f5f5]');
+    expect(footer.className).not.toContain('bg-stone-950');
+    expect(footer.className).not.toContain('-mt-[4.5rem]');
   });
 });

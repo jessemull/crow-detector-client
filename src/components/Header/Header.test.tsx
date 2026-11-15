@@ -9,8 +9,10 @@ import Header from './Header';
 
 expect.extend(toHaveNoViolations);
 
+const mockPathname = jest.fn(() => '/');
+
 jest.mock('next/navigation', () => ({
-  usePathname: () => '/',
+  usePathname: () => mockPathname(),
 }));
 
 jest.mock('next/link', () => {
@@ -67,6 +69,7 @@ jest.mock('next/image', () => {
 describe('Header', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPathname.mockReturnValue('/');
   });
 
   it('renders the header with mark and title', () => {
@@ -78,6 +81,14 @@ describe('Header', () => {
     expect(mark).toBeTruthy();
     expect(mark.getAttribute('data-mark')).toBe('crow-4');
     expect(title).toBeTruthy();
+  });
+
+  it('keeps a dark brand mark on the light Shelter Cam page', () => {
+    mockPathname.mockReturnValue('/porch');
+    render(<Header />);
+
+    const logoLink = screen.getByRole('link', { name: /Critter Canteen/ });
+    expect(logoLink.className).toContain('text-[#0e0e0e]');
   });
 
   it('renders desktop navigation links', () => {

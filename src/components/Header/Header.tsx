@@ -45,8 +45,9 @@ const Header: React.FC = () => {
   const isAbout = pathname === '/about';
   const isPorch = pathname === '/porch';
 
-  // Dark mark over photo heroes (Home / About); light mark on dark interior pages.
-  const brandClassName = isHome || isAbout ? 'text-[#0e0e0e]' : 'text-white';
+  // Dark mark on light / photo pages (Home, About, Shelter Cam).
+  const brandClassName =
+    isHome || isAbout || isPorch ? 'text-[#0e0e0e]' : 'text-white';
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

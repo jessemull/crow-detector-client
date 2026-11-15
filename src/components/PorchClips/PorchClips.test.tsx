@@ -41,11 +41,14 @@ describe('PorchClips', () => {
   });
 
   it('renders Shelter Cam visits from the API', async () => {
-    render(<PorchClips />);
+    const { container } = render(<PorchClips />);
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Shelter Cam' })
     ).toBeTruthy();
+    expect(container.querySelector('section')?.className).toContain(
+      'bg-[#f5f5f5]'
+    );
 
     await waitFor(() => {
       expect(
@@ -59,6 +62,7 @@ describe('PorchClips', () => {
     expect(
       screen.getByLabelText(`Shelter visit recorded ${recordedLabel}`)
     ).toBeTruthy();
+    expect(screen.getByRole('article').className).toContain('bg-white');
   });
 
   it('shows a configuration error when the API base is missing', async () => {

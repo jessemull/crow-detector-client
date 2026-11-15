@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { PageShell } from '@components/PageShell';
 
 export type PorchClip = {
   name: string;
@@ -102,10 +101,7 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
   }, [shouldLoad]);
 
   return (
-    <div
-      ref={containerRef}
-      className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_50px_-28px_rgba(0,0,0,0.85)]"
-    >
+    <div ref={containerRef} className="bg-black">
       <video
         className="aspect-video w-full bg-black"
         controls
@@ -208,78 +204,83 @@ const PorchClips: React.FC = () => {
     clips.length === 1 ? '1 visit' : `${clips.length} visits`;
 
   return (
-    <PageShell>
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-8 text-center md:mb-10">
-          <p className="mb-2 text-[0.65rem] font-medium uppercase tracking-[0.35em] text-cc-amber/80 md:text-xs">
-            Critter Canteen
-          </p>
-          <h1 className="mb-3 text-xl font-light tracking-wide text-cc-amber md:text-2xl lg:text-4xl">
+    <section className="min-h-screen bg-[#f5f5f5]">
+      <div className="mx-auto max-w-3xl px-6 pb-16 pt-28 md:px-10 md:pb-24 md:pt-32">
+        <div className="mb-10 text-center md:mb-14">
+          <h1 className="mb-4 font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-[#0e0e0e] md:text-5xl md:leading-[1.05] lg:text-[56px] lg:tracking-[-1.12px]">
             Shelter Cam
           </h1>
-          <p className="mx-auto max-w-xl text-xs font-light leading-relaxed text-cc-cream-muted md:text-sm">
-            A heated little house on the porch for any animal that stops by.
-            Short visits, newest first. The list updates on its own; playback
-            links expire after a few minutes.
+          <p className="mx-auto max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-[#0e0e0e]/70 md:text-lg">
+            Short visits to the heated porch shelter, newest first. The list
+            updates on its own. Playback links expire after a few minutes.
           </p>
         </div>
 
-        <p className="mb-6 text-xs text-stone-400" aria-live="polite">
+        <p
+          className="mb-6 text-center font-urbanist text-sm font-medium tracking-[-0.28px] text-[#0e0e0e]/50"
+          aria-live="polite"
+        >
           {loading ? 'Loading…' : error ? 'Unavailable' : clipCountLabel}
         </p>
 
         {loading ? (
           <div
-            className="flex min-h-[12rem] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-stone-950/50"
+            className="flex min-h-[12rem] items-center justify-center rounded-[24px] border border-dashed border-black/10 bg-white/70"
             role="status"
           >
-            <p className="text-sm text-stone-400">Loading Shelter Cam…</p>
+            <p className="font-urbanist text-sm font-medium text-[#0e0e0e]/50">
+              Loading Shelter Cam…
+            </p>
           </div>
         ) : null}
 
         {error ? (
           <div
-            className="rounded-2xl border border-red-900/60 bg-red-950/30 px-5 py-8 text-center"
+            className="rounded-[24px] border border-red-200 bg-white px-5 py-8 text-center shadow-[0_12px_40px_-16px_rgba(0,0,0,0.12)]"
             role="alert"
           >
-            <p className="text-sm text-red-200">{error}</p>
-            <p className="mt-2 text-xs text-stone-400">
+            <p className="font-urbanist text-sm font-medium text-red-700">
+              {error}
+            </p>
+            <p className="mt-2 font-urbanist text-xs font-medium text-[#0e0e0e]/50">
               We will keep trying while this page is open.
             </p>
           </div>
         ) : null}
 
         {!loading && !error && clips.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-stone-950/50 px-5 py-16 text-center">
-            <p className="text-base font-light text-cc-cream">No visits yet.</p>
-            <p className="mt-2 text-xs text-stone-500">
+          <div className="rounded-[24px] border border-dashed border-black/10 bg-white px-5 py-16 text-center shadow-[0_12px_40px_-16px_rgba(0,0,0,0.12)]">
+            <p className="font-urbanist text-base font-medium text-[#0e0e0e]">
+              No visits yet.
+            </p>
+            <p className="mt-2 font-urbanist text-sm font-medium text-[#0e0e0e]/50">
               When someone stops by the shelter, it will show up here.
             </p>
           </div>
         ) : null}
 
         {!loading && !error && clips.length > 0 ? (
-          <ul className="space-y-10">
+          <ul className="space-y-8 md:space-y-10">
             {clips.map((clip, index) => {
               const recordedLabel = formatRecordedAt(clip.recordedAt);
               return (
                 <li key={`${clip.name}-${clip.recordedAt}`}>
-                  <article>
-                    <div className="mb-3 flex items-baseline justify-between gap-3">
-                      <h2 className="text-sm font-medium tracking-wide text-cc-amber md:text-base">
-                        {recordedLabel}
-                      </h2>
-                      {index === 0 ? (
-                        <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">
-                          Latest
-                        </span>
-                      ) : null}
-                    </div>
+                  <article className="overflow-hidden rounded-[24px] bg-white shadow-[0_12px_40px_-16px_rgba(0,0,0,0.18)]">
                     <LazyClipVideo
                       src={clip.playbackUrl}
                       ariaLabel={`Shelter visit recorded ${recordedLabel}`}
                       eager={index === 0}
                     />
+                    <div className="flex items-baseline justify-between gap-3 px-5 py-4 md:px-6 md:py-5">
+                      <h2 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-[#0e0e0e] md:text-lg">
+                        {recordedLabel}
+                      </h2>
+                      {index === 0 ? (
+                        <span className="rounded-full bg-[#0e0e0e] px-2.5 py-0.5 font-urbanist text-[0.65rem] font-medium uppercase tracking-[0.16em] text-white">
+                          Latest
+                        </span>
+                      ) : null}
+                    </div>
                   </article>
                 </li>
               );
@@ -287,7 +288,7 @@ const PorchClips: React.FC = () => {
           </ul>
         ) : null}
       </div>
-    </PageShell>
+    </section>
   );
 };
 
