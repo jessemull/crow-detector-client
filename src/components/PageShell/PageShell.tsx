@@ -19,7 +19,7 @@ const PageShell: React.FC<PageShellProps> = ({
       className={`relative min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-neutral-900 ${className}`.trim()}
     >
       <div
-        className={`absolute inset-0 ${DOT_GRID_BACKGROUND} opacity-40`}
+        className={`pointer-events-none absolute inset-0 ${DOT_GRID_BACKGROUND} opacity-40`}
         aria-hidden="true"
       />
       <div

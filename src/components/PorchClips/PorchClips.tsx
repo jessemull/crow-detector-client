@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PageShell } from '@components/PageShell';
 
 export type PorchClip = {
@@ -12,6 +12,9 @@ export type PorchClip = {
 
 /** How often to re-fetch while the tab is visible. */
 const POLL_INTERVAL_MS = 45_000;
+
+/** Refresh a still-visible clip’s signed URL before CloudFront rejects it. */
+const URL_REFRESH_BUFFER_MS = 60_000;
 
 const getApiBaseUrl = (): string =>
   (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
@@ -28,6 +31,93 @@ const formatRecordedAt = (value: string): string => {
     hour: 'numeric',
     minute: '2-digit',
   });
+};
+
+const sameClipIdentity = (a: PorchClip, b: PorchClip): boolean =>
+  a.name === b.name && a.recordedAt === b.recordedAt;
+
+/**
+ * Keep prior signed URLs when the clip set is unchanged so every <video>
+ * does not remount and re-download on each poll.
+ */
+const mergeClipsForPlayback = (
+  previous: PorchClip[],
+  next: PorchClip[],
+  nowMs: number
+): PorchClip[] => {
+  if (
+    previous.length === next.length &&
+    previous.every((clip, index) => sameClipIdentity(clip, next[index]))
+  ) {
+    return previous.map((clip, index) => {
+      const expiresAtMs = Date.parse(clip.expiresAt);
+      const needsFreshUrl =
+        !Number.isFinite(expiresAtMs) ||
+        expiresAtMs - nowMs < URL_REFRESH_BUFFER_MS;
+      return needsFreshUrl ? next[index] : clip;
+    });
+  }
+
+  return next;
+};
+
+type LazyClipVideoProps = {
+  src: string;
+  ariaLabel: string;
+  /** Load immediately (latest visit) instead of waiting for scroll. */
+  eager?: boolean;
+};
+
+const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
+  src,
+  ariaLabel,
+  eager = false,
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(eager);
+
+  useEffect(() => {
+    if (shouldLoad) {
+      return;
+    }
+
+    const node = containerRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '240px 0px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldLoad]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_50px_-28px_rgba(0,0,0,0.85)]"
+    >
+      <video
+        className="aspect-video w-full bg-black"
+        controls
+        playsInline
+        preload="none"
+        src={shouldLoad ? src : undefined}
+        aria-label={ariaLabel}
+      >
+        Your browser does not support video playback.
+      </video>
+    </div>
+  );
 };
 
 const PorchClips: React.FC = () => {
@@ -56,7 +146,10 @@ const PorchClips: React.FC = () => {
         throw new Error(`Could not load visits (${response.status})`);
       }
       const data = (await response.json()) as PorchClip[];
-      setClips(Array.isArray(data) ? data : []);
+      const next = Array.isArray(data) ? data : [];
+      setClips((previous) =>
+        silent ? mergeClipsForPlayback(previous, next, Date.now()) : next
+      );
       setError(null);
     } catch (loadError) {
       // Keep the last good list on background polls so the page does not flash empty.
@@ -182,18 +275,11 @@ const PorchClips: React.FC = () => {
                         </span>
                       ) : null}
                     </div>
-                    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_50px_-28px_rgba(0,0,0,0.85)]">
-                      <video
-                        className="aspect-video w-full bg-black"
-                        controls
-                        playsInline
-                        preload="metadata"
-                        src={clip.playbackUrl}
-                        aria-label={`Shelter visit recorded ${recordedLabel}`}
-                      >
-                        Your browser does not support video playback.
-                      </video>
-                    </div>
+                    <LazyClipVideo
+                      src={clip.playbackUrl}
+                      ariaLabel={`Shelter visit recorded ${recordedLabel}`}
+                      eager={index === 0}
+                    />
                   </article>
                 </li>
               );

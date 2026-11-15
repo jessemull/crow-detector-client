@@ -119,7 +119,7 @@ const Header: React.FC = () => {
   }, [isMenuOpen]);
 
   return (
-    <header className="pointer-events-none absolute inset-x-0 top-8 z-10 bg-transparent font-urbanist">
+    <header className="pointer-events-none absolute inset-x-0 top-8 z-50 bg-transparent font-urbanist">
       <nav
         ref={chromeRef}
         className="pointer-events-auto mx-auto flex h-[60px] w-full max-w-[1280px] items-center justify-between px-[30px]"

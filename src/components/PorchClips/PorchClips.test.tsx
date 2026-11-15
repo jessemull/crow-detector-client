@@ -121,6 +121,74 @@ describe('PorchClips', () => {
     });
   });
 
+  it('keeps the same playback URL across silent polls when the clip set is unchanged', async () => {
+    jest.useFakeTimers();
+    const firstUrl = 'https://cdn.example.com/clip-1.mp4?sig=1';
+    const refreshedUrl = 'https://cdn.example.com/clip-1.mp4?sig=2';
+
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: firstUrl,
+            expiresAt: '2099-01-01T00:00:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: refreshedUrl,
+            expiresAt: '2099-01-01T00:05:00.000Z',
+          },
+        ],
+      });
+
+    render(<PorchClips />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(`Shelter visit recorded ${recordedLabel}`)
+      ).toHaveAttribute('src', firstUrl);
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(
+      screen.getByLabelText(`Shelter visit recorded ${recordedLabel}`)
+    ).toHaveAttribute('src', firstUrl);
+  });
+
+  it('does not preload video bytes until playback is requested', async () => {
+    render(<PorchClips />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(`Shelter visit recorded ${recordedLabel}`)
+      ).toBeTruthy();
+    });
+
+    expect(
+      screen.getByLabelText(`Shelter visit recorded ${recordedLabel}`)
+    ).toHaveAttribute('preload', 'none');
+  });
+
   it('has no accessibility violations after load', async () => {
     const { container } = render(<PorchClips />);
 
