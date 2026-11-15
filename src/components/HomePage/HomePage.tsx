@@ -51,16 +51,10 @@ const HomeHero: React.FC = () => {
             Critter Canteen
           </h1>
           <p className="mb-8 max-w-xl text-sm font-light leading-relaxed text-cc-cream-muted md:text-base">
-            A cozy porch station for neighborhood wildlife — a heated little
-            shelter for whoever stops by, with a crow feeder on the way.
+            Crows eat from an automated feeder. A heated shelter stays open for
+            whoever else stops by.
           </p>
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-            <Link
-              href="/porch"
-              className="inline-flex items-center justify-center rounded-full bg-cc-lime px-8 py-3 text-sm font-medium text-stone-900 transition-colors hover:bg-[#d4e87a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-cream"
-            >
-              Shelter Cam
-            </Link>
             <button
               type="button"
               disabled
@@ -68,8 +62,14 @@ const HomeHero: React.FC = () => {
               aria-disabled="true"
               title="Feeding controls are not connected yet"
             >
-              Feeder — coming soon
+              Feeder
             </button>
+            <Link
+              href="/porch"
+              className="inline-flex items-center justify-center rounded-full bg-cc-lime px-8 py-3 text-sm font-medium text-stone-900 transition-colors hover:bg-[#d4e87a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-cream"
+            >
+              Shelter Cam
+            </Link>
           </div>
         </div>
       </div>

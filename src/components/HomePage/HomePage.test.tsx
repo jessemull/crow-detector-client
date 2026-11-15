@@ -83,9 +83,9 @@ describe('HomePage', () => {
     expect(link).toHaveAttribute('href', '/porch');
   });
 
-  it('renders the feeder control as coming soon', () => {
+  it('renders the feeder control as disabled', () => {
     render(<HomePage />);
-    const button = screen.getByRole('button', { name: 'Feeder — coming soon' });
+    const button = screen.getByRole('button', { name: 'Feeder' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('type', 'button');
     expect(button).toHaveAttribute('aria-disabled', 'true');

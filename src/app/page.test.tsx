@@ -52,8 +52,6 @@ describe('Home Page', () => {
       'href',
       '/porch'
     );
-    expect(
-      screen.getByRole('button', { name: 'Feeder — coming soon' })
-    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Feeder' })).toBeDisabled();
   });
 });
