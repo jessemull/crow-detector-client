@@ -6,12 +6,6 @@ import React, {
 import { render, screen } from '@testing-library/react';
 import Home from './page';
 
-const mockSearchParams = new URLSearchParams();
-
-jest.mock('next/navigation', () => ({
-  useSearchParams: () => mockSearchParams,
-}));
-
 jest.mock('next/link', () => {
   const MockLink = ({
     children,

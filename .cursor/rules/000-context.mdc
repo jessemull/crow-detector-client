@@ -38,4 +38,4 @@ CONTEXT.md > GOVERNANCE.md > ARCHITECTURE.md > domain docs > inline comments
 - Conventional Commits + Husky
 - No hardcoded secrets; CloudFront signing in `proxy/`
 - Quality gate: `make preflight`
-- Keep Critter Canteen surface small; preserve stone/amber visual language
+- Keep Critter Canteen surface small; preserve Earthon visual language (canvas/ink/yellow + Urbanist)

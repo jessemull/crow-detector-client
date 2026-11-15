@@ -38,7 +38,7 @@
 - ESLint + Prettier
 - Shared Header / Footer chrome
 - Behavior tests for user-visible changes
-- Preserve Critter Canteen stone/amber visual language
+- Preserve Critter Canteen visual language (light canvas, ink, yellow `#fff017`, Urbanist; photo heroes stay dark)
 
 ---
 

@@ -6,28 +6,19 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-urbanist:
     var(--font-urbanist-family), ui-sans-serif, system-ui, sans-serif;
-  --color-cc-ink: #1c1917;
-  --color-cc-ink-soft: #292524;
-  --color-cc-cream: #faf7f2;
-  --color-cc-cream-muted: #e7e2d9;
-  --color-cc-amber: #fbbf24;
-  --color-cc-amber-soft: #f59e0b;
-  --color-cc-lime: #c8e06a;
-  --color-cc-glass: rgb(28 25 23 / 0.45);
-  --color-cc-glass-border: rgb(255 255 255 / 0.18);
+  --color-cc-canvas: #f5f5f5;
+  --color-cc-ink: #0e0e0e;
+  --color-cc-yellow: #fff017;
 }
 
 :root {
-  --cc-page-bg: var(--color-cc-ink);
-  --cc-accent: var(--color-cc-amber);
-  --cc-accent-cta: var(--color-cc-lime);
-  --cc-on-photo: var(--color-cc-cream);
-  --cc-on-photo-muted: var(--color-cc-cream-muted);
+  --cc-page-bg: var(--color-cc-canvas);
+  --cc-page-fg: var(--color-cc-ink);
 }
 
 body {
   font-family: var(--font-sans);
   margin: 0;
   background-color: var(--cc-page-bg);
-  color: var(--cc-on-photo);
+  color: var(--cc-page-fg);
 }

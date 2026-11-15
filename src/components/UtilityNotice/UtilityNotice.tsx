@@ -21,8 +21,8 @@ const UtilityNotice: React.FC<UtilityNoticeProps> = ({
     <section
       className={
         standalone
-          ? 'relative flex min-h-screen flex-col items-center justify-center bg-[#f5f5f5] px-6 py-16 text-center md:px-10'
-          : 'relative flex min-h-screen flex-col items-center justify-center bg-[#f5f5f5] px-6 pb-16 pt-28 text-center md:px-10 md:pt-32'
+          ? 'relative flex min-h-screen flex-col items-center justify-center bg-cc-canvas px-6 py-16 text-center md:px-10'
+          : 'relative flex min-h-screen flex-col items-center justify-center bg-cc-canvas px-6 pb-16 pt-28 text-center md:px-10 md:pt-32'
       }
     >
       {watermark ? (
@@ -35,15 +35,15 @@ const UtilityNotice: React.FC<UtilityNoticeProps> = ({
       ) : null}
 
       <div className="relative z-10 flex max-w-2xl flex-col items-center">
-        <h1 className="mb-4 font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-[#0e0e0e] md:text-5xl md:leading-[1.05] lg:text-[56px] lg:tracking-[-1.12px]">
+        <h1 className="mb-4 font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-cc-ink md:text-5xl md:leading-[1.05] lg:text-[56px] lg:tracking-[-1.12px]">
           {title}
         </h1>
-        <p className="mb-8 max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-[#0e0e0e]/70 md:text-lg">
+        <p className="mb-8 max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-cc-ink/70 md:text-lg">
           {description}
         </p>
         <Link
           href="/"
-          className="inline-flex h-12 items-center justify-center rounded-[50px] bg-[#fff017] px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-[#0e0e0e] transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e]"
+          className="inline-flex h-12 items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink"
         >
           {ctaLabel}
         </Link>

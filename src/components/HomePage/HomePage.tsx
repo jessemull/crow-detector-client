@@ -1,31 +1,10 @@
-'use client';
-
-import React, { Suspense, useMemo } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import {
-  getActiveHero,
-  resolveHeroQuery,
-  resolveObjectPosition,
-} from '@constants/heroes';
+import { getActiveHero } from '@constants/heroes';
 
-const showHeroReviewHint =
-  process.env.NODE_ENV === 'development' ||
-  process.env.NEXT_PUBLIC_HERO_REVIEW === 'true';
-
-const HomeHero: React.FC = () => {
-  const searchParams = useSearchParams();
-  const active = getActiveHero();
-
-  const hero = useMemo(() => {
-    const fromQuery = resolveHeroQuery(searchParams.get('hero'), active.id);
-    const objectPosition = resolveObjectPosition(
-      searchParams.get('pos'),
-      fromQuery.objectPosition
-    );
-    return { ...fromQuery, objectPosition };
-  }, [searchParams, active.id]);
+const HomePage: React.FC = () => {
+  const hero = getActiveHero();
 
   return (
     <section className="relative isolate min-h-[calc(100vh+4.5rem)] overflow-hidden bg-stone-950">
@@ -44,13 +23,13 @@ const HomeHero: React.FC = () => {
       />
       <div className="relative z-10 flex min-h-screen flex-col justify-end px-6 pb-16 pt-28 md:px-10 md:pb-24 lg:px-16">
         <div className="max-w-3xl">
-          <p className="mb-3 text-[0.7rem] font-medium uppercase tracking-[0.35em] text-cc-cream-muted/90 md:text-xs">
+          <p className="mb-3 font-urbanist text-[0.7rem] font-medium uppercase tracking-[0.35em] text-white/70 md:text-xs">
             Neighborhood wildlife station
           </p>
-          <h1 className="mb-4 text-4xl font-light tracking-wide text-cc-cream md:text-6xl lg:text-7xl">
+          <h1 className="mb-4 font-urbanist text-4xl font-medium tracking-[-0.04em] text-white md:text-6xl md:leading-[1.05] lg:text-7xl">
             Critter Canteen
           </h1>
-          <p className="mb-8 max-w-xl text-sm font-light leading-relaxed text-cc-cream-muted md:text-base">
+          <p className="mb-8 max-w-xl font-urbanist text-sm font-medium leading-relaxed tracking-[-0.32px] text-white/85 md:text-base">
             Crows eat from an automated feeder. A heated shelter stays open for
             whoever else stops by.
           </p>
@@ -58,7 +37,7 @@ const HomeHero: React.FC = () => {
             <button
               type="button"
               disabled
-              className="inline-flex cursor-not-allowed items-center justify-center rounded-full border border-white/35 bg-white/10 px-8 py-3 text-sm font-medium text-cc-cream/75 opacity-80 backdrop-blur-sm"
+              className="inline-flex h-12 cursor-not-allowed items-center justify-center rounded-[50px] border border-white/35 bg-white/10 px-8 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-white/75 opacity-80 backdrop-blur-sm"
               aria-disabled="true"
               title="Feeding controls are not connected yet"
             >
@@ -66,30 +45,14 @@ const HomeHero: React.FC = () => {
             </button>
             <Link
               href="/porch"
-              className="inline-flex items-center justify-center rounded-full bg-cc-lime px-8 py-3 text-sm font-medium text-stone-900 transition-colors hover:bg-[#d4e87a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-cream"
+              className="inline-flex h-12 items-center justify-center rounded-[50px] bg-cc-yellow px-8 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               Shelter Cam
             </Link>
           </div>
         </div>
       </div>
-      {showHeroReviewHint ? (
-        <p
-          className="pointer-events-none absolute bottom-3 right-3 z-20 rounded-md bg-black/70 px-2 py-1 font-mono text-[0.65rem] text-cc-cream/90"
-          data-testid="hero-review-hint"
-        >
-          hero={hero.id} · pos={hero.objectPosition}
-        </p>
-      ) : null}
     </section>
-  );
-};
-
-const HomePage: React.FC = () => {
-  return (
-    <Suspense fallback={<section className="min-h-screen bg-stone-950" />}>
-      <HomeHero />
-    </Suspense>
   );
 };
 

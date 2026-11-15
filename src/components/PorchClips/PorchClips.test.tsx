@@ -47,7 +47,7 @@ describe('PorchClips', () => {
       screen.getByRole('heading', { level: 1, name: 'Shelter Cam' })
     ).toBeTruthy();
     expect(container.querySelector('section')?.className).toContain(
-      'bg-[#f5f5f5]'
+      'bg-cc-canvas'
     );
 
     await waitFor(() => {

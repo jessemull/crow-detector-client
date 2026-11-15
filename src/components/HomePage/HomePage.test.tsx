@@ -9,12 +9,6 @@ import { render, screen } from '@testing-library/react';
 
 expect.extend(toHaveNoViolations);
 
-const mockSearchParams = new URLSearchParams();
-
-jest.mock('next/navigation', () => ({
-  useSearchParams: () => mockSearchParams,
-}));
-
 jest.mock('next/link', () => {
   const MockLink = ({
     children,
@@ -62,12 +56,6 @@ jest.mock('next/image', () => {
 });
 
 describe('HomePage', () => {
-  beforeEach(() => {
-    Array.from(mockSearchParams.keys()).forEach((key) => {
-      mockSearchParams.delete(key);
-    });
-  });
-
   it('renders the main heading', () => {
     render(<HomePage />);
     const heading = screen.getByRole('heading', {
@@ -81,6 +69,7 @@ describe('HomePage', () => {
     render(<HomePage />);
     const link = screen.getByRole('link', { name: 'Shelter Cam' });
     expect(link).toHaveAttribute('href', '/porch');
+    expect(link.className).toContain('bg-cc-yellow');
   });
 
   it('renders the feeder control as disabled', () => {
@@ -98,7 +87,7 @@ describe('HomePage', () => {
     expect(screen.queryByTestId('camera-status')).toBeNull();
   });
 
-  it('renders the default active hero image', () => {
+  it('renders the locked active hero image', () => {
     render(<HomePage />);
     expect(screen.getByTestId('hero-image')).toHaveAttribute(
       'src',
@@ -106,22 +95,9 @@ describe('HomePage', () => {
     );
   });
 
-  it('cycles hero via ?hero= query', () => {
-    mockSearchParams.set('hero', 'luca');
+  it('does not render a hero review hint', () => {
     render(<HomePage />);
-    expect(screen.getByTestId('hero-image')).toHaveAttribute(
-      'src',
-      '/images/hero/luca.jpg'
-    );
-  });
-
-  it('applies CSS crop via ?pos= query', () => {
-    mockSearchParams.set('hero', 'mia');
-    mockSearchParams.set('pos', '20%_80%');
-    render(<HomePage />);
-    expect(screen.getByTestId('hero-image')).toHaveStyle({
-      objectPosition: '20% 80%',
-    });
+    expect(screen.queryByTestId('hero-review-hint')).toBeNull();
   });
 
   it('has no accessibility violations', async () => {

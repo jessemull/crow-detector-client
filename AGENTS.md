@@ -22,7 +22,7 @@
 crow-detector-client/
 ├── src/
 │   ├── app/                 # Routes: /, /about, /porch (Shelter Cam)
-│   ├── components/          # Header, Footer, HomePage, About, PorchClips
+│   ├── components/          # Header, Footer, HomePage, About, PorchClips, UtilityNotice
 │   ├── constants/           # Shared constants (when present)
 │   ├── hooks/               # Shared hooks (when present)
 │   ├── types/

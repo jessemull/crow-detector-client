@@ -1,36 +1,20 @@
 import {
   ACTIVE_HERO_ID,
+  ABOUT_IMAGE_ID,
   getActiveHero,
   getAboutImage,
-  resolveHeroQuery,
-  resolveObjectPosition,
 } from './heroes';
 
 describe('heroes', () => {
   it('defaults ACTIVE_HERO_ID to spencer', () => {
     expect(ACTIVE_HERO_ID).toBe('spencer');
     expect(getActiveHero().id).toBe('spencer');
+    expect(getActiveHero().src).toBe('/images/hero/spencer.jpg');
   });
 
   it('resolves about image separately', () => {
+    expect(ABOUT_IMAGE_ID).toBe('narubono');
     expect(getAboutImage().id).toBe('narubono');
-  });
-
-  it('resolves hero by id, index, and next/prev', () => {
-    expect(resolveHeroQuery('luca').id).toBe('luca');
-    expect(resolveHeroQuery('0').id).toBe('glen');
-    expect(resolveHeroQuery('next', 'mia').id).toBe('narubono');
-    expect(resolveHeroQuery('prev', 'mia').id).toBe('martine');
-  });
-
-  it('falls back to active hero for unknown ids', () => {
-    expect(resolveHeroQuery('nope').id).toBe('spencer');
-  });
-
-  it('resolves object-position presets and percent pairs', () => {
-    expect(resolveObjectPosition('left', '50% 50%')).toBe('20% 50%');
-    expect(resolveObjectPosition('30%_70%', '50% 50%')).toBe('30% 70%');
-    expect(resolveObjectPosition(null, '40% 60%')).toBe('40% 60%');
-    expect(resolveObjectPosition('nonsense', '40% 60%')).toBe('40% 60%');
+    expect(getAboutImage().src).toBe('/images/hero/narubono.jpg');
   });
 });

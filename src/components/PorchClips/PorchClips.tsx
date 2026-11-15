@@ -220,20 +220,20 @@ const PorchClips: React.FC = () => {
     clips.length === 1 ? '1 visit' : `${clips.length} visits`;
 
   return (
-    <section className="min-h-screen bg-[#f5f5f5]">
+    <section className="min-h-screen bg-cc-canvas">
       <div className="mx-auto max-w-3xl px-6 pb-16 pt-28 md:px-10 md:pb-24 md:pt-32">
         <div className="mb-10 text-center md:mb-14">
-          <h1 className="mb-4 font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-[#0e0e0e] md:text-5xl md:leading-[1.05] lg:text-[56px] lg:tracking-[-1.12px]">
+          <h1 className="mb-4 font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-cc-ink md:text-5xl md:leading-[1.05] lg:text-[56px] lg:tracking-[-1.12px]">
             Shelter Cam
           </h1>
-          <p className="mx-auto max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-[#0e0e0e]/70 md:text-lg">
+          <p className="mx-auto max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-cc-ink/70 md:text-lg">
             Short visits to the heated porch shelter, newest first. The list
             updates on its own. Playback links expire after a few minutes.
           </p>
         </div>
 
         <p
-          className="mb-6 text-center font-urbanist text-sm font-medium tracking-[-0.28px] text-[#0e0e0e]/50"
+          className="mb-6 text-center font-urbanist text-sm font-medium tracking-[-0.28px] text-cc-ink/50"
           aria-live="polite"
         >
           {loading ? 'Loading…' : error ? 'Unavailable' : clipCountLabel}
@@ -258,7 +258,7 @@ const PorchClips: React.FC = () => {
             <p className="font-urbanist text-sm font-medium text-red-700">
               {error}
             </p>
-            <p className="mt-2 font-urbanist text-xs font-medium text-[#0e0e0e]/50">
+            <p className="mt-2 font-urbanist text-xs font-medium text-cc-ink/50">
               We will keep trying while this page is open.
             </p>
           </div>
@@ -266,10 +266,10 @@ const PorchClips: React.FC = () => {
 
         {!loading && !error && clips.length === 0 ? (
           <div className="rounded-[24px] border border-dashed border-black/10 bg-white px-5 py-16 text-center shadow-[0_12px_40px_-16px_rgba(0,0,0,0.12)]">
-            <p className="font-urbanist text-base font-medium text-[#0e0e0e]">
+            <p className="font-urbanist text-base font-medium text-cc-ink">
               No visits yet.
             </p>
-            <p className="mt-2 font-urbanist text-sm font-medium text-[#0e0e0e]/50">
+            <p className="mt-2 font-urbanist text-sm font-medium text-cc-ink/50">
               When someone stops by the shelter, it will show up here.
             </p>
           </div>
@@ -288,11 +288,11 @@ const PorchClips: React.FC = () => {
                       eager={index === 0}
                     />
                     <div className={clipCardMetaClassName}>
-                      <h2 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-[#0e0e0e] md:text-lg">
+                      <h2 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-cc-ink md:text-lg">
                         {recordedLabel}
                       </h2>
                       {index === 0 ? (
-                        <span className="rounded-full bg-[#0e0e0e] px-2.5 py-0.5 font-urbanist text-[0.65rem] font-medium uppercase tracking-[0.16em] text-white">
+                        <span className="rounded-full bg-cc-ink px-2.5 py-0.5 font-urbanist text-[0.65rem] font-medium uppercase tracking-[0.16em] text-white">
                           Latest
                         </span>
                       ) : null}

@@ -88,7 +88,25 @@ describe('Header', () => {
     render(<Header />);
 
     const logoLink = screen.getByRole('link', { name: /Critter Canteen/ });
-    expect(logoLink.className).toContain('text-[#0e0e0e]');
+    expect(logoLink.className).toContain('text-cc-ink');
+  });
+
+  it('marks About as the active desktop tab', () => {
+    mockPathname.mockReturnValue('/about');
+    render(<Header />);
+
+    const aboutLink = screen.getByRole('link', { name: 'About' });
+    expect(aboutLink.className).toContain('bg-cc-ink');
+    expect(aboutLink).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('marks Shelter Cam as the active desktop tab', () => {
+    mockPathname.mockReturnValue('/porch');
+    render(<Header />);
+
+    const shelterLink = screen.getByRole('link', { name: 'Shelter Cam' });
+    expect(shelterLink.className).toContain('bg-cc-ink');
+    expect(shelterLink).toHaveAttribute('aria-current', 'page');
   });
 
   it('renders desktop navigation links', () => {
@@ -400,14 +418,13 @@ describe('Header', () => {
     expect(header.className).toContain('absolute');
     expect(header.className).toContain('bg-transparent');
     expect(header.className).not.toContain('bg-stone');
-    expect(header.className).not.toContain('bg-cc-glass');
 
     const desktopNav = screen.getByLabelText('Desktop navigation');
-    expect(desktopNav.className).toContain('bg-[#f5f5f5]');
+    expect(desktopNav.className).toContain('bg-cc-canvas');
     expect(desktopNav.className).toContain('rounded-[244px]');
 
     const homeLink = desktopNav.querySelector('a[href="/"]');
-    expect(homeLink?.className).toContain('bg-[#0e0e0e]');
+    expect(homeLink?.className).toContain('bg-cc-ink');
     expect(homeLink).toHaveAttribute('aria-current', 'page');
   });
 
@@ -416,7 +433,7 @@ describe('Header', () => {
 
     const contact = screen.getByRole('button', { name: 'Contact' });
     expect(contact).toHaveAttribute('type', 'button');
-    expect(contact.className).toContain('bg-[#fff017]');
+    expect(contact.className).toContain('bg-cc-yellow');
     expect(contact.className).toContain('rounded-[50px]');
   });
 

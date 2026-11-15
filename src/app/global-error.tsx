@@ -22,7 +22,7 @@ const GlobalError: React.FC<Props> = ({ error }) => {
 
   return (
     <html lang="en">
-      <body className={`${urbanist.className} min-h-screen bg-[#f5f5f5]`}>
+      <body className={`${urbanist.className} min-h-screen bg-cc-canvas`}>
         <UtilityNotice
           standalone
           title="Something went wrong"

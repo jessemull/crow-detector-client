@@ -71,7 +71,7 @@ These constraints apply to **every change**. No exceptions without explicit huma
 
 - Prefer existing shared chrome (`Header`, `Footer`) over copy-pasted shells.
 - Product surface stays small: Home, About, shared Header / Footer, and `/porch` (Shelter Cam). Do not invent Cognito admin, SWR feeds, forms, lightbox, or search menus unless product explicitly adds them.
-- Preserve Critter Canteen visual language (stone/amber). Do not restyle to another product’s look.
+- Preserve Critter Canteen visual language: light canvas (`#f5f5f5`), ink (`#0e0e0e`), yellow (`#fff017`), Urbanist; photo heroes stay dark imagery. Do not restyle to another product’s look.
 
 ---
 

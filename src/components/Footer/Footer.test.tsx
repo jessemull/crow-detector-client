@@ -30,13 +30,24 @@ describe('Footer', () => {
     expect(footer.className).not.toContain('bg-stone-950');
     expect(footer.className).not.toContain('border-t');
     expect(footer.className).not.toContain('fixed');
+    expect(screen.getByText(/Critter Canteen/).className).toContain(
+      'text-white/70'
+    );
+  });
+
+  it('floats over About the same as Home', () => {
+    mockPathname.mockReturnValue('/about');
+    render(<Footer />);
+    const footer = screen.getByRole('contentinfo');
+    expect(footer.className).toContain('bg-transparent');
+    expect(footer.className).toContain('-mt-[4.5rem]');
   });
 
   it('keeps light-page footer below the canvas with no hairline', () => {
     mockPathname.mockReturnValue('/porch');
     render(<Footer />);
     const footer = screen.getByRole('contentinfo');
-    expect(footer.className).toContain('bg-[#f5f5f5]');
+    expect(footer.className).toContain('bg-cc-canvas');
     expect(footer.className).toContain('mt-auto');
     expect(footer.className).toContain('border-0');
     expect(footer.className).not.toContain('border-t');
