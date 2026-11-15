@@ -27,6 +27,7 @@ jobs:
           echo "Deploying to development environment"
           NODE_ENV=test npm run build
         env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL_DEV }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ secrets.GA_TRACKING_ID_DEV }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           NEXT_PUBLIC_SENTRY_RELEASE: ${{ secrets.SENTRY_ENVIRONMENT_TEST }}-${{ github.sha }}

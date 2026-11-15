@@ -21,8 +21,8 @@
 ```
 crow-detector-client/
 ├── src/
-│   ├── app/                 # Routes: /, /about
-│   ├── components/          # Header, Footer, HomePage, About
+│   ├── app/                 # Routes: /, /about, /porch (unlinked)
+│   ├── components/          # Header, Footer, HomePage, About, PorchClips
 │   ├── constants/           # Shared constants (when present)
 │   ├── hooks/               # Shared hooks (when present)
 │   ├── types/
@@ -119,7 +119,7 @@ Follow `docs/COMMENTS.md`. Prefer self-documenting names; comments explain **why
 
 - **Routes** (`src/app`) → **feature components** → **hooks / util / constants**.
 - Shared chrome: prefer `Header`, `Footer`.
-- Keep the product surface small unless product explicitly expands it.
+- Keep the product surface small: Home, About, and the unlinked `/porch` clips page unless product expands it further.
 
 ### Data
 
@@ -190,7 +190,7 @@ See `docs/SECURITY.md`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
