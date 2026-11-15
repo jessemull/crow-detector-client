@@ -6,22 +6,24 @@ describe('Homepage', () => {
   });
 
   it('should display the main heading', () => {
-    cy.get('h1').should('contain', 'Critter Canteen');
+    cy.get('main h1').should('contain', 'Critter Canteen');
   });
 
   it('should describe the feeder and shelter', () => {
-    cy.get('p').should(
+    cy.get('main p').should(
       'contain',
       'Crows eat from an automated feeder. A heated shelter stays open for whoever else stops by.'
     );
   });
 
   it('should show a disabled Feeder control', () => {
-    cy.get('button').contains('Feeder').should('be.disabled');
+    cy.get('main button').contains('Feeder').should('be.disabled');
   });
 
   it('should link to Shelter Cam', () => {
-    cy.get('a').contains('Shelter Cam').should('have.attr', 'href', '/porch');
+    cy.get('main a')
+      .contains('Shelter Cam')
+      .should('have.attr', 'href', '/porch');
   });
 });
 
@@ -31,10 +33,13 @@ describe('About page', () => {
   });
 
   it('should display the about heading', () => {
-    cy.get('h1').should('contain', 'Wildlife care, engineered end to end.');
+    cy.get('main h1').should(
+      'contain',
+      'Wildlife care, engineered end to end.'
+    );
   });
 
   it('should link back home', () => {
-    cy.get('a').contains('Back to Home').should('have.attr', 'href', '/');
+    cy.get('main a').contains('Back to Home').should('have.attr', 'href', '/');
   });
 });
