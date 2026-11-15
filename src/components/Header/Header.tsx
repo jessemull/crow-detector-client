@@ -45,8 +45,8 @@ const Header: React.FC = () => {
   const isAbout = pathname === '/about';
   const isPorch = pathname === '/porch';
 
-  // Earthon logo is dark; on our dark interior pages keep the mark readable.
-  const brandClassName = isHome ? 'text-[#0e0e0e]' : 'text-white';
+  // Dark mark over photo heroes (Home / About); light mark on dark interior pages.
+  const brandClassName = isHome || isAbout ? 'text-[#0e0e0e]' : 'text-white';
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

@@ -38,7 +38,7 @@ describe('About', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'About Critter Canteen',
+        name: 'Wildlife care, engineered end to end.',
       })
     ).toBeTruthy();
   });
@@ -51,16 +51,22 @@ describe('About', () => {
     );
   });
 
-  it('renders Shelter Cam and back to home links', () => {
+  it('describes the station and the tech stack', () => {
     render(<About />);
-    expect(screen.getByRole('link', { name: 'Shelter Cam' })).toHaveAttribute(
-      'href',
-      '/porch'
-    );
-    expect(screen.getByRole('link', { name: 'Back to Home' })).toHaveAttribute(
+    expect(screen.getByText(/backyard wildlife station/i)).toBeTruthy();
+    expect(
+      screen.getByText(/Edge IoT handles sensing and control/i)
+    ).toBeTruthy();
+    expect(screen.getByText(/AI and LLM tooling/i)).toBeTruthy();
+  });
+
+  it('renders a back to home CTA', () => {
+    render(<About />);
+    expect(screen.getByRole('link', { name: /Back to Home/i })).toHaveAttribute(
       'href',
       '/'
     );
+    expect(screen.queryByRole('link', { name: /Shelter Cam/i })).toBeNull();
   });
 
   it('has no accessibility violations', async () => {

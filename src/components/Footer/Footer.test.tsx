@@ -15,7 +15,7 @@ describe('Footer', () => {
     ).toBeTruthy();
   });
 
-  it('keeps home copyright in flow without a black bar', () => {
+  it('keeps photo-page copyright in flow without a black bar', () => {
     render(<Footer />);
     const footer = screen.getByRole('contentinfo');
     expect(footer.className).toContain('bg-transparent');

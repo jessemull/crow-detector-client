@@ -24,21 +24,19 @@ jest.mock('next/image', () => {
 describe('About Page', () => {
   it('renders the about page component', () => {
     render(<AboutPage />);
-    const heading = screen.getByRole('heading', {
-      level: 1,
-      name: 'About Critter Canteen',
-    });
-    expect(heading).toBeTruthy();
     expect(
-      screen.getByText(
-        /Critter Canteen is a small porch station for neighborhood wildlife/
-      )
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Wildlife care, engineered end to end.',
+      })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Edge IoT handles sensing and control/i)
     ).toBeTruthy();
   });
 
   it('renders the back to home link', () => {
     render(<AboutPage />);
-    const link = screen.getByRole('link', { name: 'Back to Home' });
-    expect(link).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Back to Home' })).toBeTruthy();
   });
 });
