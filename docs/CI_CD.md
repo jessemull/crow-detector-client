@@ -17,13 +17,13 @@ Do **not** rewrite these lightly. Document changes in the PR and treat as human-
 
 ### Quality jobs (PR)
 
-| Job              | Blocking? | Notes                                                                                             |
-| ---------------- | --------- | ------------------------------------------------------------------------------------------------- |
-| Build            | Yes       | Static export; bakes `NEXT_PUBLIC_SENTRY_*` and `NEXT_PUBLIC_API_BASE_URL` (no source-map upload) |
-| Lint             | Yes       | `npm run lint`                                                                                    |
-| Typecheck        | Yes       | `npm run typecheck`                                                                               |
-| Unit tests       | Yes       | Jest + ≥80% coverage (`jest.config` thresholds; authoritative gate)                               |
-| E2E & Lighthouse | Soft LH   | Cypress blocking; **LH may `continue-on-error` on PR** (intentional)                              |
+| Job              | Blocking? | Notes                                                                                                                                                   |
+| ---------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build            | Yes       | Static export; bakes `NEXT_PUBLIC_SENTRY_*` and `NEXT_PUBLIC_API_BASE_URL` from `NEXT_PUBLIC_API_BASE_URL_DEV` / `_PROD` secrets (no source-map upload) |
+| Lint             | Yes       | `npm run lint`                                                                                                                                          |
+| Typecheck        | Yes       | `npm run typecheck`                                                                                                                                     |
+| Unit tests       | Yes       | Jest + ≥80% coverage (`jest.config` thresholds; authoritative gate)                                                                                     |
+| E2E & Lighthouse | Soft LH   | Cypress blocking; **LH may `continue-on-error` on PR** (intentional)                                                                                    |
 
 ### Merge / deploy
 

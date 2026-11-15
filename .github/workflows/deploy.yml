@@ -34,6 +34,7 @@ jobs:
           echo "Deploying to ${{ inputs.environment }} environment"
           NODE_ENV=${{ inputs.environment }} npm run build
         env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ inputs.environment == 'test' && secrets.NEXT_PUBLIC_API_BASE_URL_DEV || secrets.NEXT_PUBLIC_API_BASE_URL_PROD }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || secrets.GA_TRACKING_ID_PROD }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           NEXT_PUBLIC_SENTRY_RELEASE: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}-${{ github.sha }}
@@ -56,6 +57,7 @@ jobs:
           echo "Uploading source maps to Sentry.io..."
           NODE_ENV=${{ inputs.environment }} npm run source-maps
         env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ inputs.environment == 'test' && secrets.NEXT_PUBLIC_API_BASE_URL_DEV || secrets.NEXT_PUBLIC_API_BASE_URL_PROD }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || secrets.GA_TRACKING_ID_PROD }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           NEXT_PUBLIC_SENTRY_RELEASE: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}-${{ github.sha }}

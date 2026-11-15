@@ -123,6 +123,7 @@ const PorchClips: React.FC = () => {
               playsInline
               preload="metadata"
               src={clip.playbackUrl}
+              aria-label={`Porch clip ${clip.name}`}
             >
               Your browser does not support video playback.
             </video>
