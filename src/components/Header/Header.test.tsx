@@ -83,8 +83,8 @@ describe('Header', () => {
     expect(title).toBeTruthy();
   });
 
-  it('keeps a dark brand mark on the light Shelter Cam page', () => {
-    mockPathname.mockReturnValue('/porch');
+  it('keeps a dark brand mark on every page', () => {
+    mockPathname.mockReturnValue('/missing-route');
     render(<Header />);
 
     const logoLink = screen.getByRole('link', { name: /Critter Canteen/ });
