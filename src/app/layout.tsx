@@ -1,7 +1,7 @@
 import './globals.css';
 import Script from 'next/script';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Urbanist } from 'next/font/google';
 import { Footer } from '@components/Footer';
 import { Header } from '@components/Header';
 
@@ -10,6 +10,13 @@ const inter = Inter({
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-inter',
+});
+
+const urbanist = Urbanist({
+  subsets: ['latin'],
+  weight: ['500', '600'],
+  display: 'swap',
+  variable: '--font-urbanist-family',
 });
 
 const NEXT_PUBLIC_GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
@@ -60,7 +67,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${urbanist.variable}`}>
       <body className="flex flex-col min-h-screen font-sans">
         <a
           href="#main-content"

@@ -2,28 +2,51 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { Menu, X, Home, Info, Camera, Bird } from 'lucide-react';
 
-const navLinkClassName =
-  'text-gray-200 hover:text-gray-400 transition-colors font-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400';
+/** Earthon Menu List pill: rgb(245,245,245), radius 244px, padding 5px */
+const menuListClassName =
+  'hidden lg:flex items-center justify-center rounded-[244px] bg-[#f5f5f5] p-[5px] font-urbanist';
 
-const disabledNavClassName =
-  'text-gray-500 font-light cursor-not-allowed opacity-70';
+/**
+ * Earthon tab labels: Urbanist 16px / 500, letter-spacing -0.32px
+ * Contact CTA: Urbanist 20px / 600, letter-spacing -0.4px
+ */
+const navIdleClassName =
+  'inline-flex items-center justify-center rounded-[137px] bg-[rgba(13,13,13,0)] px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-[#0e0e0e] backdrop-blur-[45px] transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e]';
+
+const navActiveClassName =
+  'inline-flex items-center justify-center rounded-[137px] bg-[#0e0e0e] px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-white backdrop-blur-[45px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e]';
+
+const navDisabledClassName =
+  'inline-flex cursor-not-allowed items-center justify-center rounded-[137px] px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-[#0e0e0e]/60';
+
+const contactClassName =
+  'hidden lg:inline-flex h-11 items-center justify-center rounded-[50px] bg-[#fff017] px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-[#0e0e0e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e]';
 
 const mobileNavLinkClassName =
-  'text-white hover:text-gray-400 transition-colors font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400';
+  'flex items-center space-x-3 px-4 py-2.5 font-urbanist text-[16px] font-medium tracking-[-0.32px] text-[#0e0e0e] transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e] md:py-3';
 
 const mobileDisabledNavClassName =
-  'text-gray-500 font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 cursor-not-allowed opacity-70';
+  'flex cursor-not-allowed items-center space-x-3 px-4 py-2.5 font-urbanist text-[16px] font-medium tracking-[-0.32px] text-[#0e0e0e]/60 md:py-3';
 
 const Header: React.FC = () => {
+  const pathname = usePathname() || '/';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
   const wasMenuOpenRef = useRef(false);
+
+  const isHome = pathname === '/';
+  const isAbout = pathname === '/about';
+  const isPorch = pathname === '/porch';
+
+  // Earthon logo is dark; on our dark interior pages keep the mark readable.
+  const brandClassName = isHome ? 'text-[#0e0e0e]' : 'text-white';
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -96,79 +119,99 @@ const Header: React.FC = () => {
   }, [isMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-20 bg-stone-900 backdrop-blur-sm border-b border-amber-400/30 relative">
-      <div ref={chromeRef} className="max-w-6xl py-3 md:py-4 pl-3 md:pl-6">
-        <div className="flex items-center relative">
-          <button
-            ref={menuButtonRef}
-            type="button"
-            onClick={toggleMenu}
-            className="lg:hidden absolute md:-left-2 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-            aria-label="Toggle menu"
-            aria-expanded={isMenuOpen}
-            aria-controls="mobile-navigation"
+    <header className="pointer-events-none absolute inset-x-0 top-8 z-10 bg-transparent font-urbanist">
+      <nav
+        ref={chromeRef}
+        className="pointer-events-auto mx-auto flex h-[60px] w-full max-w-[1280px] items-center justify-between px-[30px]"
+        aria-label="Primary"
+      >
+        <button
+          ref={menuButtonRef}
+          type="button"
+          onClick={toggleMenu}
+          className="absolute left-[30px] z-10 cursor-pointer rounded-full bg-[#f5f5f5] p-2 text-[#0e0e0e] lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e]"
+          aria-label="Toggle menu"
+          aria-expanded={isMenuOpen}
+          aria-controls="mobile-navigation"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
+        <Link
+          href="/"
+          className={`relative z-10 flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e] max-lg:mx-auto ${brandClassName}`}
+        >
+          <Image
+            src="/favicon.png"
+            alt=""
+            width={27}
+            height={27}
+            priority
+            className="h-[27px] w-[27px]"
+          />
+          <span className="text-[16px] font-medium leading-[22.4px] tracking-[-0.32px]">
+            Critter Canteen
+          </span>
+        </Link>
+
+        <div className={`${menuListClassName}`} aria-label="Desktop navigation">
+          <Link
+            href="/"
+            className={isHome ? navActiveClassName : navIdleClassName}
+            aria-current={isHome ? 'page' : undefined}
           >
-            <Menu className="w-6 h-6 md:w-8 md:h-8 text-white" />
-          </button>
-          <div className="flex items-center space-x-3 w-full lg:w-auto justify-center lg:justify-start">
-            <Link
-              href="/"
-              className="flex items-center space-x-3 text-white hover:text-gray-400 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-            >
-              <Image
-                src="/favicon.png"
-                alt=""
-                width={32}
-                height={32}
-                priority
-                className="w-6 h-6 md:w-8 md:h-8"
-              />
-              <span className="font-light text-base md:text-lg tracking-wide">
-                Critter Canteen
-              </span>
-            </Link>
-          </div>
-          <nav
-            className="hidden lg:flex items-center space-x-6 ml-8"
-            aria-label="Desktop navigation"
+            Home
+          </Link>
+          <span
+            className={navDisabledClassName}
+            aria-disabled="true"
+            title="Feeding controls are not connected yet"
           >
-            <Link href="/" className={navLinkClassName}>
-              Home
-            </Link>
-            <span
-              className={disabledNavClassName}
-              aria-disabled="true"
-              title="Feeding controls are not connected yet"
-            >
-              Feeder
-            </span>
-            <Link href="/porch" className={navLinkClassName}>
-              Shelter Cam
-            </Link>
-            <Link href="/about" className={navLinkClassName}>
-              About
-            </Link>
-          </nav>
+            Feeder
+          </span>
+          <Link
+            href="/porch"
+            className={isPorch ? navActiveClassName : navIdleClassName}
+            aria-current={isPorch ? 'page' : undefined}
+          >
+            Shelter Cam
+          </Link>
+          <Link
+            href="/about"
+            className={isAbout ? navActiveClassName : navIdleClassName}
+            aria-current={isAbout ? 'page' : undefined}
+          >
+            About
+          </Link>
         </div>
-      </div>
+
+        <button
+          type="button"
+          className={contactClassName}
+          title="Contact form coming soon"
+        >
+          Contact
+        </button>
+      </nav>
+
       {isMenuOpen && (
         <div
           ref={dialogRef}
-          className="lg:hidden min-h-screen absolute top-0 left-0 bg-stone-900 border-r border-white/30 shadow-lg z-50 min-w-72"
+          className="pointer-events-auto absolute left-0 top-0 z-50 min-h-screen min-w-72 border-r border-stone-200 bg-white shadow-lg lg:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Mobile menu"
         >
-          <div className="flex justify-between items-center p-4 border-b border-white/30">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between border-b border-stone-200 p-4">
+            <div className="flex items-center gap-1">
               <Image
                 src="/favicon.png"
                 alt=""
-                width={32}
-                height={32}
-                className="w-5 h-5 md:w-6 md:w-6"
+                width={27}
+                height={27}
+                className="h-5 w-5"
               />
-              <span className="text-white font-light text-sm md:text-base tracking-wide">
+              <span className="text-base font-medium tracking-[-0.32px] text-[#0e0e0e]">
                 Critter Canteen
               </span>
             </div>
@@ -176,15 +219,15 @@ const Header: React.FC = () => {
               ref={closeButtonRef}
               type="button"
               onClick={() => setIsMenuOpen(false)}
-              className="text-white hover:text-gray-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+              className="cursor-pointer text-[#0e0e0e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e0e0e]"
               aria-label="Close menu"
             >
-              <X className="w-5 h-5 md:w-6 md:h-6" />
+              <X className="h-5 w-5" />
             </button>
           </div>
           <nav
             id="mobile-navigation"
-            className="flex flex-col space-y-0"
+            className="flex flex-col"
             aria-label="Mobile navigation"
           >
             <Link
@@ -192,7 +235,7 @@ const Header: React.FC = () => {
               className={mobileNavLinkClassName}
               onClick={() => setIsMenuOpen(false)}
             >
-              <Home className="w-4 h-4 md:w-5 md:h-5" />
+              <Home className="h-4 w-4" />
               <span>Home</span>
             </Link>
             <span
@@ -200,7 +243,7 @@ const Header: React.FC = () => {
               aria-disabled="true"
               title="Feeding controls are not connected yet"
             >
-              <Bird className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+              <Bird className="h-4 w-4" aria-hidden="true" />
               <span>Feeder</span>
             </span>
             <Link
@@ -208,7 +251,7 @@ const Header: React.FC = () => {
               className={mobileNavLinkClassName}
               onClick={() => setIsMenuOpen(false)}
             >
-              <Camera className="w-4 h-4 md:w-5 md:h-5" />
+              <Camera className="h-4 w-4" />
               <span>Shelter Cam</span>
             </Link>
             <Link
@@ -216,9 +259,16 @@ const Header: React.FC = () => {
               className={mobileNavLinkClassName}
               onClick={() => setIsMenuOpen(false)}
             >
-              <Info className="w-4 h-4 md:w-5 md:h-5" />
+              <Info className="h-4 w-4" />
               <span>About</span>
             </Link>
+            <button
+              type="button"
+              className="mx-4 mt-4 inline-flex h-11 items-center justify-center rounded-[50px] bg-[#fff017] px-6 text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-[#0e0e0e]"
+              title="Contact form coming soon"
+            >
+              Contact
+            </button>
           </nav>
         </div>
       )}

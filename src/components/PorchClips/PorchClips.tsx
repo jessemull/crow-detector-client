@@ -118,13 +118,13 @@ const PorchClips: React.FC = () => {
     <PageShell>
       <div className="mx-auto max-w-3xl">
         <div className="mb-8 text-center md:mb-10">
-          <p className="mb-2 text-[0.65rem] font-medium uppercase tracking-[0.35em] text-amber-500/80 md:text-xs">
+          <p className="mb-2 text-[0.65rem] font-medium uppercase tracking-[0.35em] text-cc-amber/80 md:text-xs">
             Critter Canteen
           </p>
-          <h1 className="mb-3 text-xl font-light tracking-wide text-amber-400 md:text-2xl lg:text-4xl">
+          <h1 className="mb-3 text-xl font-light tracking-wide text-cc-amber md:text-2xl lg:text-4xl">
             Shelter Cam
           </h1>
-          <p className="mx-auto max-w-xl text-xs font-light leading-relaxed text-stone-300 md:text-sm">
+          <p className="mx-auto max-w-xl text-xs font-light leading-relaxed text-cc-cream-muted md:text-sm">
             A heated little house on the porch for any animal that stops by.
             Short visits, newest first. The list updates on its own; playback
             links expire after a few minutes.
@@ -137,7 +137,7 @@ const PorchClips: React.FC = () => {
 
         {loading ? (
           <div
-            className="flex min-h-[12rem] items-center justify-center rounded-xl border border-dashed border-stone-700 bg-stone-950/40"
+            className="flex min-h-[12rem] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-stone-950/50"
             role="status"
           >
             <p className="text-sm text-stone-400">Loading Shelter Cam…</p>
@@ -146,7 +146,7 @@ const PorchClips: React.FC = () => {
 
         {error ? (
           <div
-            className="rounded-xl border border-red-900/60 bg-red-950/30 px-5 py-8 text-center"
+            className="rounded-2xl border border-red-900/60 bg-red-950/30 px-5 py-8 text-center"
             role="alert"
           >
             <p className="text-sm text-red-200">{error}</p>
@@ -157,10 +157,8 @@ const PorchClips: React.FC = () => {
         ) : null}
 
         {!loading && !error && clips.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-stone-700 bg-stone-950/40 px-5 py-16 text-center">
-            <p className="text-base font-light text-stone-200">
-              No visits yet.
-            </p>
+          <div className="rounded-2xl border border-dashed border-white/15 bg-stone-950/50 px-5 py-16 text-center">
+            <p className="text-base font-light text-cc-cream">No visits yet.</p>
             <p className="mt-2 text-xs text-stone-500">
               When someone stops by the shelter, it will show up here.
             </p>
@@ -175,16 +173,16 @@ const PorchClips: React.FC = () => {
                 <li key={`${clip.name}-${clip.recordedAt}`}>
                   <article>
                     <div className="mb-3 flex items-baseline justify-between gap-3">
-                      <h2 className="text-sm font-medium tracking-wide text-amber-400 md:text-base">
+                      <h2 className="text-sm font-medium tracking-wide text-cc-amber md:text-base">
                         {recordedLabel}
                       </h2>
                       {index === 0 ? (
-                        <span className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-500">
+                        <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">
                           Latest
                         </span>
                       ) : null}
                     </div>
-                    <div className="overflow-hidden rounded-xl border border-stone-700/90 bg-black shadow-[0_20px_50px_-28px_rgba(0,0,0,0.85)]">
+                    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_50px_-28px_rgba(0,0,0,0.85)]">
                       <video
                         className="aspect-video w-full bg-black"
                         controls

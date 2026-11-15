@@ -9,6 +9,10 @@ import Header from './Header';
 
 expect.extend(toHaveNoViolations);
 
+jest.mock('next/navigation', () => ({
+  usePathname: () => '/',
+}));
+
 jest.mock('next/link', () => {
   const MockLink = ({
     children,
@@ -171,26 +175,27 @@ describe('Header', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
+    const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
     const mobileNav = screen.getByLabelText('Mobile navigation');
     const homeLink = mobileNav.querySelector(
       'a[href="/"]'
     ) as HTMLAnchorElement | null;
-    const aboutLink = mobileNav.querySelector(
-      'a[href="/about"]'
-    ) as HTMLAnchorElement | null;
+    const contactButton = Array.from(dialog.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Contact'
+    ) as HTMLButtonElement;
 
     expect(homeLink).toBeTruthy();
-    expect(aboutLink).toBeTruthy();
+    expect(contactButton).toBeTruthy();
 
-    // Disabled Feeder is not an href link, so About stays last in the trap.
-    aboutLink?.focus();
-    expect(aboutLink).toHaveFocus();
+    // Contact is the last focusable control in the mobile drawer.
+    contactButton.focus();
+    expect(contactButton).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(closeButton).toHaveFocus();
 
     closeButton.focus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
-    expect(aboutLink).toHaveFocus();
+    expect(contactButton).toHaveFocus();
   });
 
   it('wraps Tab from the last menu item back to the close button', () => {
@@ -199,13 +204,13 @@ describe('Header', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
-    const mobileNav = screen.getByLabelText('Mobile navigation');
-    const aboutLink = mobileNav.querySelector(
-      'a[href="/about"]'
-    ) as HTMLAnchorElement;
+    const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
+    const contactButton = Array.from(dialog.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Contact'
+    ) as HTMLButtonElement;
 
-    aboutLink.focus();
-    expect(document.activeElement).toBe(aboutLink);
+    contactButton.focus();
+    expect(document.activeElement).toBe(contactButton);
 
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: false });
     expect(document.activeElement).toBe(closeButton);
@@ -220,7 +225,7 @@ describe('Header', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
-    const chrome = screen.getByRole('banner').querySelector(':scope > div');
+    const chrome = screen.getByLabelText('Primary');
     expect(chrome).toHaveAttribute('inert');
     expect(main).toHaveAttribute('inert');
     expect(footer).toHaveAttribute('inert');
@@ -377,14 +382,31 @@ describe('Header', () => {
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
-  it('renders header with correct CSS classes', () => {
+  it('renders Earthon-style floating header with light menu pill and no brown bar', () => {
     render(<Header />);
 
     const header = screen.getByRole('banner');
-    expect(header.className).toContain('sticky');
-    expect(header.className).toContain('top-0');
-    expect(header.className).toContain('z-20');
-    expect(header.className).toContain('bg-stone-900');
+    expect(header.className).toContain('absolute');
+    expect(header.className).toContain('bg-transparent');
+    expect(header.className).not.toContain('bg-stone');
+    expect(header.className).not.toContain('bg-cc-glass');
+
+    const desktopNav = screen.getByLabelText('Desktop navigation');
+    expect(desktopNav.className).toContain('bg-[#f5f5f5]');
+    expect(desktopNav.className).toContain('rounded-[244px]');
+
+    const homeLink = desktopNav.querySelector('a[href="/"]');
+    expect(homeLink?.className).toContain('bg-[#0e0e0e]');
+    expect(homeLink).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('renders a no-op Contact button matching Earthon yellow CTA', () => {
+    render(<Header />);
+
+    const contact = screen.getByRole('button', { name: 'Contact' });
+    expect(contact).toHaveAttribute('type', 'button');
+    expect(contact.className).toContain('bg-[#fff017]');
+    expect(contact.className).toContain('rounded-[50px]');
   });
 
   it('renders logo link with correct href', () => {
