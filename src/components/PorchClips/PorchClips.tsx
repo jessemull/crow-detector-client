@@ -10,6 +10,9 @@ export type PorchClip = {
   expiresAt: string;
 };
 
+/** How often to re-fetch while the tab is visible. */
+const POLL_INTERVAL_MS = 45_000;
+
 const getApiBaseUrl = (): string =>
   (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
 
@@ -18,7 +21,13 @@ const formatRecordedAt = (value: string): string => {
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleString();
+  return date.toLocaleString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 };
 
 const PorchClips: React.FC = () => {
@@ -26,110 +35,174 @@ const PorchClips: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadClips = useCallback(async () => {
+  const loadClips = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
     const apiBaseUrl = getApiBaseUrl();
     if (!apiBaseUrl) {
-      setError('Porch clips are not configured for this build.');
+      setError('Shelter Cam is not configured for this build.');
       setClips([]);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
 
     try {
       const response = await fetch(`${apiBaseUrl}/porch/clips`);
       if (!response.ok) {
-        throw new Error(`Could not load clips (${response.status})`);
+        throw new Error(`Could not load visits (${response.status})`);
       }
       const data = (await response.json()) as PorchClip[];
       setClips(Array.isArray(data) ? data : []);
+      setError(null);
     } catch (loadError) {
-      setClips([]);
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : 'Could not load porch clips'
-      );
+      // Keep the last good list on background polls so the page does not flash empty.
+      if (!silent) {
+        setClips([]);
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : 'Could not load Shelter Cam visits'
+        );
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    // Defer so the initial fetch does not setState synchronously inside the effect.
-    const timer = window.setTimeout(() => {
-      void loadClips();
+    let cancelled = false;
+
+    const run = (silent: boolean) => {
+      if (cancelled) {
+        return;
+      }
+      void loadClips({ silent });
+    };
+
+    // Defer the first fetch so setState does not run synchronously inside the effect.
+    const initialTimer = window.setTimeout(() => {
+      run(false);
     }, 0);
-    return () => window.clearTimeout(timer);
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        run(true);
+      }
+    }, POLL_INTERVAL_MS);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        run(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initialTimer);
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [loadClips]);
+
+  const clipCountLabel =
+    clips.length === 1 ? '1 visit' : `${clips.length} visits`;
 
   return (
     <PageShell>
-      <div className="text-center mb-6 lg:mb-8">
-        <h1 className="text-xl md:text-2xl lg:text-4xl font-light text-amber-400 mb-3 tracking-wide">
-          Porch Clips
-        </h1>
-        <p className="text-xs md:text-sm text-white max-w-3xl mx-auto leading-relaxed font-light">
-          Short visits recorded by the porch camera. Playback links expire after
-          a few minutes — refresh the list when a clip stops playing.
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-8 text-center md:mb-10">
+          <p className="mb-2 text-[0.65rem] font-medium uppercase tracking-[0.35em] text-amber-500/80 md:text-xs">
+            Critter Canteen
+          </p>
+          <h1 className="mb-3 text-xl font-light tracking-wide text-amber-400 md:text-2xl lg:text-4xl">
+            Shelter Cam
+          </h1>
+          <p className="mx-auto max-w-xl text-xs font-light leading-relaxed text-stone-300 md:text-sm">
+            A heated little house on the porch for any animal that stops by.
+            Short visits, newest first. The list updates on its own; playback
+            links expire after a few minutes.
+          </p>
+        </div>
+
+        <p className="mb-6 text-xs text-stone-400" aria-live="polite">
+          {loading ? 'Loading…' : error ? 'Unavailable' : clipCountLabel}
         </p>
-      </div>
 
-      <div className="flex justify-center mb-6">
-        <button
-          type="button"
-          onClick={() => void loadClips()}
-          className="bg-stone-800 text-amber-400 border border-amber-400 font-medium py-2 px-6 rounded-lg hover:bg-stone-700 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-amber-400"
-        >
-          Refresh clips
-        </button>
-      </div>
-
-      {loading ? (
-        <p className="text-center text-sm text-gray-300" role="status">
-          Loading porch clips…
-        </p>
-      ) : null}
-
-      {error ? (
-        <p className="text-center text-sm text-red-300" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {!loading && !error && clips.length === 0 ? (
-        <p className="text-center text-sm text-gray-300">No porch clips yet.</p>
-      ) : null}
-
-      <ul className="space-y-8">
-        {clips.map((clip) => (
-          <li
-            key={`${clip.name}-${clip.recordedAt}`}
-            className="rounded-lg border border-stone-700 bg-stone-900/60 p-4"
+        {loading ? (
+          <div
+            className="flex min-h-[12rem] items-center justify-center rounded-xl border border-dashed border-stone-700 bg-stone-950/40"
+            role="status"
           >
-            <div className="mb-3 text-left">
-              <h2 className="text-sm font-medium text-amber-400">
-                {clip.name}
-              </h2>
-              <p className="text-xs text-gray-300">
-                Recorded {formatRecordedAt(clip.recordedAt)}
-              </p>
-            </div>
-            <video
-              className="w-full rounded-md bg-black"
-              controls
-              playsInline
-              preload="metadata"
-              src={clip.playbackUrl}
-              aria-label={`Porch clip ${clip.name}`}
-            >
-              Your browser does not support video playback.
-            </video>
-          </li>
-        ))}
-      </ul>
+            <p className="text-sm text-stone-400">Loading Shelter Cam…</p>
+          </div>
+        ) : null}
+
+        {error ? (
+          <div
+            className="rounded-xl border border-red-900/60 bg-red-950/30 px-5 py-8 text-center"
+            role="alert"
+          >
+            <p className="text-sm text-red-200">{error}</p>
+            <p className="mt-2 text-xs text-stone-400">
+              We will keep trying while this page is open.
+            </p>
+          </div>
+        ) : null}
+
+        {!loading && !error && clips.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-stone-700 bg-stone-950/40 px-5 py-16 text-center">
+            <p className="text-base font-light text-stone-200">
+              No visits yet.
+            </p>
+            <p className="mt-2 text-xs text-stone-500">
+              When someone stops by the shelter, it will show up here.
+            </p>
+          </div>
+        ) : null}
+
+        {!loading && !error && clips.length > 0 ? (
+          <ul className="space-y-10">
+            {clips.map((clip, index) => {
+              const recordedLabel = formatRecordedAt(clip.recordedAt);
+              return (
+                <li key={`${clip.name}-${clip.recordedAt}`}>
+                  <article>
+                    <div className="mb-3 flex items-baseline justify-between gap-3">
+                      <h2 className="text-sm font-medium tracking-wide text-amber-400 md:text-base">
+                        {recordedLabel}
+                      </h2>
+                      {index === 0 ? (
+                        <span className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-500">
+                          Latest
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="overflow-hidden rounded-xl border border-stone-700/90 bg-black shadow-[0_20px_50px_-28px_rgba(0,0,0,0.85)]">
+                      <video
+                        className="aspect-video w-full bg-black"
+                        controls
+                        playsInline
+                        preload="metadata"
+                        src={clip.playbackUrl}
+                        aria-label={`Shelter visit recorded ${recordedLabel}`}
+                      >
+                        Your browser does not support video playback.
+                      </video>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+      </div>
     </PageShell>
   );
 };

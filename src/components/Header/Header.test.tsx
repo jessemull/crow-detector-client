@@ -81,12 +81,18 @@ describe('Header', () => {
 
     const desktopNav = screen.getByLabelText('Desktop navigation');
     const homeLink = desktopNav.querySelector('a[href="/"]');
+    const shelterLink = desktopNav.querySelector('a[href="/porch"]');
     const aboutLink = desktopNav.querySelector('a[href="/about"]');
+    const feeder = desktopNav.querySelector('[aria-disabled="true"]');
 
     expect(homeLink).toBeTruthy();
+    expect(shelterLink).toBeTruthy();
     expect(aboutLink).toBeTruthy();
     expect(homeLink?.textContent).toBe('Home');
+    expect(shelterLink?.textContent).toBe('Shelter Cam');
     expect(aboutLink?.textContent).toBe('About');
+    expect(feeder?.textContent).toBe('Feeder');
+    expect(desktopNav.querySelector('a[href="/feeder"]')).toBeNull();
   });
 
   it('renders mobile menu toggle button', () => {
@@ -117,7 +123,11 @@ describe('Header', () => {
     const mobileNav = screen.getByLabelText('Mobile navigation');
     expect(mobileNav).toHaveAttribute('id', 'mobile-navigation');
     expect(mobileNav.querySelector('a[href="/"]')).toBeTruthy();
+    expect(mobileNav.querySelector('a[href="/porch"]')).toBeTruthy();
     expect(mobileNav.querySelector('a[href="/about"]')).toBeTruthy();
+    expect(
+      mobileNav.querySelector('[aria-disabled="true"]')?.textContent
+    ).toContain('Feeder');
   });
 
   it('supports keyboard activation of the menu toggle', () => {
@@ -172,6 +182,7 @@ describe('Header', () => {
     expect(homeLink).toBeTruthy();
     expect(aboutLink).toBeTruthy();
 
+    // Disabled Feeder is not an href link, so About stays last in the trap.
     aboutLink?.focus();
     expect(aboutLink).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Tab' });
@@ -341,10 +352,29 @@ describe('Header', () => {
 
     const mobileNav = screen.getByLabelText('Mobile navigation');
     const homeLink = mobileNav.querySelector('a[href="/"]');
+    const shelterLink = mobileNav.querySelector('a[href="/porch"]');
     const aboutLink = mobileNav.querySelector('a[href="/about"]');
+    const feeder = mobileNav.querySelector('[aria-disabled="true"]');
 
     expect(homeLink?.querySelector('svg')).toBeTruthy();
+    expect(shelterLink?.querySelector('svg')).toBeTruthy();
     expect(aboutLink?.querySelector('svg')).toBeTruthy();
+    expect(feeder?.querySelector('svg')).toBeTruthy();
+  });
+
+  it('closes mobile menu when Shelter Cam is clicked', () => {
+    render(<Header />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const mobileNav = screen.getByLabelText('Mobile navigation');
+    const shelterLink = mobileNav.querySelector('a[href="/porch"]');
+    expect(shelterLink).toBeTruthy();
+
+    if (shelterLink) {
+      fireEvent.click(shelterLink);
+    }
+
+    expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
   it('renders header with correct CSS classes', () => {

@@ -3,7 +3,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, X, Home, Info } from 'lucide-react';
+import { Menu, X, Home, Info, Camera, Bird } from 'lucide-react';
+
+const navLinkClassName =
+  'text-gray-200 hover:text-gray-400 transition-colors font-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400';
+
+const disabledNavClassName =
+  'text-gray-500 font-light cursor-not-allowed opacity-70';
+
+const mobileNavLinkClassName =
+  'text-white hover:text-gray-400 transition-colors font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400';
+
+const mobileDisabledNavClassName =
+  'text-gray-500 font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 cursor-not-allowed opacity-70';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -120,16 +132,20 @@ const Header: React.FC = () => {
             className="hidden lg:flex items-center space-x-6 ml-8"
             aria-label="Desktop navigation"
           >
-            <Link
-              href="/"
-              className="text-gray-200 hover:text-gray-400 transition-colors font-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-            >
+            <Link href="/" className={navLinkClassName}>
               Home
             </Link>
-            <Link
-              href="/about"
-              className="text-gray-200 hover:text-gray-400 transition-colors font-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+            <span
+              className={disabledNavClassName}
+              aria-disabled="true"
+              title="Feeding controls are not connected yet"
             >
+              Feeder
+            </span>
+            <Link href="/porch" className={navLinkClassName}>
+              Shelter Cam
+            </Link>
+            <Link href="/about" className={navLinkClassName}>
               About
             </Link>
           </nav>
@@ -143,7 +159,7 @@ const Header: React.FC = () => {
           aria-modal="true"
           aria-label="Mobile menu"
         >
-          <div className="flex justify-between items-center p-4">
+          <div className="flex justify-between items-center p-4 border-b border-white/30">
             <div className="flex items-center space-x-3">
               <Image
                 src="/favicon.png"
@@ -173,15 +189,31 @@ const Header: React.FC = () => {
           >
             <Link
               href="/"
-              className="text-white hover:text-gray-400 transition-colors font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 border-t border-b border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+              className={mobileNavLinkClassName}
               onClick={() => setIsMenuOpen(false)}
             >
               <Home className="w-4 h-4 md:w-5 md:h-5" />
               <span>Home</span>
             </Link>
+            <span
+              className={mobileDisabledNavClassName}
+              aria-disabled="true"
+              title="Feeding controls are not connected yet"
+            >
+              <Bird className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+              <span>Feeder</span>
+            </span>
+            <Link
+              href="/porch"
+              className={mobileNavLinkClassName}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Camera className="w-4 h-4 md:w-5 md:h-5" />
+              <span>Shelter Cam</span>
+            </Link>
             <Link
               href="/about"
-              className="text-white hover:text-gray-400 transition-colors font-light text-sm md:text-base flex items-center space-x-3 py-2.5 md:py-3 px-4 border-b border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+              className={mobileNavLinkClassName}
               onClick={() => setIsMenuOpen(false)}
             >
               <Info className="w-4 h-4 md:w-5 md:h-5" />

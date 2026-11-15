@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { PageShell } from '@components/PageShell';
 
 const HomePage: React.FC = () => {
@@ -9,51 +10,28 @@ const HomePage: React.FC = () => {
           Critter Canteen
         </h1>
         <p className="text-xs md:text-sm text-white max-w-3xl mx-auto leading-relaxed font-light">
-          An innovative IoT-powered crow feeding and imaging station that
-          combines wildlife observation with cutting-edge technology. Watch our
-          feathered friends enjoy their meals and view captured images in
-          real-time.
+          A cozy porch station for neighborhood wildlife — a heated little
+          shelter for whoever stops by, with a crow feeder on the way. Peek in
+          on Shelter Cam visits anytime.
         </p>
       </div>
-      <div className="text-center mb-6">
-        <h2 className="text-lg md:text-xl font-medium text-white mb-4">
-          System Status
-        </h2>
-      </div>
-      <div className="text-center mb-8">
+
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-10">
+        <Link
+          href="/porch"
+          className="inline-flex items-center justify-center bg-stone-800 text-amber-400 border border-amber-400 font-medium py-3 px-8 rounded-lg hover:bg-stone-700 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+        >
+          Shelter Cam
+        </Link>
         <button
           type="button"
           disabled
-          className="bg-stone-800 text-amber-400 border border-amber-400 font-medium py-3 px-8 rounded-lg opacity-70 cursor-not-allowed"
+          className="bg-stone-800 text-amber-400/70 border border-amber-400/50 font-medium py-3 px-8 rounded-lg opacity-70 cursor-not-allowed"
           aria-disabled="true"
           title="Feeding controls are not connected yet"
         >
-          Feed the Crows
+          Feeder — coming soon
         </button>
-      </div>
-      <div className="flex justify-center items-center gap-8 mb-6">
-        <div className="flex items-start gap-2" data-testid="feeder-status">
-          <span className="text-sm mt-0.5" aria-hidden="true">
-            ⚪
-          </span>
-          <div className="text-left">
-            <h3 className="text-sm font-medium text-white mb-1">
-              Feeder Status
-            </h3>
-            <p className="text-gray-300 text-xs">Status unknown</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-2" data-testid="camera-status">
-          <span className="text-lg -mt-1" aria-hidden="true">
-            📷
-          </span>
-          <div className="text-left">
-            <h3 className="text-sm font-medium text-white mb-1">
-              Camera Status
-            </h3>
-            <p className="text-gray-300 text-xs">Status unknown</p>
-          </div>
-        </div>
       </div>
     </PageShell>
   );

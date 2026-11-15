@@ -21,7 +21,7 @@
 ```
 crow-detector-client/
 ├── src/
-│   ├── app/                 # Routes: /, /about, /porch (unlinked)
+│   ├── app/                 # Routes: /, /about, /porch (Shelter Cam)
 │   ├── components/          # Header, Footer, HomePage, About, PorchClips
 │   ├── constants/           # Shared constants (when present)
 │   ├── hooks/               # Shared hooks (when present)
@@ -119,7 +119,7 @@ Follow `docs/COMMENTS.md`. Prefer self-documenting names; comments explain **why
 
 - **Routes** (`src/app`) → **feature components** → **hooks / util / constants**.
 - Shared chrome: prefer `Header`, `Footer`.
-- Keep the product surface small: Home, About, and the unlinked `/porch` clips page unless product expands it further.
+- Keep the product surface small: Home, About, and `/porch` (Shelter Cam, linked from Home) unless product expands it further.
 
 ### Data
 

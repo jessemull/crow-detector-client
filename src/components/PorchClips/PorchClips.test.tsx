@@ -1,7 +1,6 @@
 import React from 'react';
 import { axe, toHaveNoViolations } from 'jest-axe';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import PorchClips from './PorchClips';
 
 expect.extend(toHaveNoViolations);
@@ -10,6 +9,14 @@ const originalApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 describe('PorchClips', () => {
   const fetchMock = jest.fn();
+  const recordedAt = '2026-11-14T20:00:00.000Z';
+  const recordedLabel = new Date(recordedAt).toLocaleString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api-dev.example.com';
@@ -18,7 +25,7 @@ describe('PorchClips', () => {
       json: async () => [
         {
           name: 'clip-1.mp4',
-          recordedAt: '2026-11-14T20:00:00.000Z',
+          recordedAt,
           playbackUrl: 'https://cdn.example.com/clip-1.mp4?sig=1',
           expiresAt: '2026-11-14T20:05:00.000Z',
         },
@@ -30,22 +37,28 @@ describe('PorchClips', () => {
   afterEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBase;
     fetchMock.mockReset();
+    jest.useRealTimers();
   });
 
-  it('renders porch clips from the API', async () => {
+  it('renders Shelter Cam visits from the API', async () => {
     render(<PorchClips />);
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Porch Clips' })
+      screen.getByRole('heading', { level: 1, name: 'Shelter Cam' })
     ).toBeTruthy();
 
     await waitFor(() => {
       expect(
-        screen.getByRole('heading', { level: 2, name: 'clip-1.mp4' })
+        screen.getByRole('heading', { level: 2, name: recordedLabel })
       ).toBeTruthy();
     });
 
-    expect(screen.getByRole('button', { name: 'Refresh clips' })).toBeTruthy();
+    expect(screen.getByText('1 visit')).toBeTruthy();
+    expect(screen.getByText('Latest')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull();
+    expect(
+      screen.getByLabelText(`Shelter visit recorded ${recordedLabel}`)
+    ).toBeTruthy();
   });
 
   it('shows a configuration error when the API base is missing', async () => {
@@ -68,12 +81,12 @@ describe('PorchClips', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toContain(
-        'Could not load clips'
+        'Could not load visits'
       );
     });
   });
 
-  it('shows an empty state when there are no clips', async () => {
+  it('shows an empty state when there are no visits', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => [],
@@ -82,19 +95,26 @@ describe('PorchClips', () => {
     render(<PorchClips />);
 
     await waitFor(() => {
-      expect(screen.getByText('No porch clips yet.')).toBeTruthy();
+      expect(screen.getByText('No visits yet.')).toBeTruthy();
     });
+    expect(screen.getByText('0 visits')).toBeTruthy();
   });
 
-  it('reloads clips when refresh is pressed', async () => {
-    const user = userEvent.setup();
+  it('polls for new visits while the tab is visible', async () => {
+    jest.useFakeTimers();
     render(<PorchClips />);
 
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'clip-1.mp4' })).toBeTruthy();
+    await act(async () => {
+      jest.advanceTimersByTime(0);
     });
 
-    await user.click(screen.getByRole('button', { name: 'Refresh clips' }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -105,7 +125,7 @@ describe('PorchClips', () => {
     const { container } = render(<PorchClips />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'clip-1.mp4' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: recordedLabel })).toBeTruthy();
     });
 
     expect(await axe(container)).toHaveNoViolations();

@@ -15,19 +15,25 @@ describe('HomePage', () => {
     expect(heading).toBeTruthy();
   });
 
-  it('renders the feed button as a disabled control', () => {
+  it('links to Shelter Cam', () => {
     render(<HomePage />);
-    const button = screen.getByRole('button', { name: 'Feed the Crows' });
+    const link = screen.getByRole('link', { name: 'Shelter Cam' });
+    expect(link).toHaveAttribute('href', '/porch');
+  });
+
+  it('renders the feeder control as coming soon', () => {
+    render(<HomePage />);
+    const button = screen.getByRole('button', { name: 'Feeder — coming soon' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('type', 'button');
     expect(button).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('renders feeder and camera status indicators', () => {
+  it('does not render placeholder system status', () => {
     render(<HomePage />);
-    expect(screen.getByTestId('feeder-status')).toBeTruthy();
-    expect(screen.getByTestId('camera-status')).toBeTruthy();
-    expect(screen.getAllByText('Status unknown')).toHaveLength(2);
+    expect(screen.queryByText('System Status')).toBeNull();
+    expect(screen.queryByTestId('feeder-status')).toBeNull();
+    expect(screen.queryByTestId('camera-status')).toBeNull();
   });
 
   it('has no accessibility violations', async () => {
