@@ -24,7 +24,7 @@ Do **not** lower the threshold. Do **not** delete tests solely to raise coverage
 ## What to test
 
 - Shared chrome: Header (desktop + mobile menu keyboard/`type="button"`), Footer
-- Pages: HomePage, About (headings, primary CTAs/links)
+- Pages: HomePage, About, PorchClips (headings, primary CTAs/links, clip list states)
 - Behavior and accessible names over implementation details
 - Proxy fail-closed behavior may be covered by manual/script smoke; keep unit focus on UI
 

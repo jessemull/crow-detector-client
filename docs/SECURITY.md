@@ -14,7 +14,7 @@
 
 ## Client surface
 
-- Public config only via `NEXT_PUBLIC_*` (e.g. Sentry environment, GA tracking ID).
+- Public config only via `NEXT_PUBLIC_*` (e.g. Sentry environment, GA tracking ID, `NEXT_PUBLIC_API_BASE_URL` for porch clips).
 - Do not embed private keys or signing material in source or the static bundle.
 - Avoid logging tokens, passwords, or full PII to the console in production paths.
 
