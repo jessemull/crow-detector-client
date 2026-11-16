@@ -3,7 +3,7 @@
 
 .DEFAULT_GOAL := help
 
-.PHONY: help lint lint-fix format typecheck test test-coverage e2e lighthouse build preflight security dev
+.PHONY: help lint lint-fix format typecheck test test-coverage e2e lighthouse build preflight security dev stack-create
 
 help: ## Help@show targets
 	@printf 'Critter Canteen — make <target>\n\n'
@@ -52,3 +52,11 @@ security: ## Quality@npm audit
 
 dev: ## Local@Next.js dev server
 	npm run dev
+
+# ── Infra ──────────────────────────────────────────────────────────
+
+# Usage: make stack-create ENV=prod   or   make stack-create ENV=dev
+ENV ?= prod
+
+stack-create: ## Infra@create/update client CFN stack (ENV=prod|dev)
+	./scripts/create-client-stack.sh "$(ENV)"

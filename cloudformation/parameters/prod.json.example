@@ -1,0 +1,10 @@
+{
+  "BucketName": "crow-detector-client",
+  "ACMCertificateArn": "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID",
+  "HostedZoneId": "ZXXXXXXXXXXXXXXXXXXXX",
+  "CloudFrontHostedZoneId": "Z2FDTNDATAQYW2",
+  "Environment": "prod",
+  "CreateDNSRecords": "true",
+  "EnableSignedCookiesCheck": "false",
+  "CloudFrontKeyGroupId": ""
+}

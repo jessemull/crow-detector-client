@@ -13,7 +13,7 @@
 | `.github/workflows/deploy.yml`       | `workflow_dispatch` (test/production) | Manual deploy with same post-deploy e2e/LH rollback pattern                                        |
 | `.github/workflows/rollback.yml`     | `workflow_dispatch`                   | Restore named S3 backup + CloudFront invalidate                                                    |
 
-Do **not** rewrite these lightly. Document changes in the PR and treat as human-review required (`docs/GOVERNANCE.md`).
+Production hosting stack (S3/CloudFront/Route53) is created with CloudFormation — see **[`docs/PRODUCTION.md`](PRODUCTION.md)** and `make stack-create ENV=prod`. Do **not** rewrite workflows lightly; treat CI/CD and CFN changes as human-review required (`docs/GOVERNANCE.md`).
 
 ### Quality jobs (PR)
 
