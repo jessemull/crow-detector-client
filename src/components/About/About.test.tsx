@@ -1,10 +1,6 @@
-import React, {
-  AnchorHTMLAttributes,
-  ImgHTMLAttributes,
-  ReactNode,
-} from 'react';
+import React, { AnchorHTMLAttributes, ReactNode } from 'react';
 import { axe, toHaveNoViolations } from 'jest-axe';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import About from './About';
 
 expect.extend(toHaveNoViolations);
@@ -26,33 +22,6 @@ jest.mock('next/link', () => {
   return MockLink;
 });
 
-jest.mock('next/image', () => {
-  type MockImageProps = Pick<
-    ImgHTMLAttributes<HTMLImageElement>,
-    'alt' | 'className' | 'style'
-  > & {
-    src: string;
-    fill?: boolean;
-    priority?: boolean;
-    sizes?: string;
-  };
-
-  const MockImage = ({ src, alt, className, style }: MockImageProps) => {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt={alt ?? ''}
-        className={className}
-        style={style}
-        data-testid="about-image"
-      />
-    );
-  };
-  MockImage.displayName = 'MockImage';
-  return MockImage;
-});
-
 describe('About', () => {
   it('renders the page heading', () => {
     render(<About />);
@@ -66,10 +35,22 @@ describe('About', () => {
 
   it('renders the locked about splash image', () => {
     render(<About />);
-    const image = screen.getByTestId('about-image');
-    expect(image).toHaveAttribute('src', '/images/hero/narubono.jpg');
+    const image = screen.getByTestId('splash-image');
+    expect(image).toHaveAttribute('src', '/images/hero/narubono-1920.jpg');
     expect(image.className).toContain('!-top-[20%]');
     expect(image.className).toContain('!h-[120%]');
+  });
+
+  it('keeps the heading when the splash fails', () => {
+    render(<About />);
+    fireEvent.error(screen.getByTestId('splash-image'));
+    expect(screen.queryByTestId('splash-image')).toBeNull();
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Wildlife care, engineered end to end.',
+      })
+    ).toBeTruthy();
   });
 
   it('describes the station and the tech stack', () => {

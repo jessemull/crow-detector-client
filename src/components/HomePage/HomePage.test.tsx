@@ -1,11 +1,7 @@
 import HomePage from './HomePage';
-import React, {
-  AnchorHTMLAttributes,
-  ImgHTMLAttributes,
-  ReactNode,
-} from 'react';
+import React, { AnchorHTMLAttributes, ReactNode } from 'react';
 import { axe, toHaveNoViolations } from 'jest-axe';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 expect.extend(toHaveNoViolations);
 
@@ -26,33 +22,6 @@ jest.mock('next/link', () => {
   };
   MockLink.displayName = 'MockLink';
   return MockLink;
-});
-
-jest.mock('next/image', () => {
-  type MockImageProps = Pick<
-    ImgHTMLAttributes<HTMLImageElement>,
-    'alt' | 'className' | 'style'
-  > & {
-    src: string;
-    fill?: boolean;
-    priority?: boolean;
-    sizes?: string;
-  };
-
-  const MockImage = ({ src, alt, className, style }: MockImageProps) => {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt={alt ?? ''}
-        className={className}
-        style={style}
-        data-testid="hero-image"
-      />
-    );
-  };
-  MockImage.displayName = 'MockImage';
-  return MockImage;
 });
 
 describe('HomePage', () => {
@@ -89,10 +58,19 @@ describe('HomePage', () => {
 
   it('renders the locked active hero image', () => {
     render(<HomePage />);
-    expect(screen.getByTestId('hero-image')).toHaveAttribute(
-      'src',
-      '/images/hero/spencer.jpg'
-    );
+    const image = screen.getByTestId('splash-image');
+    expect(image).toHaveAttribute('src', '/images/hero/spencer-1280.jpg');
+    expect(image.className).toContain('!-top-[25%]');
+    expect(image.className).toContain('!h-[125%]');
+  });
+
+  it('keeps the heading when the splash fails', () => {
+    render(<HomePage />);
+    fireEvent.error(screen.getByTestId('splash-image'));
+    expect(screen.queryByTestId('splash-image')).toBeNull();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Critter Canteen' })
+    ).toBeTruthy();
   });
 
   it('does not render a hero review hint', () => {

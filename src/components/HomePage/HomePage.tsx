@@ -1,21 +1,31 @@
 import React from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { getActiveHero } from '@constants/heroes';
+import { preload } from 'react-dom';
+import SplashBackground from '@components/SplashBackground';
+import {
+  SPLASH_SIZES,
+  getActiveHero,
+  splashFallback,
+  splashSrcSet,
+} from '@constants/heroes';
 
 const HomePage: React.FC = () => {
   const hero = getActiveHero();
+  const fallback = splashFallback(hero);
+
+  preload(fallback.webp, {
+    as: 'image',
+    fetchPriority: 'high',
+    imageSrcSet: splashSrcSet(hero, 'webp'),
+    imageSizes: SPLASH_SIZES,
+    type: 'image/webp',
+  });
 
   return (
     <section className="relative isolate min-h-[calc(100vh+4.5rem)] overflow-hidden bg-stone-950">
-      <Image
-        src={hero.src}
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover !-top-[25%] !bottom-auto !h-[125%]"
-        style={{ objectPosition: hero.objectPosition }}
+      <SplashBackground
+        image={hero}
+        frameClassName="!-top-[25%] !bottom-auto !h-[125%]"
       />
       <div
         className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/35 to-stone-950/25"

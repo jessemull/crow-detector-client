@@ -1,22 +1,32 @@
 import React from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
+import { preload } from 'react-dom';
 import { ArrowRight } from 'lucide-react';
-import { getAboutImage } from '@constants/heroes';
+import SplashBackground from '@components/SplashBackground';
+import {
+  SPLASH_SIZES,
+  getAboutImage,
+  splashFallback,
+  splashSrcSet,
+} from '@constants/heroes';
 
 const About: React.FC = () => {
   const aboutImage = getAboutImage();
+  const fallback = splashFallback(aboutImage);
+
+  preload(fallback.webp, {
+    as: 'image',
+    fetchPriority: 'high',
+    imageSrcSet: splashSrcSet(aboutImage, 'webp'),
+    imageSizes: SPLASH_SIZES,
+    type: 'image/webp',
+  });
 
   return (
     <section className="relative isolate min-h-[calc(100vh+4.5rem)] overflow-hidden bg-stone-950">
-      <Image
-        src={aboutImage.src}
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover !-top-[20%] !bottom-auto !h-[120%]"
-        style={{ objectPosition: aboutImage.objectPosition }}
+      <SplashBackground
+        image={aboutImage}
+        frameClassName="!-top-[20%] !bottom-auto !h-[120%]"
       />
       <div
         className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/55"
