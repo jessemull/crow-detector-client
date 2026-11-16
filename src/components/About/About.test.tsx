@@ -88,6 +88,12 @@ describe('About', () => {
       '/'
     );
     expect(screen.queryByRole('link', { name: /Shelter Cam/i })).toBeNull();
+    expect(
+      screen.getByRole('heading', { level: 1 }).parentElement?.className
+    ).toContain('justify-start');
+    expect(
+      screen.getByRole('heading', { level: 1 }).parentElement?.className
+    ).toContain('md:justify-center');
   });
 
   it('has no accessibility violations', async () => {
