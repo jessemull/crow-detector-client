@@ -298,15 +298,16 @@ describe('Header', () => {
     spy.mockRestore();
   });
 
-  it('locks background scroll while the mobile menu is open', () => {
+  it('leaves page scroll enabled while the mobile menu is open', () => {
     render(<Header />);
 
-    expect(document.body.style.overflow).toBe('');
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.body.style.overflow).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
 
     fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
     expect(document.body.style.overflow).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
   });
 
   it('exposes visible focus styles on the menu toggle', () => {
@@ -388,12 +389,17 @@ describe('Header', () => {
     const shelterLink = mobileNav.querySelector('a[href="/porch"]');
     const aboutLink = mobileNav.querySelector('a[href="/about"]');
     const feeder = within(mobileNav).getByRole('button', { name: 'Feeder' });
+    const contact = within(mobileNav).getByRole('button', { name: 'Contact' });
 
     expect(homeLink?.querySelector('svg')).toBeTruthy();
     expect(shelterLink?.querySelector('svg')).toBeTruthy();
     expect(aboutLink?.querySelector('svg')).toBeTruthy();
     expect(feeder.querySelector('svg')).toBeTruthy();
     expect(feeder).toBeDisabled();
+    expect(mobileNav.querySelector('a[href="/contact"]')).toBeNull();
+    expect(contact.querySelector('svg')).toBeTruthy();
+    expect(contact).toBeDisabled();
+    expect(contact.className).not.toContain('bg-cc-yellow');
   });
 
   it('closes mobile menu when Shelter Cam is clicked', () => {

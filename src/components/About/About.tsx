@@ -23,7 +23,7 @@ const About: React.FC = () => {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 pb-24 pt-28 text-center md:px-10">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-start px-6 pb-24 pt-28 text-center md:justify-center md:px-10">
         <h1 className="mb-5 max-w-4xl font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-white md:text-6xl md:leading-[1.05] lg:text-[80px] lg:leading-[80px] lg:tracking-[-1.6px]">
           Wildlife care, engineered end to end.
         </h1>

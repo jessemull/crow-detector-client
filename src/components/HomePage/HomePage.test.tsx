@@ -69,7 +69,7 @@ describe('HomePage', () => {
     render(<HomePage />);
     const link = screen.getByRole('link', { name: 'Shelter Cam' });
     expect(link).toHaveAttribute('href', '/porch');
-    expect(link.className).toContain('bg-cc-yellow');
+    expect(link.className).toContain('bg-cc-lime');
   });
 
   it('renders the feeder control as disabled', () => {
