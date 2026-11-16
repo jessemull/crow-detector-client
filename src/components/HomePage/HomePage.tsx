@@ -33,7 +33,7 @@ const HomePage: React.FC = () => {
             Crows eat from an automated feeder. A heated shelter stays open for
             whoever else stops by.
           </p>
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <div className="flex flex-row items-center gap-3">
             <button
               type="button"
               disabled
