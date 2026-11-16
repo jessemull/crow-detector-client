@@ -67,22 +67,26 @@ create a duplicate if the name matches.
 
 ## Post-merge ops checklist (go live)
 
-1. **Stack** — Already live (`crow-detector-client-s3-cloudfront-route-53-stack-prod`). Re-run `make stack-create ENV=prod` only to **update** the template; do not create a second stack.
-2. **GitHub secrets** — set/confirm these **exact** live values:
+Complete after the IaC MR is on `main` (or from a branch with AWS access):
 
-   | Secret                                | Must be                            |
-   | ------------------------------------- | ---------------------------------- |
-   | `AWS_S3_BUCKET_PROD`                  | `crow-detector-client-prod`        |
-   | `AWS_S3_BUCKET_BACKUP_PROD`           | `crow-detector-client-backup-prod` |
-   | `AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD` | `E6LTPZFHOXVP8`                    |
-   | `SENTRY_ENVIRONMENT_PROD`             | `production`                       |
-   | `GA_TRACKING_ID_PROD`                 | your prod GA id                    |
-   | `NEXT_PUBLIC_API_BASE_URL_PROD`       | optional until API prod exists     |
+1. **Audit** — Confirm whether `crow-detector-client-prod` (or an older prod stack) and buckets already exist; create vs update accordingly.
+2. **Params** — Copy `prod.json.example` → `prod.json`; fill real `ACMCertificateArn` and `HostedZoneId`.
+3. **Stack** — `make stack-create ENV=prod`; save printed outputs.
+4. **GitHub secrets** (Actions → repo secrets):
 
-   Shared (used by test too): `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, Sentry DSN/org/token.
+   | Secret                                | Value                                                                                      |
+   | ------------------------------------- | ------------------------------------------------------------------------------------------ |
+   | `AWS_S3_BUCKET_PROD`                  | Stack `S3BucketName`                                                                       |
+   | `AWS_S3_BUCKET_BACKUP_PROD`           | Stack `BackupBucketName`                                                                   |
+   | `AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD` | Stack `CloudFrontDistributionId`                                                           |
+   | `SENTRY_ENVIRONMENT_PROD`             | `production` (or your label)                                                               |
+   | `GA_TRACKING_ID_PROD`                 | Prod GA measurement ID                                                                     |
+   | `NEXT_PUBLIC_API_BASE_URL_PROD`       | Prod Nest API base when ready; omit/placeholder until then (`/porch` shows not configured) |
 
-3. **Deploy site** — Actions → **Deploy** → **`production`**. That uploads current `main` to S3. Merge alone does **not** update www.
-4. **Smoke** — `https://www.crittercanteen.com` (today still an older Aug 2026 build until Deploy runs).
+   Shared secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, Sentry org/token/DSN) should already exist for test deploys.
+
+5. **Deploy** — Actions → **Deploy** → environment **`production`** ([`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)). Merge to `main` does **not** promote to prod.
+6. **Smoke** — `https://www.crittercanteen.com` Home and About; Cypress/LH run against live www in that workflow. `/porch` waits on server prod + API URL secret + redeploy.
 
 ---
 
