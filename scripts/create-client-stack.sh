@@ -15,7 +15,8 @@ fi
 
 PARAMS_FILE="${ROOT_DIR}/cloudformation/parameters/${ENV_NAME}.json"
 TEMPLATE_FILE="${ROOT_DIR}/cloudformation/crow-detector-client-s3-cloudfront-route-53-stack.yaml"
-STACK_NAME="crow-detector-client-${ENV_NAME}"
+# Match stacks already in the Critter Canteen AWS account (override with STACK_NAME=...).
+STACK_NAME="${STACK_NAME:-crow-detector-client-s3-cloudfront-route-53-stack-${ENV_NAME}}"
 
 if [[ ! -f "${PARAMS_FILE}" ]]; then
   echo "Missing ${PARAMS_FILE}" >&2

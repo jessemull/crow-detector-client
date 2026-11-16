@@ -12,14 +12,15 @@ Shelter Cam (`/porch`) needs a separate server/API prod stand-up and `NEXT_PUBLI
 
 Template: [`cloudformation/crow-detector-client-s3-cloudfront-route-53-stack.yaml`](../cloudformation/crow-detector-client-s3-cloudfront-route-53-stack.yaml)
 
-| Resource         | Prod (`Environment=prod`)                      | Test (`Environment=dev`)                               |
-| ---------------- | ---------------------------------------------- | ------------------------------------------------------ |
-| Site bucket      | `crow-detector-client-production`              | `crow-detector-client-test`                            |
-| Backup bucket    | `crow-detector-client-backup-production`       | `crow-detector-client-backup-test`                     |
-| DNS (if enabled) | `www.crittercanteen.com`, `crittercanteen.com` | `www.dev.crittercanteen.com`, `dev.crittercanteen.com` |
-| Signed cookies   | Off                                            | On (requires Key Group)                                |
+| Resource         | Prod (`Environment=prod`)                                | Test (`Environment=dev`)                               |
+| ---------------- | -------------------------------------------------------- | ------------------------------------------------------ |
+| Site bucket      | `crow-detector-client-prod`                              | `crow-detector-client-dev`                             |
+| Backup bucket    | `crow-detector-client-backup-prod`                       | `crow-detector-client-backup-dev`                      |
+| DNS (if enabled) | `www.crittercanteen.com`, `crittercanteen.com`           | `www.dev.crittercanteen.com`, `dev.crittercanteen.com` |
+| Signed cookies   | Off                                                      | On (requires Key Group)                                |
+| Stack name       | `crow-detector-client-s3-cloudfront-route-53-stack-prod` | `…-stack-dev`                                          |
 
-Bucket suffixes match GitHub secrets in [`env.example`](../env.example) (`AWS_S3_BUCKET_PROD`, etc.).
+Live account already has these stacks/buckets. GitHub secrets must use the **`-prod` / `-dev`** names above (not `-production` / `-test`).
 
 ---
 
@@ -57,7 +58,10 @@ Filled `cloudformation/parameters/*.json` files are gitignored; only `*.example`
 
 The script prints stack outputs and the GitHub secret names to set.
 
-**Existing stacks:** If a prod stack already exists under another name or with old `*-prod` bucket names, reconcile before create (rename secrets, or update the existing stack carefully — S3 bucket renames require replacement). Prefer `aws cloudformation describe-stacks` first.
+**Existing stacks:** Critter Canteen already has
+`crow-detector-client-s3-cloudfront-route-53-stack-prod` (and `-dev`). The create script
+defaults to those stack names. Running it again **updates** the stack; it does not
+create a duplicate if the name matches.
 
 ---
 
