@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, X, Home, Info, Camera, Bird } from 'lucide-react';
+import { Menu, X, Home, Info, Camera, Bird, Mail } from 'lucide-react';
 import HeaderMark from './HeaderMark';
 
 /** Earthon Menu List pill: canvas, radius 244px, padding 5px */
@@ -25,9 +25,6 @@ const navDisabledClassName =
 
 const contactClassName =
   'hidden lg:inline-flex h-11 cursor-not-allowed items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink opacity-70';
-
-const mobileContactClassName =
-  'mx-4 mt-4 inline-flex h-11 cursor-not-allowed items-center justify-center rounded-[50px] bg-cc-yellow px-6 text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink opacity-70';
 
 const mobileNavLinkClassName =
   'flex items-center space-x-3 px-4 py-2.5 font-urbanist text-[16px] font-medium tracking-[-0.32px] text-cc-ink transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink md:py-3';
@@ -192,7 +189,7 @@ const Header: React.FC = () => {
       {isMenuOpen && (
         <div
           ref={dialogRef}
-          className="pointer-events-auto absolute left-0 top-0 z-50 min-h-screen min-w-72 border-r border-stone-200 bg-white shadow-lg lg:hidden"
+          className="pointer-events-auto fixed inset-y-0 left-0 z-[60] h-dvh min-w-72 overflow-y-auto border-r border-stone-200 bg-white shadow-lg lg:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Mobile menu"
@@ -254,11 +251,12 @@ const Header: React.FC = () => {
             </Link>
             <button
               type="button"
-              className={mobileContactClassName}
+              className={mobileDisabledNavClassName}
               disabled
               title="Contact form coming soon"
             >
-              Contact
+              <Mail className="h-4 w-4" aria-hidden="true" />
+              <span>Contact</span>
             </button>
           </nav>
         </div>
