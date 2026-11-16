@@ -22,7 +22,7 @@ Every agent MUST read the following documents **in order** before making any cha
 
 Read items 5–10 on every task. Do not skip them because the work “seems unrelated”; agents cannot know upfront which rules will apply.
 
-Domain docs to load when the task touches that area: `docs/NETWORKING.md`, `docs/ERROR_HANDLING.md`, `docs/PERFORMANCE.md`, `docs/ACCESSIBILITY.md`, `docs/ANALYTICS.md`, `docs/CONTRIBUTING.md`.
+Domain docs to load when the task touches that area: `docs/NETWORKING.md`, `docs/ERROR_HANDLING.md`, `docs/PERFORMANCE.md`, `docs/ACCESSIBILITY.md`, `docs/ANALYTICS.md`, `docs/CONTRIBUTING.md`, `docs/DEVICES.md` (Shelter Cam / physical capture assumptions; full plan in crow-detector-server).
 
 For PR or repo reviews, also read **`docs/REVIEW.md`**.
 

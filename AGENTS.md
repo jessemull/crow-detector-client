@@ -120,6 +120,7 @@ Follow `docs/COMMENTS.md`. Prefer self-documenting names; comments explain **why
 - **Routes** (`src/app`) → **feature components** → **hooks / util / constants**.
 - Shared chrome: prefer `Header`, `Footer`.
 - Keep the product surface small: Home, About, and `/porch` (Shelter Cam, linked from Home) unless product expands it further.
+- Shelter Cam capture assumptions: see `docs/DEVICES.md` (pointer to server `docs/DEVICES.md`). Do not assume an on-porch Pi CSI camera.
 
 ### Data
 
