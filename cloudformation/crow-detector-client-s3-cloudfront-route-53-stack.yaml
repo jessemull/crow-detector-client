@@ -1,28 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: >-
-  Critter Canteen static client — S3 + CloudFront + optional Route53.
-  Environment=dev maps buckets to *-test (CI test secrets);
-  Environment=prod maps to *-production (CI prod secrets).
 
 Parameters:
   BucketName:
     Type: String
-    Description: >-
-      Base name for site/backup buckets (e.g. crow-detector-client).
-      Site becomes ${BucketName}-test|production; backup ${BucketName}-backup-test|production.
+    Description: The name of the S3 bucket for static website hosting.
   ACMCertificateArn:
     Type: String
-    Description: The ARN of the ACM certificate for the CloudFront distribution (must be us-east-1).
+    Description: The ARN of the ACM certificate for the CloudFront distribution.
   HostedZoneId:
     Type: String
     Description: The ID of the Route 53 hosted zone.
   CloudFrontHostedZoneId:
     Type: String
-    Description: The Hosted Zone ID for CloudFront alias records (usually Z2FDTNDATAQYW2).
+    Description: The Hosted Zone ID for CloudFront alias record.
   Environment:
     Type: String
     Default: 'dev'
-    Description: 'Logical environment (dev or prod). Controls DNS aliases and CI bucket suffixes.'
+    Description: 'The environment for the deployment (dev or prod).'
     AllowedValues:
       - dev
       - prod
@@ -36,37 +30,20 @@ Parameters:
       - 'false'
   EnableSignedCookiesCheck:
     Type: String
-    Description: "Set to 'true' to enable signed cookies (test CDN). Prod should be 'false'."
+    Description: "Set to 'true' to enable signed cookies check, 'false' to disable."
     AllowedValues:
       - 'true'
       - 'false'
   CloudFrontKeyGroupId:
     Type: String
-    Description: 'Existing CloudFront Key Group ID for signed cookies (test only; leave empty for prod).'
+    Description: 'The ID of an existing CloudFront Key Group to use for signed cookies.'
     Default: ''
-
-Mappings:
-  EnvConfig:
-    # Align with GitHub secrets AWS_S3_BUCKET_DEV / _PROD in env.example
-    dev:
-      BucketSuffix: test
-    prod:
-      BucketSuffix: production
-
-Conditions:
-  IsProd: !Equals [!Ref Environment, 'prod']
-  CreateDNSRecordTrue: !Equals [!Ref CreateDNSRecords, 'true']
-  EnableSignedCookiesCheckCondition:
-    !Equals [!Ref EnableSignedCookiesCheck, 'true']
 
 Resources:
   StaticWebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub
-        - '${Base}-${Suffix}'
-        - Base: !Ref BucketName
-          Suffix: !FindInMap [EnvConfig, !Ref Environment, BucketSuffix]
+      BucketName: !Sub '${BucketName}-${Environment}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
@@ -76,10 +53,7 @@ Resources:
   BackupBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub
-        - '${Base}-backup-${Suffix}'
-        - Base: !Ref BucketName
-          Suffix: !FindInMap [EnvConfig, !Ref Environment, BucketSuffix]
+      BucketName: !Sub '${BucketName}-backup-${Environment}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
@@ -109,9 +83,7 @@ Resources:
             Principal:
               AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}'
             Action: 's3:GetObject'
-            Resource: !Sub
-              - '${BucketArn}/*'
-              - BucketArn: !GetAtt StaticWebsiteBucket.Arn
+            Resource: !Sub 'arn:aws:s3:::${BucketName}-${Environment}/*'
 
   CompressionCachePolicy:
     Type: AWS::CloudFront::CachePolicy
@@ -214,6 +186,12 @@ Resources:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
         HostedZoneId: !Ref CloudFrontHostedZoneId
 
+Conditions:
+  IsProd: !Equals [!Ref Environment, 'prod']
+  CreateDNSRecordTrue: !Equals [!Ref CreateDNSRecords, 'true']
+  EnableSignedCookiesCheckCondition:
+    !Equals [!Ref EnableSignedCookiesCheck, 'true']
+
 Outputs:
   CloudFrontDistributionId:
     Description: 'CloudFront Distribution ID'
@@ -228,13 +206,13 @@ Outputs:
       Name: !Sub '${AWS::StackName}-CloudFrontDistributionDomainName'
 
   S3BucketName:
-    Description: 'S3 Bucket Name (matches AWS_S3_BUCKET_DEV / _PROD)'
+    Description: 'S3 Bucket Name'
     Value: !Ref StaticWebsiteBucket
     Export:
       Name: !Sub '${AWS::StackName}-S3BucketName'
 
   BackupBucketName:
-    Description: 'Backup S3 Bucket Name (matches AWS_S3_BUCKET_BACKUP_DEV / _PROD)'
+    Description: 'Backup S3 Bucket Name'
     Value: !Ref BackupBucket
     Export:
       Name: !Sub '${AWS::StackName}-BackupBucketName'

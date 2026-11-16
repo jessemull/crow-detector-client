@@ -38,10 +38,6 @@
 
 ---
 
-## Production stand-up
-
-First-time (or rebuilt) production CloudFront/S3: see **[`docs/PRODUCTION.md`](PRODUCTION.md)** (`make stack-create ENV=prod`, secrets, then Deploy → `production`).
-
 ## Hotfix
 
 Prefer Actions rollback for production. Coordinate with humans for prod deploys.

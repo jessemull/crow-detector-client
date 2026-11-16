@@ -64,7 +64,3 @@ public/data/data.json
 
 # next analyzer
 /analyze
-
-# CloudFormation filled parameter files (keep *.example)
-cloudformation/parameters/*.json
-!cloudformation/parameters/*.json.example
