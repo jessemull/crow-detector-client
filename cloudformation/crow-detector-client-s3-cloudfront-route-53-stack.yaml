@@ -1,15 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
   Critter Canteen static client — S3 + CloudFront + optional Route53.
-  Environment=dev → buckets *-dev; Environment=prod → *-prod
-  (matches live stacks and typical GitHub AWS_S3_BUCKET_* secrets).
+  Environment=dev maps buckets to *-test (CI test secrets);
+  Environment=prod maps to *-production (CI prod secrets).
 
 Parameters:
   BucketName:
     Type: String
     Description: >-
       Base name for site/backup buckets (e.g. crow-detector-client).
-      Site becomes ${BucketName}-dev|prod; backup ${BucketName}-backup-dev|prod.
+      Site becomes ${BucketName}-test|production; backup ${BucketName}-backup-test|production.
   ACMCertificateArn:
     Type: String
     Description: The ARN of the ACM certificate for the CloudFront distribution (must be us-east-1).
@@ -47,11 +47,11 @@ Parameters:
 
 Mappings:
   EnvConfig:
-    # Live account buckets: crow-detector-client-dev / crow-detector-client-prod
+    # Align with GitHub secrets AWS_S3_BUCKET_DEV / _PROD in env.example
     dev:
-      BucketSuffix: dev
+      BucketSuffix: test
     prod:
-      BucketSuffix: prod
+      BucketSuffix: production
 
 Conditions:
   IsProd: !Equals [!Ref Environment, 'prod']
