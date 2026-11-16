@@ -82,6 +82,10 @@ describe('PorchClips', () => {
     expect(status.querySelectorAll('article')).toHaveLength(2);
     expect(status.querySelector('.aspect-video')).toBeTruthy();
     expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Shelter Cam' })
+        .parentElement?.className
+    ).toContain('mb-10');
 
     await act(async () => {
       resolveFetch?.({
@@ -104,16 +108,25 @@ describe('PorchClips', () => {
     });
   });
 
-  it('shows a configuration error when the API base is missing', async () => {
+  it('shows a status line when the API base is missing', async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     render(<PorchClips />);
 
     await waitFor(() => {
-      expect(screen.getByRole('alert').textContent).toContain('not configured');
+      expect(
+        screen.getByText(
+          'Visits will appear here when the shelter camera is online.'
+        )
+      ).toBeTruthy();
     });
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Shelter Cam' })
+        .parentElement?.className
+    ).toContain('mb-4');
   });
 
-  it('shows an error when the API fails', async () => {
+  it('shows a status line when the API fails', async () => {
     fetchMock.mockResolvedValue({
       ok: false,
       status: 500,
@@ -123,13 +136,12 @@ describe('PorchClips', () => {
     render(<PorchClips />);
 
     await waitFor(() => {
-      expect(screen.getByRole('alert').textContent).toContain(
-        'Could not load visits'
-      );
+      expect(screen.getByText("Can't load visits right now.")).toBeTruthy();
     });
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('shows an empty state when there are no visits', async () => {
+  it('shows an empty status line when there are no visits', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => [],
@@ -140,7 +152,7 @@ describe('PorchClips', () => {
     await waitFor(() => {
       expect(screen.getByText('No visits yet.')).toBeTruthy();
     });
-    expect(screen.getByText('0 visits')).toBeTruthy();
+    expect(screen.queryByText('0 visits')).toBeNull();
   });
 
   it('polls for new visits while the tab is visible', async () => {
