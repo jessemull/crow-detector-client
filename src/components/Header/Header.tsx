@@ -54,9 +54,6 @@ const Header: React.FC = () => {
       wasMenuOpenRef.current = true;
       closeButtonRef.current?.focus();
 
-      const previousOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-
       const inertTargets = [
         chromeRef.current,
         document.querySelector('main'),
@@ -102,7 +99,6 @@ const Header: React.FC = () => {
       document.addEventListener('keydown', onKeyDown);
       return () => {
         document.removeEventListener('keydown', onKeyDown);
-        document.body.style.overflow = previousOverflow;
         for (const element of inertTargets) {
           element.removeAttribute('inert');
         }

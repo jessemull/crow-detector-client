@@ -298,15 +298,16 @@ describe('Header', () => {
     spy.mockRestore();
   });
 
-  it('locks background scroll while the mobile menu is open', () => {
+  it('leaves page scroll enabled while the mobile menu is open', () => {
     render(<Header />);
 
-    expect(document.body.style.overflow).toBe('');
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.body.style.overflow).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
 
     fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
     expect(document.body.style.overflow).toBe('');
+    expect(document.body.style.paddingRight).toBe('');
   });
 
   it('exposes visible focus styles on the menu toggle', () => {
