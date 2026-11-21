@@ -32,6 +32,11 @@ const About: React.FC = () => {
         className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/25 to-black/55"
         aria-hidden="true"
       />
+      {/* Soft copy wash — feathered, no box edge; phones only where the birds fight the type. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-[70%] bg-[radial-gradient(ellipse_at_50%_30%,rgba(0,0,0,0.45)_0%,rgba(0,0,0,0.22)_45%,transparent_72%)] md:hidden"
+        aria-hidden="true"
+      />
 
       <div className="relative z-10 flex min-h-dvh flex-col items-center justify-start px-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+4rem))] pt-28 text-center md:justify-center md:px-10">
         <h1 className="mb-5 max-w-4xl font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-white md:text-6xl md:leading-[1.05] lg:text-[80px] lg:leading-[80px] lg:tracking-[-1.6px]">
