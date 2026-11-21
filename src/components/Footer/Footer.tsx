@@ -12,8 +12,10 @@ const Footer: React.FC = () => {
     <footer
       className={
         floatsOverHero
-          ? // Pull up over the hero’s extra bottom band — no bar, still below the fold.
-            'relative z-20 -mt-[4.5rem] border-0 bg-transparent py-6'
+          ? // Pull up over the hero spill. Use stone-950 (not transparent): on
+            // portrait the copyright wraps taller than the spill, and transparent
+            // text sat on body canvas (#f5f5f5) — white-on-white “cut off” footer.
+            'relative z-20 -mt-[4.5rem] border-0 bg-stone-950 py-6'
           : // Full-height canvas above; copyright only after scroll — never a hairline.
             'mt-auto border-0 bg-cc-canvas py-6'
       }
