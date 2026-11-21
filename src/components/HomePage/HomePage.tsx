@@ -22,7 +22,7 @@ const HomePage: React.FC = () => {
   });
 
   return (
-    <section className="relative isolate min-h-[calc(100vh+4.5rem)] overflow-hidden bg-stone-950">
+    <section className="relative isolate min-h-[calc(100dvh+4.5rem)] overflow-hidden bg-stone-950">
       <SplashBackground
         image={hero}
         frameClassName="!-top-[25%] !bottom-auto !h-[125%]"
@@ -31,7 +31,8 @@ const HomePage: React.FC = () => {
         className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/35 to-stone-950/25"
         aria-hidden="true"
       />
-      <div className="relative z-10 flex min-h-screen flex-col justify-end px-6 pb-16 pt-28 md:px-10 md:pb-24 lg:px-16">
+      {/* dvh + safe-area: mobile browser chrome sits on 100vh and ate bottom-pinned CTAs. */}
+      <div className="relative z-10 flex min-h-dvh flex-col justify-end px-6 pb-[max(5rem,calc(env(safe-area-inset-bottom,0px)+3.5rem))] pt-28 md:px-10 md:pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))] lg:px-16">
         <div className="max-w-3xl">
           <p className="mb-3 text-[0.7rem] font-medium uppercase tracking-[0.35em] text-cc-cream-muted/90 md:text-xs">
             Neighborhood wildlife station

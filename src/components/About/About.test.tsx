@@ -37,8 +37,12 @@ describe('About', () => {
     render(<About />);
     const image = screen.getByTestId('splash-image');
     expect(image).toHaveAttribute('src', '/images/hero/narubono-1920.jpg');
-    expect(image.className).toContain('!-top-[20%]');
-    expect(image.className).toContain('!h-[120%]');
+    expect(image.className).toContain('!top-0');
+    expect(image.className).toContain('!h-full');
+    expect(image.className).toContain('md:!-top-[20%]');
+    expect(image.className).toContain('md:!h-[120%]');
+    expect(image.style.getPropertyValue('--splash-op-mobile')).toBe('48% 8%');
+    expect(image.style.getPropertyValue('--splash-op')).toBe('50% 50%');
   });
 
   it('keeps the heading when the splash fails', () => {

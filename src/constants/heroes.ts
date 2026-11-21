@@ -7,7 +7,13 @@ export type SplashVariant = {
 
 export type HeroImage = {
   id: string;
+  /** Desktop / default `object-position` for cover crops. */
   objectPosition: string;
+  /**
+   * Narrow-viewport cover crop. Landscape heroes need a tighter focal point on
+   * phones or the subject rides the edge under `object-cover`.
+   */
+  objectPositionMobile?: string;
   variants: SplashVariant[];
 };
 
@@ -43,6 +49,8 @@ const HERO_IMAGES: Record<string, HeroImage> = {
   narubono: {
     id: 'narubono',
     objectPosition: '50% 50%',
+    // Phone cover: pin to upper sky so birds/branches fall under the copy, not through it.
+    objectPositionMobile: '48% 8%',
     variants: [
       {
         width: 640,

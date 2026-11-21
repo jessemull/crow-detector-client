@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   SPLASH_SIZES,
   splashFallback,
@@ -50,8 +50,14 @@ const SplashBackground = ({ image, frameClassName }: SplashBackgroundProps) => {
         height={fallback.height}
         alt=""
         fetchPriority="high"
-        className={`absolute left-0 w-full object-cover ${frameClassName}`}
-        style={{ objectPosition: image.objectPosition }}
+        className={`absolute left-0 w-full object-cover [object-position:var(--splash-op-mobile)] md:[object-position:var(--splash-op)] ${frameClassName}`}
+        style={
+          {
+            '--splash-op': image.objectPosition,
+            '--splash-op-mobile':
+              image.objectPositionMobile ?? image.objectPosition,
+          } as CSSProperties
+        }
         onError={() => setFailed(true)}
         data-testid="splash-image"
       />
