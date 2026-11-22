@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { Menu, X, Home, Info, Camera, Bird, Mail } from 'lucide-react';
+import { CONTACT_MAILTO } from '@constants/contact';
 import HeaderMark from './HeaderMark';
 
 /** Earthon Menu List pill: canvas, radius 244px, padding 5px */
@@ -24,7 +25,7 @@ const navDisabledClassName =
   'inline-flex cursor-not-allowed items-center justify-center rounded-[137px] px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-cc-ink/60';
 
 const contactClassName =
-  'hidden lg:inline-flex h-11 cursor-not-allowed items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink opacity-70';
+  'hidden lg:inline-flex h-11 items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink';
 
 const mobileNavLinkClassName =
   'flex items-center space-x-3 px-4 py-2.5 font-urbanist text-[16px] font-medium tracking-[-0.32px] text-cc-ink transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink md:py-3';
@@ -172,14 +173,9 @@ const Header: React.FC = () => {
           </Link>
         </div>
 
-        <button
-          type="button"
-          className={contactClassName}
-          disabled
-          title="Contact form coming soon"
-        >
+        <a href={CONTACT_MAILTO} className={contactClassName}>
           Contact
-        </button>
+        </a>
       </nav>
 
       {isMenuOpen && (
@@ -245,15 +241,14 @@ const Header: React.FC = () => {
               <Info className="h-4 w-4" />
               <span>About</span>
             </Link>
-            <button
-              type="button"
-              className={mobileDisabledNavClassName}
-              disabled
-              title="Contact form coming soon"
+            <a
+              href={CONTACT_MAILTO}
+              className={mobileNavLinkClassName}
+              onClick={() => setIsMenuOpen(false)}
             >
               <Mail className="h-4 w-4" aria-hidden="true" />
               <span>Contact</span>
-            </button>
+            </a>
           </nav>
         </div>
       )}

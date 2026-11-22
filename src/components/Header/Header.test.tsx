@@ -208,22 +208,22 @@ describe('Header', () => {
     const homeLink = mobileNav.querySelector(
       'a[href="/"]'
     ) as HTMLAnchorElement | null;
-    // About is the last focusable control (Contact/Feeder are disabled).
-    const aboutLink = mobileNav.querySelector(
-      'a[href="/about"]'
+    // Contact mailto is the last focusable control (Feeder stays disabled).
+    const contactLink = mobileNav.querySelector(
+      'a[href^="mailto:"]'
     ) as HTMLAnchorElement | null;
 
     expect(homeLink).toBeTruthy();
-    expect(aboutLink).toBeTruthy();
+    expect(contactLink).toBeTruthy();
 
-    aboutLink!.focus();
-    expect(aboutLink).toHaveFocus();
+    contactLink!.focus();
+    expect(contactLink).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(closeButton).toHaveFocus();
 
     closeButton.focus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
-    expect(aboutLink).toHaveFocus();
+    expect(contactLink).toHaveFocus();
   });
 
   it('wraps Tab from the last menu item back to the close button', () => {
@@ -233,12 +233,12 @@ describe('Header', () => {
 
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
     const mobileNav = screen.getByLabelText('Mobile navigation');
-    const aboutLink = mobileNav.querySelector(
-      'a[href="/about"]'
+    const contactLink = mobileNav.querySelector(
+      'a[href^="mailto:"]'
     ) as HTMLAnchorElement;
 
-    aboutLink.focus();
-    expect(document.activeElement).toBe(aboutLink);
+    contactLink.focus();
+    expect(document.activeElement).toBe(contactLink);
 
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: false });
     expect(document.activeElement).toBe(closeButton);
@@ -389,7 +389,7 @@ describe('Header', () => {
     const shelterLink = mobileNav.querySelector('a[href="/porch"]');
     const aboutLink = mobileNav.querySelector('a[href="/about"]');
     const feeder = within(mobileNav).getByRole('button', { name: 'Feeder' });
-    const contact = within(mobileNav).getByRole('button', { name: 'Contact' });
+    const contact = within(mobileNav).getByRole('link', { name: 'Contact' });
 
     expect(homeLink?.querySelector('svg')).toBeTruthy();
     expect(shelterLink?.querySelector('svg')).toBeTruthy();
@@ -397,8 +397,11 @@ describe('Header', () => {
     expect(feeder.querySelector('svg')).toBeTruthy();
     expect(feeder).toBeDisabled();
     expect(mobileNav.querySelector('a[href="/contact"]')).toBeNull();
+    expect(contact).toHaveAttribute(
+      'href',
+      'mailto:contact@crittercanteen.com'
+    );
     expect(contact.querySelector('svg')).toBeTruthy();
-    expect(contact).toBeDisabled();
     expect(contact.className).not.toContain('bg-cc-yellow');
   });
 
@@ -434,14 +437,17 @@ describe('Header', () => {
     expect(homeLink).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders a disabled Contact button matching Earthon yellow CTA', () => {
+  it('renders Contact as a yellow mailto CTA', () => {
     render(<Header />);
 
-    const contact = screen.getByRole('button', { name: 'Contact' });
-    expect(contact).toHaveAttribute('type', 'button');
-    expect(contact).toBeDisabled();
+    const contact = screen.getByRole('link', { name: 'Contact' });
+    expect(contact).toHaveAttribute(
+      'href',
+      'mailto:contact@crittercanteen.com'
+    );
     expect(contact.className).toContain('bg-cc-yellow');
     expect(contact.className).toContain('rounded-[50px]');
+    expect(contact.className).not.toContain('opacity-70');
   });
 
   it('renders logo link with correct href', () => {
