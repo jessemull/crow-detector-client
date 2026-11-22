@@ -103,6 +103,45 @@ Resources:
           QueryStringsConfig:
             QueryStringBehavior: none
 
+  # Apex DNS already pointed here, but aliases were www-only — TLS/host 403.
+  # Redirect keeps www as the canonical host (matches site metadata).
+  ApexToWwwRedirectFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub 'ApexToWwwRedirectCrowDetectorClient-${Environment}'
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Redirect apex hosts to www (canonical)
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          var host = ((request.headers.host || {}).value || '').toLowerCase();
+          if (host === 'crittercanteen.com' || host === 'dev.crittercanteen.com') {
+            var location = 'https://www.' + host + request.uri;
+            var keys = Object.keys(request.querystring || {});
+            if (keys.length > 0) {
+              location += '?' + keys.map(function (key) {
+                var entry = request.querystring[key];
+                if (entry.multiValue) {
+                  return entry.multiValue.map(function (item) {
+                    return encodeURIComponent(key) + '=' + encodeURIComponent(item.value);
+                  }).join('&');
+                }
+                return encodeURIComponent(key) + '=' + encodeURIComponent(entry.value || '');
+              }).join('&');
+            }
+            return {
+              statusCode: 301,
+              statusDescription: 'Moved Permanently',
+              headers: {
+                location: { value: location }
+              }
+            };
+          }
+          return request;
+        }
+
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -122,6 +161,9 @@ Resources:
           ViewerProtocolPolicy: redirect-to-https
           CachePolicyId: !Ref CompressionCachePolicy
           Compress: true
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt ApexToWwwRedirectFunction.FunctionARN
           TrustedKeyGroups:
             Fn::If:
               - EnableSignedCookiesCheckCondition
@@ -151,6 +193,10 @@ Resources:
         Aliases:
           - !If
             - IsProd
+            - 'crittercanteen.com'
+            - 'dev.crittercanteen.com'
+          - !If
+            - IsProd
             - 'www.crittercanteen.com'
             - 'www.dev.crittercanteen.com'
         ViewerCertificate:
@@ -172,6 +218,7 @@ Resources:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
         HostedZoneId: !Ref CloudFrontHostedZoneId
 
+  # Apex A → same distribution; HTTP redirect to www is the CloudFront function above.
   RootDomainRedirect:
     Type: AWS::Route53::RecordSet
     Condition: CreateDNSRecordTrue

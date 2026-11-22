@@ -7,6 +7,7 @@
 ## Static hosting
 
 - Production serves static assets from S3 via CloudFront (`www.crittercanteen.com`).
+- Apex `crittercanteen.com` (and `dev.crittercanteen.com`) resolve to the same distribution and **301 to `www…`** via a CloudFront Function. Prefer `www` in links and canonicals.
 - Do not hardcode environment hosts in client code; use env / config.
 
 ---
