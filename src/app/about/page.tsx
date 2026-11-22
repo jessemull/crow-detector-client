@@ -24,10 +24,10 @@ export const metadata: Metadata = {
     images: [ABOUT_OG_IMAGE],
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'About Critter Canteen',
     description: ABOUT_DESCRIPTION,
-    images: ['/og-image.png'],
+    images: ['/twitter-image.png'],
   },
 };
 
