@@ -54,10 +54,11 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: 'summary_large_image',
+    // Square asset for X summary card; keep landscape `/og-image.png` for Open Graph only.
+    card: 'summary',
     title: 'Critter Canteen - Crow Feeding Station',
     description: 'Automated crow feeding and imaging station.',
-    images: ['/og-image.png'],
+    images: ['/twitter-image.png'],
   },
 };
 
