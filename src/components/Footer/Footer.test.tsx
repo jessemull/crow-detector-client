@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import Footer from './Footer';
+import HeroCopyright from './HeroCopyright';
+import { copyrightLine } from './copyright';
 
 const mockPathname = jest.fn(() => '/');
 
@@ -13,45 +15,35 @@ describe('Footer', () => {
     mockPathname.mockReturnValue('/');
   });
 
-  it('renders the current year copyright', () => {
-    render(<Footer />);
-    const year = new Date().getFullYear();
-    expect(
-      screen.getByText(`© ${year} Critter Canteen. All rights reserved.`)
-    ).toBeTruthy();
+  it('does not render on Home — copyright lives in the hero below the fold', () => {
+    const { container } = render(<Footer />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it('keeps photo-page copyright in flow on a dark spill band', () => {
-    render(<Footer />);
-    const footer = screen.getByRole('contentinfo');
-    expect(footer.className).toContain('bg-stone-950');
-    expect(footer.className).toContain('-mt-[4.5rem]');
-    expect(footer.className).toContain('border-0');
-    expect(footer.className).not.toContain('bg-transparent');
-    expect(footer.className).not.toContain('border-t');
-    expect(footer.className).not.toContain('fixed');
-    expect(screen.getByText(/Critter Canteen/).className).toContain(
-      'text-white/70'
-    );
-  });
-
-  it('floats over About the same as Home', () => {
+  it('does not render on About — copyright lives in the hero below the fold', () => {
     mockPathname.mockReturnValue('/about');
-    render(<Footer />);
-    const footer = screen.getByRole('contentinfo');
-    expect(footer.className).toContain('bg-stone-950');
-    expect(footer.className).toContain('-mt-[4.5rem]');
+    const { container } = render(<Footer />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it('keeps light-page footer below the canvas with no hairline', () => {
+  it('keeps light-page footer in document flow on canvas', () => {
     mockPathname.mockReturnValue('/porch');
     render(<Footer />);
     const footer = screen.getByRole('contentinfo');
     expect(footer.className).toContain('bg-cc-canvas');
     expect(footer.className).toContain('mt-auto');
-    expect(footer.className).toContain('border-0');
-    expect(footer.className).not.toContain('border-t');
-    expect(footer.className).not.toContain('-mt-[4.5rem]');
-    expect(footer.className).not.toContain('bg-stone-950');
+    expect(screen.getByText(copyrightLine())).toBeTruthy();
+    expect(screen.getByText(copyrightLine()).className).toContain(
+      'text-cc-ink/55'
+    );
+  });
+});
+
+describe('HeroCopyright', () => {
+  it('renders transparent copyright text for hero pages', () => {
+    render(<HeroCopyright />);
+    const line = screen.getByText(copyrightLine());
+    expect(line.className).toContain('text-white/70');
+    expect(line.parentElement?.className).toContain('bg-transparent');
   });
 });

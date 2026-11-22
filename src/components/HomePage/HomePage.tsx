@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { preload } from 'react-dom';
 import SplashBackground from '@components/SplashBackground';
+import HeroCopyright from '@components/Footer/HeroCopyright';
 import {
   SPLASH_SIZES,
   getActiveHero,
@@ -22,7 +23,7 @@ const HomePage: React.FC = () => {
   });
 
   return (
-    <section className="relative isolate min-h-[calc(100dvh+4.5rem)] overflow-hidden bg-stone-950">
+    <section className="relative isolate overflow-hidden bg-stone-950">
       <SplashBackground
         image={hero}
         frameClassName="!-top-[25%] !bottom-auto !h-[125%]"
@@ -31,7 +32,7 @@ const HomePage: React.FC = () => {
         className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/35 to-stone-950/25"
         aria-hidden="true"
       />
-      {/* dvh + safe-area: mobile browser chrome sits on 100vh and ate bottom-pinned CTAs. */}
+      {/* First viewport: photo + CTAs only. Copyright is the next sibling (under the fold). */}
       <div className="relative z-10 flex min-h-dvh flex-col justify-end px-6 pb-[max(5rem,calc(env(safe-area-inset-bottom,0px)+3.5rem))] pt-28 md:px-10 md:pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))] lg:px-16">
         <div className="max-w-3xl">
           <p className="mb-3 text-[0.7rem] font-medium uppercase tracking-[0.35em] text-cc-cream-muted/90 md:text-xs">
@@ -63,6 +64,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+      <HeroCopyright />
     </section>
   );
 };

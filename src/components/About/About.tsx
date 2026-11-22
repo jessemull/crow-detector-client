@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { preload } from 'react-dom';
 import { ArrowRight } from 'lucide-react';
 import SplashBackground from '@components/SplashBackground';
+import HeroCopyright from '@components/Footer/HeroCopyright';
 import {
   SPLASH_SIZES,
   getAboutImage,
@@ -23,7 +24,7 @@ const About: React.FC = () => {
   });
 
   return (
-    <section className="relative isolate min-h-[calc(100dvh+4.5rem)] overflow-hidden bg-stone-950">
+    <section className="relative isolate overflow-hidden bg-stone-950">
       <SplashBackground
         image={aboutImage}
         frameClassName="!top-0 !bottom-auto !h-full md:!-top-[20%] md:!h-[120%]"
@@ -38,6 +39,7 @@ const About: React.FC = () => {
         aria-hidden="true"
       />
 
+      {/* First viewport: photo + copy only. Copyright is the next sibling (under the fold). */}
       <div className="relative z-10 flex min-h-dvh flex-col items-center justify-start px-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+4rem))] pt-28 text-center md:justify-center md:px-10">
         <h1 className="mb-5 max-w-4xl font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-white md:text-6xl md:leading-[1.05] lg:text-[80px] lg:leading-[80px] lg:tracking-[-1.6px]">
           Wildlife care, engineered end to end.
@@ -63,6 +65,7 @@ const About: React.FC = () => {
           </span>
         </Link>
       </div>
+      <HeroCopyright />
     </section>
   );
 };

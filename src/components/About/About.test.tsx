@@ -81,6 +81,16 @@ describe('About', () => {
     ).toContain('md:justify-center');
   });
 
+  it('keeps copyright below the fold on the photo', () => {
+    render(<About />);
+    const year = new Date().getFullYear();
+    const line = screen.getByText(
+      `© ${year} Critter Canteen. All rights reserved.`
+    );
+    expect(line.className).toContain('text-white/70');
+    expect(line.parentElement?.className).toContain('bg-transparent');
+  });
+
   it('has no accessibility violations', async () => {
     const { container } = render(<About />);
     expect(await axe(container)).toHaveNoViolations();

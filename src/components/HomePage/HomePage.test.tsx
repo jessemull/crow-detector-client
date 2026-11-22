@@ -78,6 +78,16 @@ describe('HomePage', () => {
     expect(screen.queryByTestId('hero-review-hint')).toBeNull();
   });
 
+  it('keeps copyright below the fold on the photo', () => {
+    render(<HomePage />);
+    const year = new Date().getFullYear();
+    const line = screen.getByText(
+      `© ${year} Critter Canteen. All rights reserved.`
+    );
+    expect(line.className).toContain('text-white/70');
+    expect(line.parentElement?.className).toContain('bg-transparent');
+  });
+
   it('has no accessibility violations', async () => {
     const { container } = render(<HomePage />);
     expect(await axe(container)).toHaveNoViolations();
