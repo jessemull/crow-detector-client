@@ -3,7 +3,7 @@
 
 .DEFAULT_GOAL := help
 
-.PHONY: help lint lint-fix format typecheck test test-coverage e2e lighthouse build preflight security dev
+.PHONY: help lint lint-fix format typecheck test test-coverage e2e lighthouse build preflight security review-inventory review-check review-eval-validate dev
 
 help: ## Help@show targets
 	@printf 'Critter Canteen — make <target>\n\n'
@@ -47,6 +47,20 @@ preflight: ## Quality@lint + typecheck + test + build
 
 security: ## Quality@npm audit
 	npm audit --audit-level=high || npm audit
+
+# ── Review ─────────────────────────────────────────────────────────
+
+BASE ?= origin/main
+
+review-inventory: ## Review@print PR inventory vs BASE (default origin/main)
+	npm run --silent review:inventory -- --kind pr --base $(BASE)
+
+review-check: ## Review@check a ledger: make review-check LEDGER=.review/<name>/ledger.json
+	@test -n "$(LEDGER)" || (echo 'Set LEDGER=.review/<name>/ledger.json' && exit 2)
+	npm run --silent review:check -- $(LEDGER)
+
+review-eval-validate: ## Review@check seeded review cases still apply
+	npm run --silent review:eval -- validate
 
 # ── Local ──────────────────────────────────────────────────────────
 

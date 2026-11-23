@@ -6,7 +6,12 @@ const createJestConfig = nextJest({
 
 const customJestConfig = {
   collectCoverage: true,
-  collectCoverageFrom: ['src/**/*.{ts,tsx}'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    'scripts/review/**/*.js',
+    '!scripts/review/**/*.test.js',
+    '!scripts/review/test-utils/**',
+  ],
   coveragePathIgnorePatterns: [
     '/src/app/layout.tsx',
     '/src/components/.*/index.ts',
