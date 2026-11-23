@@ -39,4 +39,4 @@ git diff origin/main...HEAD
 
 Bullet format: `` `path:line` — imperative task ``
 
-Companion skills: `security-review`, `testing`, `static-export`.
+Companion skills: `security-scan`, `testing`, `static-export`, `accessibility`, `performance`.

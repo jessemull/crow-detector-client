@@ -46,4 +46,4 @@
 - `make preflight` / CI green
 - No drive-by changes
 
-Agent skills (`pr-review`, `repo-review`, `security-review`) define fixed output shapes — follow those skills.
+Agent skills (`pr-review`, `repo-review`, `security-scan`) define fixed output shapes — follow those skills. `security-review` points at `security-scan`.
