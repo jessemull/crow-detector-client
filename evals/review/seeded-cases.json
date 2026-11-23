@@ -1,0 +1,403 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "control-benign",
+      "title": "Control: comment wording only",
+      "summary": "docs: clarify which pages render the copyright in the hero",
+      "edits": [
+        {
+          "path": "src/components/Footer/Footer.tsx",
+          "find": "// Home / About own the copyright inside the hero (below the fold, on the photo).",
+          "replace": "// Home and About render the copyright inside the hero (below the fold, on the photo)."
+        }
+      ],
+      "expected": []
+    },
+    {
+      "id": "proxy-fail-open",
+      "title": "Proxy starts without CLOUDFRONT_DOMAIN",
+      "summary": "chore(proxy): let the proxy start without config so the health check works in CI",
+      "edits": [
+        {
+          "path": "proxy/index.js",
+          "find": "  process.exit(1);\n",
+          "replace": "  console.warn('Continuing without CloudFront; requests will fail.');\n"
+        }
+      ],
+      "expected": [
+        {
+          "label": "Proxy no longer fails closed when CLOUDFRONT_DOMAIN is missing",
+          "path": "proxy/index.js",
+          "criteria": ["ERR-01", "NODE-02"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "workflow-injection",
+      "title": "Branch name interpolated into a run script",
+      "summary": "ci: log the branch being linted",
+      "edits": [
+        {
+          "path": ".github/workflows/pull-request.yml",
+          "find": "      - name: Run Linting\n        run: npm run lint\n",
+          "replace": "      - name: Run Linting\n        run: echo \"Linting ${{ github.head_ref }}\" && npm run lint\n"
+        }
+      ],
+      "expected": [
+        {
+          "label": "github.head_ref is attacker-controlled and interpolated into run:",
+          "path": ".github/workflows/pull-request.yml",
+          "criteria": ["CI-01"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "xss-inner-html",
+      "title": "Clip name rendered as HTML",
+      "summary": "feat(porch): show the clip name next to the recorded time",
+      "edits": [
+        {
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "find": "                      <h2 className=\"font-urbanist text-base font-semibold tracking-[-0.32px] text-cc-ink md:text-lg\">\n                        {recordedLabel}\n                      </h2>",
+          "replace": "                      <h2\n                        className=\"font-urbanist text-base font-semibold tracking-[-0.32px] text-cc-ink md:text-lg\"\n                        dangerouslySetInnerHTML={{\n                          __html: `${recordedLabel} &middot; ${clip.name}`,\n                        }}\n                      />"
+        }
+      ],
+      "expected": [
+        {
+          "label": "API-controlled clip.name injected with dangerouslySetInnerHTML",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["SEC-07", "SEC-17"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "weakened-test",
+      "title": "Error-state test no longer checks the error message",
+      "summary": "test(porch): make the API failure test less brittle",
+      "edits": [
+        {
+          "path": "src/components/PorchClips/PorchClips.test.tsx",
+          "find": "    await waitFor(() => {\n      expect(screen.getByText(\"Can't load visits right now.\")).toBeTruthy();\n    });",
+          "replace": "    await waitFor(() => {\n      expect(screen.queryByText('Loading…')).toBeNull();\n    });"
+        }
+      ],
+      "expected": [
+        {
+          "label": "Test named 'shows a status line when the API fails' no longer asserts the status line",
+          "path": "src/components/PorchClips/PorchClips.test.tsx",
+          "criteria": ["TEST-02", "TEST-03"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "stale-comment",
+      "title": "Signed URLs always replaced, docstring still says they are kept",
+      "summary": "fix(porch): always use the freshest playback URL",
+      "edits": [
+        {
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "find": "      return needsFreshUrl ? next[index] : clip;",
+          "replace": "      return needsFreshUrl || clip.playbackUrl !== next[index].playbackUrl\n        ? next[index]\n        : clip;"
+        }
+      ],
+      "expected": [
+        {
+          "label": "mergeClipsForPlayback docstring now false; every poll swaps signed URLs",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["DOC-01"],
+          "severity": "MUST"
+        },
+        {
+          "label": "Every poll remounts and re-downloads each video (key={src})",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["PERF-05", "PERF-11"],
+          "severity": "SHOULD"
+        }
+      ]
+    },
+    {
+      "id": "public-secret",
+      "title": "API key exposed through NEXT_PUBLIC_",
+      "summary": "feat(porch): authenticate porch API requests",
+      "edits": [
+        {
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "find": "      const response = await fetch(`${apiBaseUrl}/porch/clips`);",
+          "replace": "      const response = await fetch(`${apiBaseUrl}/porch/clips`, {\n        headers: {\n          Authorization: `Bearer ${process.env.NEXT_PUBLIC_PORCH_API_KEY}`,\n        },\n      });"
+        }
+      ],
+      "expected": [
+        {
+          "label": "Secret API key in a NEXT_PUBLIC_ variable ships in the client bundle",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["SEC-03", "SEC-01"],
+          "severity": "MUST"
+        },
+        {
+          "label": "New env var missing from env templates and workflows",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["CFG-01", "CON-04"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "server-api-in-export",
+      "title": "cookies() used in a statically exported page",
+      "summary": "feat(porch): hide the shelter cam for visitors without the preview cookie",
+      "edits": [
+        {
+          "path": "src/app/porch/page.tsx",
+          "find": "import type { Metadata } from 'next';\n",
+          "replace": "import type { Metadata } from 'next';\nimport { cookies } from 'next/headers';\n"
+        },
+        {
+          "path": "src/app/porch/page.tsx",
+          "find": "const PorchPage = () => <PorchClips />;",
+          "replace": "const PorchPage = async () => {\n  const cookieStore = await cookies();\n  if (!cookieStore.get('cc-preview')) {\n    return null;\n  }\n  return <PorchClips />;\n};"
+        }
+      ],
+      "expected": [
+        {
+          "label": "cookies() is unsupported with output: 'export'",
+          "path": "src/app/porch/page.tsx",
+          "criteria": ["NEXT-01"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "effect-no-cleanup",
+      "title": "Menu keydown listener never removed",
+      "summary": "refactor(header): simplify menu effect cleanup",
+      "edits": [
+        {
+          "path": "src/components/Header/Header.tsx",
+          "find": "        document.removeEventListener('keydown', onKeyDown);\n",
+          "replace": ""
+        }
+      ],
+      "expected": [
+        {
+          "label": "keydown listener leaks; stale handlers run after the menu closes",
+          "path": "src/components/Header/Header.tsx",
+          "criteria": ["RCT-02", "CONC-03"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "partial-env-rename",
+      "title": "Env var renamed in code and one template only",
+      "summary": "refactor(porch): rename the API base env var to NEXT_PUBLIC_PORCH_API_URL",
+      "edits": [
+        {
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "find": "(process.env.NEXT_PUBLIC_API_BASE_URL || '')",
+          "replace": "(process.env.NEXT_PUBLIC_PORCH_API_URL || '')"
+        },
+        {
+          "path": ".env.example",
+          "find": "NEXT_PUBLIC_API_BASE_URL=https://api-dev.crittercanteen.com",
+          "replace": "NEXT_PUBLIC_PORCH_API_URL=https://api-dev.crittercanteen.com"
+        }
+      ],
+      "expected": [
+        {
+          "label": "Workflows still set NEXT_PUBLIC_API_BASE_URL, so builds ship with no API base",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["CON-04", "CFG-01"],
+          "severity": "MUST"
+        },
+        {
+          "label": "Tests still set the old variable name",
+          "path": "src/components/PorchClips/PorchClips.test.tsx",
+          "criteria": ["CON-01", "CON-02", "TEST-04"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "removed-ok-guard",
+      "title": "Non-2xx responses parsed as data",
+      "summary": "refactor(porch): drop redundant response check",
+      "edits": [
+        {
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "find": "      if (!response.ok) {\n        throw new Error('Could not load visits');\n      }\n",
+          "replace": ""
+        }
+      ],
+      "expected": [
+        {
+          "label": "Error responses are treated as an empty list instead of an error",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["NET-02", "ERR-04", "COR-05"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "unpinned-action",
+      "title": "Third-party action on a branch ref receives a secret",
+      "summary": "ci: notify Slack when lint finishes",
+      "edits": [
+        {
+          "path": ".github/workflows/pull-request.yml",
+          "find": "      - name: Run Linting\n        run: npm run lint\n",
+          "replace": "      - name: Run Linting\n        run: npm run lint\n\n      - name: Notify Slack\n        uses: rtCamp/action-slack-notify@master\n        env:\n          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}\n"
+        }
+      ],
+      "expected": [
+        {
+          "label": "Action pinned to a mutable branch and given a secret",
+          "path": ".github/workflows/pull-request.yml",
+          "criteria": ["CI-03", "CI-14"],
+          "severity": "SHOULD"
+        }
+      ]
+    },
+    {
+      "id": "alt-removed",
+      "title": "Decorative splash image loses alt=\"\"",
+      "summary": "refactor(splash): remove empty attribute",
+      "edits": [
+        {
+          "path": "src/components/SplashBackground/SplashBackground.tsx",
+          "find": "        alt=\"\"\n",
+          "replace": ""
+        }
+      ],
+      "expected": [
+        {
+          "label": "Image without alt is announced by file name",
+          "path": "src/components/SplashBackground/SplashBackground.tsx",
+          "criteria": ["A11Y-07"],
+          "severity": "SHOULD"
+        }
+      ]
+    },
+    {
+      "id": "lighthouse-lowered",
+      "title": "Accessibility threshold lowered for the test environment",
+      "summary": "ci(lighthouse): reduce flakiness on the proxy run",
+      "edits": [
+        {
+          "path": ".lighthouserc.js",
+          "find": "    'categories:performance': ['warn', { minScore: 0.6 }],\n    'categories:accessibility': ['error', { minScore: 0.9 }],",
+          "replace": "    'categories:performance': ['warn', { minScore: 0.6 }],\n    'categories:accessibility': ['warn', { minScore: 0.5 }],"
+        }
+      ],
+      "expected": [
+        {
+          "label": "Lighthouse accessibility gate lowered and downgraded to warn",
+          "path": ".lighthouserc.js",
+          "criteria": ["PERF-10", "GATE-12"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "sibling-parity",
+      "title": "Cache headers added to merge deploy only",
+      "summary": "perf(deploy): long-lived cache headers for static assets",
+      "edits": [
+        {
+          "path": ".github/workflows/merge.yml",
+          "find": "          args: --delete --exclude \"data/*\"\n",
+          "replace": "          args: --delete --exclude \"data/*\" --cache-control \"public, max-age=31536000, immutable\"\n"
+        }
+      ],
+      "expected": [
+        {
+          "label": "deploy.yml sync is not updated to match merge.yml",
+          "path": ".github/workflows/merge.yml",
+          "criteria": ["CON-06"],
+          "severity": "MUST"
+        },
+        {
+          "label": "HTML is also cached as immutable for a year, so deploys do not reach users",
+          "path": ".github/workflows/merge.yml",
+          "criteria": ["PERF-09", "INF-05", "CONC-05"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "footer-condition-flip",
+      "title": "Footer hidden on every page except Home",
+      "summary": "fix(footer): avoid duplicate copyright on About",
+      "edits": [
+        {
+          "path": "src/components/Footer/Footer.tsx",
+          "find": "  if (pathname === '/' || pathname === '/about') {",
+          "replace": "  if (pathname !== '/' || pathname === '/about') {"
+        }
+      ],
+      "expected": [
+        {
+          "label": "Condition now hides the footer on /porch and 404 and shows it on Home",
+          "path": "src/components/Footer/Footer.tsx",
+          "criteria": ["COR-01"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "index-keys",
+      "title": "Visit list keyed by index",
+      "summary": "refactor(porch): simplify list keys",
+      "edits": [
+        {
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "find": "                <li key={`${clip.name}-${clip.recordedAt}`}>",
+          "replace": "                <li key={index}>"
+        }
+      ],
+      "expected": [
+        {
+          "label": "New visits arrive at the top, so index keys reuse the wrong video elements",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["RCT-05"],
+          "severity": "MUST"
+        }
+      ]
+    },
+    {
+      "id": "mixed-large",
+      "title": "Large mixed change with several seeded defects",
+      "summary": "feat: porch reliability, proxy, and CI tidy-ups",
+      "includes": [
+        "proxy-fail-open",
+        "removed-ok-guard",
+        "stale-comment",
+        "index-keys",
+        "effect-no-cleanup",
+        "footer-condition-flip",
+        "lighthouse-lowered",
+        "sibling-parity",
+        "alt-removed"
+      ],
+      "edits": [
+        {
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "find": "/** How often to re-fetch while the tab is visible. */\nconst POLL_INTERVAL_MS = 45_000;",
+          "replace": "/** How often to re-fetch while the tab is visible. */\nconst POLL_INTERVAL_MS = 2_000;"
+        }
+      ],
+      "expected": [
+        {
+          "label": "Polling every 2 seconds overlaps requests and loads the API",
+          "path": "src/components/PorchClips/PorchClips.tsx",
+          "criteria": ["NET-04", "CONC-01"],
+          "severity": "SHOULD"
+        }
+      ]
+    }
+  ]
+}
