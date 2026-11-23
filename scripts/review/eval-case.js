@@ -168,6 +168,7 @@ const scoreLedger = (expected, ledger) => {
 const defaultGit = (cwd) => (args) =>
   execFileSync(resolveGit(), args, {
     cwd,
+    env: process.env,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });

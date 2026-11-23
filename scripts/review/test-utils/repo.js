@@ -5,15 +5,15 @@ const path = require('path');
 
 const { resolveGit } = require('../review-lib');
 
-// Git hooks (pre-push runs the tests) export these, which would point every
-// temp-repo command back at the real repository.
-for (const key of [
-  'GIT_DIR',
-  'GIT_WORK_TREE',
-  'GIT_INDEX_FILE',
-  'GIT_PREFIX',
-]) {
-  delete process.env[key];
+// Git hooks (pre-push runs the tests) export GIT_* variables such as GIT_DIR,
+// which would point every temp-repo command, including git init, at the real
+// repository. Jest gives each test file its own copy of process.env, so the
+// cleaned copy must be passed to child processes explicitly; review-lib does
+// that by passing env: process.env.
+for (const key of Object.keys(process.env)) {
+  if (key.startsWith('GIT_')) {
+    delete process.env[key];
+  }
 }
 
 const GIT_CONFIG = [
@@ -57,6 +57,7 @@ const createTempRepo = () => {
   const git = (...args) =>
     execFileSync(resolveGit(), [...GIT_CONFIG, ...args], {
       cwd: dir,
+      env: process.env,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -75,6 +76,12 @@ const createTempRepo = () => {
   const remove = () => fs.rmSync(dir, { recursive: true, force: true });
 
   git('init', '-q');
+  const gitDir = fs.realpathSync(git('rev-parse', '--absolute-git-dir').trim());
+  if (!gitDir.startsWith(`${fs.realpathSync(dir)}${path.sep}`)) {
+    throw new Error(
+      `Temp repo resolved to ${gitDir}; refusing to run git against another repository.`
+    );
+  }
   return { dir, git, write, read, commit, remove };
 };
 

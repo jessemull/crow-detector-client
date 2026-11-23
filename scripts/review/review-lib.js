@@ -80,6 +80,7 @@ const createGit =
   (args, { encoding = 'utf8' } = {}) =>
     execFileSync(resolveGit(), args, {
       cwd,
+      env: process.env,
       encoding: encoding === 'buffer' ? undefined : encoding,
       maxBuffer: 256 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
