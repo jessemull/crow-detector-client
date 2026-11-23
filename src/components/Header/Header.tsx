@@ -21,17 +21,11 @@ const navIdleClassName =
 const navActiveClassName =
   'inline-flex items-center justify-center rounded-[137px] bg-cc-ink px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-white backdrop-blur-[45px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink';
 
-const navDisabledClassName =
-  'inline-flex cursor-not-allowed items-center justify-center rounded-[137px] px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-cc-ink/60';
-
 const contactClassName =
   'hidden lg:inline-flex h-11 items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink';
 
 const mobileNavLinkClassName =
   'flex items-center space-x-3 px-4 py-2.5 font-urbanist text-[16px] font-medium tracking-[-0.32px] text-cc-ink transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink md:py-3';
-
-const mobileDisabledNavClassName =
-  'flex cursor-not-allowed items-center space-x-3 px-4 py-2.5 font-urbanist text-[16px] font-medium tracking-[-0.32px] text-cc-ink/60 md:py-3';
 
 const Header: React.FC = () => {
   const pathname = usePathname() || '/';
@@ -149,14 +143,15 @@ const Header: React.FC = () => {
           >
             Home
           </Link>
-          <button
-            type="button"
-            className={navDisabledClassName}
-            disabled
-            title="Feeding controls are not connected yet"
+          <Link
+            href="/feeder"
+            className={
+              pathname === '/feeder' ? navActiveClassName : navIdleClassName
+            }
+            aria-current={pathname === '/feeder' ? 'page' : undefined}
           >
             Feeder
-          </button>
+          </Link>
           <Link
             href="/porch"
             className={isPorch ? navActiveClassName : navIdleClassName}
@@ -216,15 +211,14 @@ const Header: React.FC = () => {
               <Home className="h-4 w-4" />
               <span>Home</span>
             </Link>
-            <button
-              type="button"
-              className={mobileDisabledNavClassName}
-              disabled
-              title="Feeding controls are not connected yet"
+            <Link
+              href="/feeder"
+              className={mobileNavLinkClassName}
+              onClick={() => setIsMenuOpen(false)}
             >
               <Bird className="h-4 w-4" aria-hidden="true" />
               <span>Feeder</span>
-            </button>
+            </Link>
             <Link
               href="/porch"
               className={mobileNavLinkClassName}

@@ -46,6 +46,6 @@ describe('Home Page', () => {
       'href',
       '/porch'
     );
-    expect(screen.getByRole('button', { name: 'Feeder' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Feeder' })).toBeEnabled();
   });
 });

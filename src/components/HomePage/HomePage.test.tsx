@@ -41,12 +41,11 @@ describe('HomePage', () => {
     expect(link.className).toContain('bg-cc-lime');
   });
 
-  it('renders the feeder control as disabled', () => {
+  it('renders the feeder control', () => {
     render(<HomePage />);
     const button = screen.getByRole('button', { name: 'Feeder' });
-    expect(button).toBeDisabled();
     expect(button).toHaveAttribute('type', 'button');
-    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toBeEnabled();
   });
 
   it('does not render placeholder system status', () => {

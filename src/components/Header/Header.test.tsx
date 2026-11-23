@@ -116,7 +116,7 @@ describe('Header', () => {
     const homeLink = desktopNav.querySelector('a[href="/"]');
     const shelterLink = desktopNav.querySelector('a[href="/porch"]');
     const aboutLink = desktopNav.querySelector('a[href="/about"]');
-    const feeder = within(desktopNav).getByRole('button', { name: 'Feeder' });
+    const feeder = within(desktopNav).getByRole('link', { name: 'Feeder' });
 
     expect(homeLink).toBeTruthy();
     expect(shelterLink).toBeTruthy();
@@ -124,8 +124,7 @@ describe('Header', () => {
     expect(homeLink?.textContent).toBe('Home');
     expect(shelterLink?.textContent).toBe('Shelter Cam');
     expect(aboutLink?.textContent).toBe('About');
-    expect(feeder).toBeDisabled();
-    expect(desktopNav.querySelector('a[href="/feeder"]')).toBeNull();
+    expect(feeder).toHaveAttribute('href', '/feeder');
   });
 
   it('renders mobile menu toggle button', () => {
@@ -159,8 +158,8 @@ describe('Header', () => {
     expect(mobileNav.querySelector('a[href="/porch"]')).toBeTruthy();
     expect(mobileNav.querySelector('a[href="/about"]')).toBeTruthy();
     expect(
-      within(mobileNav).getByRole('button', { name: 'Feeder' })
-    ).toBeDisabled();
+      within(mobileNav).getByRole('link', { name: 'Feeder' })
+    ).toHaveAttribute('href', '/feeder');
   });
 
   it('supports keyboard activation of the menu toggle', () => {
@@ -208,7 +207,7 @@ describe('Header', () => {
     const homeLink = mobileNav.querySelector(
       'a[href="/"]'
     ) as HTMLAnchorElement | null;
-    // Contact mailto is the last focusable control (Feeder stays disabled).
+    // Contact mailto is the last focusable control in the mobile menu.
     const contactLink = mobileNav.querySelector(
       'a[href^="mailto:"]'
     ) as HTMLAnchorElement | null;
@@ -388,14 +387,14 @@ describe('Header', () => {
     const homeLink = mobileNav.querySelector('a[href="/"]');
     const shelterLink = mobileNav.querySelector('a[href="/porch"]');
     const aboutLink = mobileNav.querySelector('a[href="/about"]');
-    const feeder = within(mobileNav).getByRole('button', { name: 'Feeder' });
+    const feeder = within(mobileNav).getByRole('link', { name: 'Feeder' });
     const contact = within(mobileNav).getByRole('link', { name: 'Contact' });
 
     expect(homeLink?.querySelector('svg')).toBeTruthy();
     expect(shelterLink?.querySelector('svg')).toBeTruthy();
     expect(aboutLink?.querySelector('svg')).toBeTruthy();
     expect(feeder.querySelector('svg')).toBeTruthy();
-    expect(feeder).toBeDisabled();
+    expect(feeder).toHaveAttribute('href', '/feeder');
     expect(mobileNav.querySelector('a[href="/contact"]')).toBeNull();
     expect(contact).toHaveAttribute(
       'href',
