@@ -10,7 +10,9 @@ description: >-
 
 This is the security review for this repo. Read `docs/SECURITY.md`, `docs/DEPENDENCIES.md`, and `docs/REVIEW.md` before judging findings.
 
-Diff-first on a branch. Scan the tree when the user asks for a repo scan. Record commands you actually ran. Do not claim a runtime check you did not execute.
+The full criteria are in `docs/review/security.md` (SEC), with security-relevant rows in `ci-cd.md` (CI-01 to CI-07, CI-14), `node-proxy-scripts.md` (NODE-02, NODE-03, NODE-06, NODE-11), `configuration.md` (CFG-01 to CFG-04), `dependencies.md` (DEP), and `infrastructure.md` (INF-02, INF-04, INF-12, INF-13). This skill is the quick standalone pass; when it runs inside `pr-review` or `repo-review`, record each result in that review's ledger rows instead of a separate report.
+
+On a branch, review every changed file in full (not only the diff hunks) and the callers of anything security-relevant. Scan the whole tree when the user asks for a repo scan. Record commands you actually ran. Do not claim a runtime check you did not execute; mark it VERIFY with the command that would prove it.
 
 ## Audit
 
@@ -47,7 +49,9 @@ Fail the review (**MUST**) when any of these are true:
 - The proxy, cookie flags, or env contract change and there is no regression note. This repo has no proxy unit suite; quote the fail-closed branch and say runtime was not executed
 - A new network, auth, or analytics dependency lands without a reason
 - `package.json` and `package-lock.json` disagree, or a hold in `docs/DEPENDENCIES.md` is silently broken
-- Cookie `httpOnly` changes. `httpOnly: false` on the localhost proxy is intentional so Cypress can read the CloudFront cookies. Do not flip it as a drive-by fix
+- Cookie flags change (SEC-13). `proxy/index.js` sets `httpOnly: false`, and its comment says Cypress and Lighthouse read the CloudFront cookies from `document.cookie`; nothing in the repo does that. Report the unsupported justification as a SHOULD (DOC-01, SEC-13) and let a dedicated fix PR decide the flag. Do not flip it as a drive-by fix
+- Workflow expressions are interpolated into `run:` scripts, actions are not SHA-pinned, or environment selection can fall through to production secrets (CI-01, CI-03, CI-06; CI-01 and CI-06 are MUST)
+- A request-controlled value reaches a redirect or proxy target (SEC-09, SEC-14, NODE-06)
 
 **NICE** when the report only needs a clearer residual note or a renamed check.
 
@@ -64,10 +68,11 @@ git ls-files | grep -E '\.pem$|(^|/)\.env(\.|$)' | grep -vE '(^|/)\.env\.example
 
 Then read, when they are in the diff or this is a full scan:
 
-- `proxy/index.js` and `proxy/util.js` — fail-closed branches
-- `env.example` — placeholders only
-- `.github/workflows/` — secrets stay in `${{ secrets.* }}` and are not echoed
-- `src/` — `NEXT_PUBLIC_` and `dangerouslySetInnerHTML`
+- `proxy/index.js` and `proxy/util.js` — fail-closed branches, redirects, cookie flags, proxy target
+- `env.example` and `.env.example` — placeholders only, and the two agree
+- `.github/workflows/` — secrets stay in `${{ secrets.* }}`, are not echoed, and are passed only to steps that need them; no `${{ }}` inside `run:`; `permissions:` and action pins
+- `cloudformation/` — bucket public access, origin access, response headers policy
+- `src/` — `NEXT_PUBLIC_`, `dangerouslySetInnerHTML`, URLs built from API data, and the inline GA script in `src/app/layout.tsx`
 
 ## Report
 

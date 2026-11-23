@@ -27,11 +27,12 @@ crow-detector-client/
 │   ├── hooks/               # Shared hooks (when present)
 │   ├── types/
 │   └── utils/
-├── scripts/                 # bastion connect, source-maps, preflight
+├── scripts/                 # bastion connect, source-maps, preflight, review/ (ledger tooling)
 ├── proxy/                   # Local CloudFront signed-cookie proxy
 ├── cloudformation/
 ├── cypress/
-├── docs/                    # Governance documentation
+├── docs/                    # Governance documentation; review/ holds review criteria
+├── evals/review/            # Seeded cases and recall set for measuring reviews
 ├── .cursor/                 # Rules, skills
 ├── .github/                 # Workflows
 ├── CONTEXT.md
@@ -79,6 +80,15 @@ Prefer **`make`** targets (see `make help`). Equivalents use npm.
 | `make security`   | `npm audit`                     |
 | `make e2e`        | Cypress                         |
 | `make lighthouse` | LHCI                            |
+
+### Review
+
+| Command                                         | Description                                          |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| `npm run review:inventory -- --kind pr\|repo …` | List files in scope; `--init <path>` writes a ledger |
+| `npm run review:check -- <ledger>`              | Check a review ledger is complete and consistent     |
+| `npm run review:eval -- validate\|apply\|score` | Seeded review evals (`evals/review/README.md`)       |
+| `make review-inventory` / `make review-check`   | Make wrappers (`BASE=`, `LEDGER=`)                   |
 
 ### Local
 
@@ -168,7 +178,9 @@ See `docs/SECURITY.md`.
 
 - Conventional Commits via commitlint; prefer `npm run commit` (Commitizen).
 - Pre-commit: lint-staged. Commit-msg: commitlint. Pre-push: `./scripts/preflight.sh`.
-- Review severity tiers: `docs/REVIEW.md` (MUST / SHOULD / NICE).
+- Review standard: `docs/REVIEW.md` (MUST / SHOULD / NICE / VERIFY / OUT OF SCOPE, verdict rules); criteria in `docs/review/`.
+- Reviews use the `pr-review` or `repo-review` skill, keep a ledger in `.review/` (gitignored), and pass `npm run review:check -- <ledger>` before reporting.
+- Start new work with the `start-branch` skill (fresh `main`, new branch, `load-context`, then stop and wait).
 
 ---
 
