@@ -37,15 +37,14 @@ This repo’s CloudFormation stack is S3/CloudFront/Route 53 only (no Lambda `no
 
 ## Intentional version holds
 
-| Package               | Held at   | Latest blocked | Why                                                                                              |
-| --------------------- | --------- | -------------- | ------------------------------------------------------------------------------------------------ |
-| `eslint`              | `^9.39.5` | 10.x           | `eslint-plugin-jsx-a11y` / `eslint-plugin-react` (via `eslint-config-next`) peer-cap at ESLint 9 |
-| `typescript`          | `^6.0.3`  | 7.x            | `typescript-eslint` (via `eslint-config-next`) peers typically `<6.1` / current Next pin         |
-| `lighthouse` (direct) | `^12.8.2` | 13.x           | Keep major aligned with `@lhci/cli@0.15`                                                         |
+| Package      | Held at   | Latest blocked | Why                                                                                              |
+| ------------ | --------- | -------------- | ------------------------------------------------------------------------------------------------ |
+| `eslint`     | `^9.39.5` | 10.x           | `eslint-plugin-jsx-a11y` / `eslint-plugin-react` (via `eslint-config-next`) peer-cap at ESLint 9 |
+| `typescript` | `^6.0.3`  | 7.x            | `typescript-eslint` (via `eslint-config-next`) peers typically `<6.1` / current Next pin         |
 
-Do **not** run `npm audit fix --force` — it may downgrade tooling (e.g. `@lhci/cli`) to ancient versions.
+`@lhci/cli@0.16` depends on `lighthouse@13.6.0`. Keep the direct `lighthouse` dependency on that same major (`^13.6.0`). Do not pin Lighthouse 12 against LHCI 0.16.
 
-Residual audit findings are often transitive via `@lhci/cli`. Prefer upgrading LHCI when a compatible release lands.
+Do **not** run `npm audit fix --force`. The remaining moderate advisories are [GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4) (`glob` 9.0.0–14.0.1, patched in 14.0.2) and [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) (`minimatch` 7.0.0–11.0.0, patched in 11.0.1). Jest 30 and `@sentry/nextjs` 10 both depend on `glob` `^13`, so they cannot take the patched 14.x release. Jest’s coverage helper `test-exclude` also pins `minimatch` 10. ESLint’s `minimatch` 3 is outside this advisory. `npm audit` suggests Jest 29.7.0 because that line uses `glob` 7, which is outside the advisory range rather than patched, and that downgrade still leaves the Sentry 10 copy in the tree. These paths run in test and build tooling. They are not in the static client bundle.
 
 ---
 

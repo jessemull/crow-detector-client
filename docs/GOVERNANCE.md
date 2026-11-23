@@ -62,4 +62,6 @@ See `CONTEXT.md`. Conflicts resolve upward: CONTEXT → GOVERNANCE → ARCHITECT
 
 ## Review
 
-Severity tiers: MUST / SHOULD / NICE — see `docs/REVIEW.md`. MUST blocks merge.
+Severity tiers: MUST / SHOULD / NICE / VERIFY / OUT OF SCOPE — see `docs/REVIEW.md`. MUST blocks merge. VERIFY marks a concern that could be serious but is not yet proven; it is resolved (proven or disproven) before merge, never dropped.
+
+Agent reviews follow `docs/REVIEW.md` and the criteria in `docs/review/`, record their work in a ledger, and must pass `npm run review:check` before reporting. The verdict (`approve`, `approve-with-should`, `changes-required`, `incomplete`) follows the verdict rules in `docs/REVIEW.md`; an `incomplete` review is not an approval.

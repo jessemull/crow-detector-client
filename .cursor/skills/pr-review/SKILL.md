@@ -1,42 +1,154 @@
 ---
 name: pr-review
 description: >-
-  Review PRs for Critter Canteen: diff-first, severity-tiered task lists. Use when reviewing a PR or branch.
+  Exhaustive PR or branch review for Critter Canteen: gates, a ledger of every
+  file, line, and criterion in docs/review/, parallel per-area passes,
+  cross-cutting checks, a fresh-context verifier, and a checked report. Use
+  when the user asks to review a PR, a branch, or local changes.
 ---
 
 # PR Review
 
-**Severity:** `docs/REVIEW.md` (MUST / SHOULD / NICE / OUT OF SCOPE / VERIFY).
+The standard is `docs/REVIEW.md`; the criteria are `docs/review/*.md`; the record is the ledger (`docs/review/LEDGER.md`); the output is `docs/review/REPORT_TEMPLATE.md`. This skill is the procedure. Follow every phase in order. The review is finished only when `check-ledger` exits 0 and the report is written from the ledger.
 
-**Governance:** skim `CONTEXT.md` + `AGENTS.md`; load domain docs when the diff touches them.
+Thoroughness beats speed and brevity. A long, complete review is correct; a short one that skipped files or criteria is a failed review. Re-read the **Forbidden shortcuts** in `docs/REVIEW.md` before starting. In particular: read whole files, not hunks; never pass a criterion without evidence; never stop after the first findings; never drop a concern because it is unproven (make it VERIFY) or pre-existing (mark it pre-existing).
 
-## Principles
+Do not edit code, commit, push, or post comments during a review unless the user asks.
 
-1. Diff-first
-2. One bullet = one actionable task
-3. Fixed output sections; `(no items)` when empty
-4. No hedging in MUST/SHOULD/NICE
+---
 
-## Gather
+## Phase 0 — Inputs and context
+
+1. Settle the inputs: the **base** (default `origin/main`; for a stacked PR, its parent branch), whether to include uncommitted work (`--worktree`), and the PR description if there is one (`gh pr view --json title,body,commits` when a PR exists).
+2. Load context with the `load-context` skill unless it was done in this session on this branch. At minimum, read the governance docs, `docs/REVIEW.md`, `docs/review/LEDGER.md`, `docs/review/REPORT_TEMPLATE.md`, and every criteria file in `docs/review/` in full.
+
+## Phase 1 — Inventory and ledger
 
 ```bash
-git fetch origin main
-git log --oneline origin/main..HEAD
-git diff origin/main...HEAD --stat
-git diff origin/main...HEAD
+git fetch origin
+npm run review:inventory -- --kind pr --base <base> [--worktree] --init .review/<name>/ledger.json
 ```
 
-## Output sections (always)
+- `<name>` is `pr-<branch>-<short head sha>` (replace `/` with `-`).
+- If the ledger already exists, **resume from it**. Do not pass `--force` unless the head changed and you are starting over.
+- Read the printed inventory. Note warnings (dirty tree, hooks missing, Node mismatch); they become gate evidence.
+- The ledger is the working memory of the review. Update it on disk after every file and every pass, so the review survives context compaction. If context runs low, keep going from the ledger. Never wrap up early.
 
-1. **Scope** — commits, files, +/-/type, risk
-2. **Architecture** — OK or concern (static export, layers, auth/networking)
-3. **Files changed** — table
-4. **Reviewed areas** — domains applied (+ N/A)
-5. **[MUST]** / **[SHOULD]** / **[NICE TO HAVE]** / **[OUT OF SCOPE]** / **[VERIFY]**
-6. **Strengths**
-7. **Test plan** — `make preflight`, targeted jest, e2e if UI
-8. **Verification** — commands actually run
+## Phase 2 — Gates
 
-Bullet format: `` `path:line` — imperative task ``
+Run every required gate and record `status`, `exitCode`, and key output in `evidence`. A failing gate does not stop the review; record it and continue.
 
-Companion skills: `security-review`, `testing`, `static-export`.
+| Gate      | Command                                                                                                                               |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| hooks     | `git config core.hooksPath` (expect `.husky/_`) and `test -d .husky/_`; then `npx --no-install commitlint --from <baseSha> --to HEAD` |
+| lint      | `make lint` (list warnings in changed files)                                                                                          |
+| typecheck | `make typecheck`                                                                                                                      |
+| format    | `npx prettier --check .`                                                                                                              |
+| test      | `make test` (record the coverage summary and per-file branch coverage for changed files)                                              |
+| build     | `make build`, then `ls out/` to confirm `index.html`, `about.html`, `porch.html`, `404.html`                                          |
+| security  | `make security` (record counts by severity; triage against `docs/DEPENDENCIES.md`)                                                    |
+
+Also run the optional gates when `docs/review/gates.md` says they apply (`e2e`, `lighthouse`) and add them to `gates[]`; otherwise record why they were not run. Record `node -v` in the hooks evidence (GATE-02). Run the suppression search from GATE-12.
+
+If a gate cannot run (no network, missing credentials), set `not-run` with the reason. That forces verdict `incomplete`, which is the honest result.
+
+## Phase 3 — Understand the change
+
+1. `git log --oneline <baseSha>..HEAD` and `git diff --stat <baseSha>...HEAD`.
+2. State in one paragraph what the change claims to do (description and commits) and group the files by purpose. This is what COR-12 and PR-01 are checked against.
+3. List what the change **should** have touched but did not: tests for changed behavior, docs that mention changed things, sibling files (`merge.yml` and `deploy.yml`, both env templates, Header and Footer route lists). Missing changes are findings.
+
+## Phase 4 — Read every file, line by line
+
+For **each** file in `files[]` (in inventory order; do not skip any category):
+
+1. Read the **whole file** at the reviewed version, chunk by chunk using the ledger's `chunks`. For deletions read `git show <baseSha>:<path>`; for renames also read the old side.
+2. Read its diff: `git diff <baseSha>...HEAD -- <path>` (or without `...HEAD` for `--worktree`). Read deleted lines as carefully as added ones: removed guards, checks, cleanup, and tests are the most common hidden defects.
+3. For every changed export, prop, type, constant, env var, route, CSS class, or test ID: find every user with `rg -n "<symbol>"` across the repo (including tests, Cypress, workflows, docs, and skills) and read those call sites.
+4. Read the file's tests and the docs that describe it.
+5. Write candidate findings as you go (see Phase 7 for fields). Do not filter yet.
+6. Update the ledger row: `status: reviewed`, `linesRead` ranges actually read, and `evidence` naming what was checked (callers searched, tests read, docs compared). Save.
+
+Lockfiles, binaries, and generated files still get a row. Check the lockfile against `package.json` (DEP-01), binary sizes (PR-04), and that generated files are intended (PR-03).
+
+## Phase 5 — Area passes (parallel subagents)
+
+Every criterion in `criteria[]` gets its own decision. Split the criteria files into groups and run one subagent per group **in parallel** (Task tool). Suggested groups:
+
+1. gates, pr-hygiene, conventions, docs-and-comments, architecture
+2. correctness, contracts, error-handling, typescript
+3. security, configuration, dependencies, observability
+4. ci-cd, infrastructure, node-proxy-scripts, networking
+5. static-export, react, concurrency, performance, accessibility, testing
+
+Give each subagent: the repo path, base sha, head sha, the change summary from Phase 3, the file list, the criteria files for its group, and these instructions:
+
+> Read each assigned criteria file in full. For every criterion ID, decide `pass`, `finding`, `not-applicable`, or `not-inspected`. Read the whole files you need; do not rely on diff hunks or on this summary. A `pass` needs evidence citing `path:line` or a backticked command you ran. `not-applicable` needs a specific reason (not "no changes in this area" without saying why the criterion cannot apply). Report every candidate finding with location, the failing scenario, evidence, a proposed severity, and a confidence. Do not stop after the first findings. Return JSON: `{ "criteria": [{ "id", "status", "evidence", "reason", "findings": [<temp ids>] }], "findings": [{ "tempId", "location", "criteria", "severity", "confidence", "title", "detail", "evidence", "preExisting" }] }`.
+
+Merge results into the ledger: one row per criterion, findings numbered `F-1`, `F-2`, … with links in both directions. If two subagents report the same issue, merge them into one finding that lists both criteria. Where you disagree with a subagent's pass, re-check it yourself.
+
+If subagents are unavailable, run the same groups sequentially yourself and say so in the report.
+
+## Phase 6 — Cross-cutting passes
+
+Do each of these explicitly, after the area passes, and record what you checked in the relevant criterion evidence:
+
+1. **Sibling parity** (CON-06): for every changed path with siblings (workflows, env templates, route lists, similar components), diff the siblings against each other.
+2. **Removed code**: list every deleted line that was a guard, check, cleanup, error path, assertion, or doc statement, and confirm each removal is intended and safe.
+3. **Weakened tests** (TEST-02, TEST-03): compare changed tests old against new; any loosened assertion, removed case, added skip, or broadened mock is a finding unless justified.
+4. **Comments and docs** (DOC-01, DOC-02): for every changed function, re-read nearby comments and docstrings and confirm they are still true. Search docs, rules, and skills for changed names.
+5. **Contracts and config** (CON-04, CFG-01): follow every env var, route, API field, and secret name through code, templates, workflows, and docs.
+6. **Pre-existing issues**: issues found in the files you read are reported with `preExisting: true`. Do not omit them.
+7. **What is missing**: tests, docs, rollback notes, approvals (PR-07, PR-08) the change needed but does not have.
+
+## Phase 7 — Findings
+
+Each finding in the ledger has: `id`, `severity`, `confidence`, `location`, `criteria`, `title` (imperative), `detail` (the concrete failing scenario and why it matters), `evidence`, `verification`, `preExisting`. Rules from `docs/REVIEW.md`:
+
+- Confidence below 0.7, or not confirmed by the verifier, means severity `VERIFY`. Unproven is never dropped.
+- Severity follows the definitions and examples in `docs/REVIEW.md`, not how much work the fix is.
+- One finding per root cause; list every location in `detail` when the same defect appears in several places.
+
+## Phase 8 — Fresh-context verifier
+
+Launch **one new subagent** that has not seen your reasoning. Give it only: the repo path, base and head shas, the ledger path, and these instructions:
+
+> You are verifying a code review. For every finding in the ledger, re-derive it from the code and commands yourself: confirm it (it is real and the location and scenario are right), overturn it (it is wrong; say why with evidence), or mark it unproven (it could not be confirmed either way). Then sample at least 10 `pass` criterion rows, or 20% if there are more than 50, choosing MUST criteria first, and check each pass against the code. Finally list anything in the diff that no finding and no criterion evidence covers. Do not trust the ledger's evidence; check it. Return JSON: `{ "findings": [{ "id", "result", "evidence" }], "passes": [{ "id", "result", "evidence" }], "uncovered": [...] }`.
+
+Apply the results:
+
+- Confirmed: `verification: verified`.
+- Unproven: `verification: unverified`, severity `VERIFY`.
+- Overturned: remove the finding only when the verifier's evidence is convincing; record it in `verification.notes`.
+- A pass row the verifier rejects: re-check it and change it to `finding` when the verifier is right.
+- Uncovered items: review them (Phase 4 and 6 rules) and add rows or findings.
+
+Set `verification.verifierRan: true`, `findingsChecked`, `passesSampled`, and `notes`.
+
+## Phase 9 — Self-audit and check
+
+Before the verdict, answer these in the ledger notes and fix any "no":
+
+- Did I read every line of every file whose coverage is required, including tests, workflows, docs, and deleted files?
+- Does every criterion row have its own evidence or reason?
+- Did I search callers for every changed symbol?
+- Did I report pre-existing issues in the files I read?
+- Is anything I noticed missing from the findings?
+
+Set the verdict using the rules in `docs/REVIEW.md`, then run:
+
+```bash
+npm run review:check -- .review/<name>/ledger.json
+```
+
+Fix every problem it reports and run it again until it exits 0. Never edit the ledger just to satisfy the checker (for example by inventing evidence or marking unread lines as read); if the work was not done, do the work or mark the row `not-inspected` with the reason.
+
+## Phase 10 — Report
+
+Write the report in chat following `docs/review/REPORT_TEMPLATE.md`, from the ledger. Include every finding at every severity, the gates table, everything `not-inspected`, the coverage summary from `check-ledger`, and the ledger path. Do not soften MUST or SHOULD items, and do not add findings that are not in the ledger.
+
+Post to GitHub only when the user asks.
+
+## Companion skills
+
+Use for deeper passes in their areas: `security-scan`, `testing`, `accessibility`, `performance`, `static-export`. Their checks map to the criteria files; they do not replace the ledger.
