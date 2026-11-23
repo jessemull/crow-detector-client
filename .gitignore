@@ -64,3 +64,6 @@ public/data/data.json
 
 # next analyzer
 /analyze
+
+# review ledgers and reports (scripts/review)
+/.review/

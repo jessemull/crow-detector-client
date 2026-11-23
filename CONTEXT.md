@@ -24,7 +24,7 @@ Read items 5–10 on every task. Do not skip them because the work “seems unre
 
 Domain docs to load when the task touches that area: `docs/NETWORKING.md`, `docs/ERROR_HANDLING.md`, `docs/PERFORMANCE.md`, `docs/ACCESSIBILITY.md`, `docs/ANALYTICS.md`, `docs/CONTRIBUTING.md`, `docs/DEVICES.md` (Shelter Cam / physical capture assumptions; full plan in crow-detector-server).
 
-For PR or repo reviews, also read **`docs/REVIEW.md`**.
+For PR or repo reviews, also read **`docs/REVIEW.md`**, **`docs/review/LEDGER.md`**, **`docs/review/REPORT_TEMPLATE.md`**, and every criteria file in **`docs/review/`**, and follow the `pr-review` or `repo-review` skill.
 
 ---
 
@@ -109,4 +109,7 @@ CI also runs Cypress e2e and Lighthouse on PRs/merges — see `docs/CI_CD.md`.
 
 - Rules: `.cursor/rules/`
 - Skills: `.cursor/skills/`
+  - `load-context` reads this governance chain, every doc, configuration, workflow, infrastructure file, script, and all of `src/`, then reports and waits. Use it at the start of a session.
+  - `start-branch` updates `main` from origin, cuts a new branch, runs `load-context`, and then stops without doing any work.
+  - `pr-review` and `repo-review` run the review process in `docs/REVIEW.md` with a ledger checked by `scripts/review/check-ledger.js`; `evals/review/` measures them.
 - Human ops detail belongs in `README.md` when present; agent rules live in this governance chain.
