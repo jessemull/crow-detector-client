@@ -8,6 +8,7 @@ jest.mock('@sentry/nextjs', () => ({
 
 describe('Porch page', () => {
   const originalApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const originalFetch = global.fetch;
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api-dev.example.com';
@@ -30,6 +31,7 @@ describe('Porch page', () => {
     } else {
       process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBase;
     }
+    global.fetch = originalFetch;
   });
 
   it('renders Shelter Cam visits', async () => {
@@ -38,7 +40,17 @@ describe('Porch page', () => {
       screen.getByRole('heading', { level: 1, name: 'Shelter Cam' })
     ).toBeTruthy();
     await waitFor(() => {
-      expect(screen.getByText('Saturday, Nov 14, 8:00 PM')).toBeTruthy();
+      expect(
+        screen.getByText(
+          new Date('2026-11-14T20:00:00.000Z').toLocaleString('en-US', {
+            weekday: 'long',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          })
+        )
+      ).toBeTruthy();
     });
   });
 });

@@ -8,7 +8,11 @@ jest.mock('@sentry/nextjs', () => ({
 }));
 
 jest.mock('next/font/google', () => ({
-  Urbanist: () => ({ className: 'font-urbanist' }),
+  Inter: () => ({ className: 'font-inter', variable: '--font-inter' }),
+  Urbanist: () => ({
+    className: 'font-urbanist',
+    variable: '--font-urbanist-family',
+  }),
 }));
 
 describe('GlobalError', () => {

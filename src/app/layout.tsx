@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   title: 'Critter Canteen - Crow Feeding Station',
   description:
-    'Automated crow feeding and imaging station. Watch our feathered friends enjoy their meals and view captured images in real-time!',
+    'Automated crow feeding and imaging station. A heated porch shelter, motion-sensing cameras, and recorded visits on Shelter Cam.',
   keywords:
     'crow feeding, automated feeder, wildlife camera, bird watching, IoT',
   authors: [{ name: 'Jesse Mull' }],
@@ -97,17 +97,13 @@ export default function RootLayout({
               {`
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
-                (window.requestIdleCallback || function(cb) { setTimeout(cb, 0); })(() => {
-                  const script = document.createElement('script');
-                  script.src = 'https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}';
-                  script.async = true;
-                  document.head.appendChild(script);
-
-                  gtag('js', new Date());
-                  gtag('config', '${gaTrackingId}', {
-                    page_path: window.location.pathname,
-                  });
-                });
+                window.gtag = gtag;
+                gtag('js', new Date());
+                const script = document.createElement('script');
+                script.src = 'https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}';
+                script.async = true;
+                document.head.appendChild(script);
+                window.dispatchEvent(new Event('ga-ready'));
               `}
             </Script>
             <GaRouteListener measurementId={gaTrackingId} />

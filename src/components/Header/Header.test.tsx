@@ -71,6 +71,13 @@ describe('Header', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPathname.mockReturnValue('/');
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    }));
   });
 
   it('renders the header with mark and title', () => {
@@ -140,14 +147,15 @@ describe('Header', () => {
     expect(menuButton.className).toContain('cursor-pointer');
   });
 
-  it('toggles mobile menu when button is clicked', () => {
+  it('toggles mobile menu when button is clicked', async () => {
+    const user = userEvent.setup();
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
 
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
 
-    fireEvent.click(menuButton);
+    await user.click(menuButton);
 
     expect(menuButton).toHaveAttribute('aria-expanded', 'true');
     const closeButton = screen.getByRole('button', { name: 'Close menu' });

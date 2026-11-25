@@ -6,24 +6,24 @@
 
 ## Workflows
 
-| Workflow                             | Trigger                               | Role                                                                                               |
-| ------------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `.github/workflows/pull-request.yml` | PR → `main`                           | Build, lint, typecheck, unit tests (≥80% via Jest), Cypress + Lighthouse against the static export |
-| `.github/workflows/merge.yml`        | Push → `main`                         | Build → lint → typecheck → tests → S3 backup → deploy → E2E → Lighthouse → rollback on E2E/LH fail |
-| `.github/workflows/deploy.yml`       | `workflow_dispatch` (test/production) | Manual deploy with same post-deploy e2e/LH rollback pattern                                        |
-| `.github/workflows/rollback.yml`     | `workflow_dispatch`                   | Restore named S3 backup + CloudFront invalidate                                                    |
+| Workflow                             | Trigger                               | Role                                                                                                                                                                                                     |
+| ------------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/pull-request.yml` | PR → `main`                           | Build, lint, typecheck, unit tests (≥80% via Jest), Cypress + Lighthouse against the static export                                                                                                       |
+| `.github/workflows/merge.yml`        | Push → `main`                         | Build, lint, and typecheck start together. Tests need all three. Backup and deploy follow. E2E and Lighthouse need only the deploy. Rollback runs when deploy, E2E, or Lighthouse fails or is cancelled. |
+| `.github/workflows/deploy.yml`       | `workflow_dispatch` (test/production) | Manual deploy with same post-deploy e2e/LH rollback pattern                                                                                                                                              |
+| `.github/workflows/rollback.yml`     | `workflow_dispatch`                   | Restore named S3 backup + CloudFront invalidate                                                                                                                                                          |
 
 Do **not** rewrite these lightly. Document changes in the PR and treat as human-review required (`docs/GOVERNANCE.md`).
 
 ### Quality jobs (PR)
 
-| Job              | Blocking? | Notes                                                                                                                                                   |
-| ---------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Build            | Yes       | Static export; bakes `NEXT_PUBLIC_SENTRY_*` and `NEXT_PUBLIC_API_BASE_URL` from `NEXT_PUBLIC_API_BASE_URL_DEV` / `_PROD` secrets (no source-map upload) |
-| Lint             | Yes       | `npm run lint`                                                                                                                                          |
-| Typecheck        | Yes       | `npm run typecheck`                                                                                                                                     |
-| Unit tests       | Yes       | Jest + ≥80% coverage (`jest.config` thresholds; authoritative gate)                                                                                     |
-| E2E & Lighthouse | Yes       | Cypress and Lighthouse run against the static export served on 127.0.0.1:3000. Lighthouse is blocking.                                                  |
+| Job              | Blocking? | Notes                                                                                                                                                              |
+| ---------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Build            | Yes       | Static export; bakes `NEXT_PUBLIC_SENTRY_*` and `NEXT_PUBLIC_API_BASE_URL` from `NEXT_PUBLIC_API_BASE_URL_DEV` only. The PROD secret is used by the manual deploy. |
+| Lint             | Yes       | `npm run lint`                                                                                                                                                     |
+| Typecheck        | Yes       | `npm run typecheck`                                                                                                                                                |
+| Unit tests       | Yes       | Jest + ≥80% coverage (`jest.config` thresholds; authoritative gate)                                                                                                |
+| E2E & Lighthouse | Yes       | Cypress and Lighthouse run against the static export served on 127.0.0.1:3000. Lighthouse is blocking.                                                             |
 
 ### Merge / deploy
 
@@ -48,7 +48,7 @@ Husky runs `./scripts/preflight.sh` (lint + typecheck + test + build) on **every
 ```bash
 make preflight   # lint + typecheck + test + build
 make typecheck
-make security    # npm audit (advisory locally; CI may treat audit as non-blocking)
+make security    # npm audit. Local only. No workflow runs it.
 ```
 
 Local preflight and CI both require **typecheck**. Keep both green.

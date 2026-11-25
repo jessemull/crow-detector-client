@@ -9,6 +9,9 @@ if [ ! -d .husky/_ ]; then
   exit 1
 fi
 
+echo "==> format"
+npx prettier --check .
+
 echo "==> lint"
 npm run lint
 

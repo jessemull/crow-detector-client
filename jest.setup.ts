@@ -1,4 +1,7 @@
 import '@testing-library/jest-dom';
+
+process.env.NEXT_PUBLIC_PLAYBACK_HOSTS =
+  process.env.NEXT_PUBLIC_PLAYBACK_HOSTS || 'cdn.example.com';
 import React from 'react';
 
 if (typeof window !== 'undefined') {

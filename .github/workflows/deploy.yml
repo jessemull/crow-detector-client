@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: critter-canteen-site-deploy
@@ -43,6 +42,7 @@ jobs:
           echo "Deploying to $DEPLOY_ENVIRONMENT environment"
           ENABLE_SOURCE_MAPS=true NODE_ENV="$DEPLOY_ENVIRONMENT" npm run build
           node ./scripts/source-maps.js
+          find out -name '*.js' -exec sed -i '/sourceMappingURL/d' {} +
           find out -name '*.map' -delete
         env:
           DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
@@ -135,6 +135,10 @@ jobs:
     name: Backup S3
     needs: test
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
     timeout-minutes: 30
     outputs:
       backup_dir: ${{ steps.timestamp.outputs.backup_dir }}
@@ -164,6 +168,10 @@ jobs:
     name: Deploy to S3
     needs: backup_s3
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
     timeout-minutes: 30
     steps:
       - name: Checkout Code
@@ -198,7 +206,6 @@ jobs:
           fi
           aws s3 sync next-build "s3://$AWS_S3_BUCKET" --exclude "*" --include "_next/*"
           aws s3 sync next-build "s3://$AWS_S3_BUCKET" --delete --exclude "data/*" --exclude "_next/*"
-          aws s3 sync next-build "s3://$AWS_S3_BUCKET" --delete --exclude "*" --include "_next/*"
         env:
           AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
 
@@ -213,6 +220,11 @@ jobs:
           aws cloudfront wait invalidation-completed --distribution-id "$DISTRIBUTION" --id "$invalidation_id"
         env:
           DISTRIBUTION: ${{ inputs.environment == 'test' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV || inputs.environment == 'production' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD }}
+
+      - name: Delete replaced hashed chunks
+        run: aws s3 sync next-build "s3://$AWS_S3_BUCKET" --delete --exclude "*" --include "_next/*"
+        env:
+          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
 
   e2e_tests:
     name: Run E2E Tests
@@ -236,7 +248,7 @@ jobs:
         if: inputs.environment == 'test'
         run: |
           NODE_ENV="$DEPLOY_ENVIRONMENT" nohup npm run proxy &
-          npx wait-on http://127.0.0.1:8080/healthcheck
+          npx wait-on -t 120000 http://127.0.0.1:8080/healthcheck
         env:
           DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
           CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}
@@ -279,11 +291,15 @@ jobs:
   rollback:
     name: Revert S3 Deployment
     needs: [deploy_to_s3, lighthouse_tests, e2e_tests, backup_s3]
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
     if: >-
       ${{
         always() &&
         needs.backup_s3.result == 'success' &&
-        (needs.deploy_to_s3.result == 'failure' || needs.lighthouse_tests.result == 'failure' || needs.e2e_tests.result == 'failure')
+        (needs.deploy_to_s3.result == 'failure' || needs.deploy_to_s3.result == 'cancelled' || needs.lighthouse_tests.result == 'failure' || needs.lighthouse_tests.result == 'cancelled' || needs.e2e_tests.result == 'failure' || needs.e2e_tests.result == 'cancelled')
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 30

@@ -17,7 +17,16 @@ jest.mock('@sentry/nextjs', () => ({
 }));
 
 const originalApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
-const recordedLabel = 'Saturday, Nov 14, 8:00 PM';
+const recordedLabel = new Date('2026-11-14T20:00:00.000Z').toLocaleString(
+  'en-US',
+  {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }
+);
 
 describe('PorchClips', () => {
   const fetchMock = jest.fn();

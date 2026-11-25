@@ -27,6 +27,13 @@ describe('Homepage', () => {
   });
 });
 
+describe('Shelter Cam', () => {
+  it('loads the porch page', () => {
+    cy.visit('/porch');
+    cy.get('main h1').should('contain', 'Shelter Cam');
+  });
+});
+
 describe('About page', () => {
   beforeEach(() => {
     cy.visit('/about');

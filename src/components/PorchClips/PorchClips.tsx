@@ -10,8 +10,11 @@ export type PorchClip = {
   expiresAt: string;
 };
 
-/** How often to re-fetch while the tab is visible. */
+/** How often to re-fetch while the tab is visible and the last poll succeeded. */
 const POLL_INTERVAL_MS = 45_000;
+
+/** Cap the wait after repeated failures so a down API is not polled every 45s. */
+const MAX_POLL_INTERVAL_MS = 6 * 60_000;
 
 /** Refresh a still-visible clip’s signed URL before CloudFront rejects it. */
 const URL_REFRESH_BUFFER_MS = 60_000;
@@ -35,27 +38,48 @@ const statusLineClassName =
 const getApiBaseUrl = (): string =>
   (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
 
+const recordedAtFormat: Intl.DateTimeFormatOptions = {
+  weekday: 'long',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+};
+
+/** Browser-local clock. Omitting timeZone is what makes that happen. */
 const formatRecordedAt = (value: string): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleString('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: 'UTC',
-  });
+  return date.toLocaleString('en-US', recordedAtFormat);
 };
 
-const isHttpsUrl = (value: string): boolean => {
+const PLAYBACK_HOST_SUFFIXES = ['.cloudfront.net', '.crittercanteen.com'];
+
+const configuredPlaybackHosts = (): string[] =>
+  (process.env.NEXT_PUBLIC_PLAYBACK_HOSTS || '')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter((host) => host.length > 0);
+
+const isAllowedPlaybackUrl = (value: string): boolean => {
+  let url: URL;
   try {
-    return new URL(value).protocol === 'https:';
+    url = new URL(value);
   } catch {
     return false;
   }
+  if (url.protocol !== 'https:') {
+    return false;
+  }
+  const host = url.hostname.toLowerCase();
+  if (configuredPlaybackHosts().includes(host)) {
+    return true;
+  }
+  return PLAYBACK_HOST_SUFFIXES.some(
+    (suffix) => host.endsWith(suffix) && host.length > suffix.length
+  );
 };
 
 const isPorchClip = (value: unknown): value is PorchClip => {
@@ -68,7 +92,7 @@ const isPorchClip = (value: unknown): value is PorchClip => {
     clip.name.length > 0 &&
     typeof clip.recordedAt === 'string' &&
     typeof clip.playbackUrl === 'string' &&
-    isHttpsUrl(clip.playbackUrl) &&
+    isAllowedPlaybackUrl(clip.playbackUrl) &&
     typeof clip.expiresAt === 'string'
   );
 };
@@ -78,7 +102,9 @@ const parsePorchClips = (value: unknown): PorchClip[] | null => {
   if (!Array.isArray(value) || !value.every(isPorchClip)) {
     return null;
   }
-  return value;
+  return [...value].sort(
+    (a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt)
+  );
 };
 
 const sameClipIdentity = (a: PorchClip, b: PorchClip): boolean =>
@@ -91,19 +117,28 @@ const sameClipIdentity = (a: PorchClip, b: PorchClip): boolean =>
 const mergeClipsForPlayback = (
   previous: PorchClip[],
   next: PorchClip[],
-  nowMs: number
+  nowMs: number,
+  failedPlaybackUrls: Set<string>
 ): PorchClip[] => {
   if (
     previous.length === next.length &&
     previous.every((clip, index) => sameClipIdentity(clip, next[index]))
   ) {
-    return previous.map((clip, index) => {
+    const merged = previous.map((clip, index) => {
       const expiresAtMs = Date.parse(clip.expiresAt);
       const needsFreshUrl =
         !Number.isFinite(expiresAtMs) ||
-        expiresAtMs - nowMs < URL_REFRESH_BUFFER_MS;
+        expiresAtMs - nowMs < URL_REFRESH_BUFFER_MS ||
+        failedPlaybackUrls.has(clip.playbackUrl);
+      if (failedPlaybackUrls.has(clip.playbackUrl)) {
+        failedPlaybackUrls.delete(clip.playbackUrl);
+      }
       return needsFreshUrl ? next[index] : clip;
     });
+    if (merged.every((clip, index) => clip === previous[index])) {
+      return previous;
+    }
+    return merged;
   }
 
   return next;
@@ -114,12 +149,14 @@ type LazyClipVideoProps = {
   ariaLabel: string;
   /** Load immediately (latest visit) instead of waiting for scroll. */
   eager?: boolean;
+  onPlaybackError?: (src: string) => void;
 };
 
 const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
   src,
   ariaLabel,
   eager = false,
+  onPlaybackError,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(eager);
@@ -158,6 +195,7 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
           This visit can’t be played. It will be replaced on the next refresh.
         </p>
       ) : (
+        // Wildlife clips have no speech, so a caption track does not apply.
         <video
           className="aspect-video w-full bg-black"
           controls
@@ -165,7 +203,10 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
           preload="none"
           src={shouldLoad ? src : undefined}
           aria-label={ariaLabel}
-          onError={() => setFailedSrc(src)}
+          onError={() => {
+            setFailedSrc(src);
+            onPlaybackError?.(src);
+          }}
         >
           Your browser does not support video playback.
         </video>
@@ -192,11 +233,18 @@ const PorchClips: React.FC = () => {
   const [refreshWarning, setRefreshWarning] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
+  const failureStreakRef = useRef(0);
+  const failedPlaybackUrlsRef = useRef(new Set<string>());
 
   const loadClips = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
     const apiBaseUrl = getApiBaseUrl();
     if (!apiBaseUrl) {
+      if (!silent) {
+        Sentry.captureException(
+          new Error('NEXT_PUBLIC_API_BASE_URL is not set')
+        );
+      }
       setError(MISSING_API_MESSAGE);
       setClips([]);
       setRefreshWarning(null);
@@ -210,7 +258,7 @@ const PorchClips: React.FC = () => {
     const generation = generationRef.current + 1;
     generationRef.current = generation;
     const timeoutId = window.setTimeout(
-      () => controller.abort(),
+      () => controller.abort('timeout'),
       FETCH_TIMEOUT_MS
     );
 
@@ -239,18 +287,37 @@ const PorchClips: React.FC = () => {
         throw new Error('Porch clips response had an unexpected shape');
       }
       setClips((previous) =>
-        silent ? mergeClipsForPlayback(previous, next, Date.now()) : next
+        silent
+          ? mergeClipsForPlayback(
+              previous,
+              next,
+              Date.now(),
+              failedPlaybackUrlsRef.current
+            )
+          : next
       );
       setError(null);
       setRefreshWarning(null);
+      failureStreakRef.current = 0;
     } catch (error) {
       if (generation !== generationRef.current) {
         return;
       }
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      const timedOut =
+        error instanceof DOMException &&
+        error.name === 'AbortError' &&
+        controller.signal.reason === 'timeout';
+      if (
+        error instanceof DOMException &&
+        error.name === 'AbortError' &&
+        !timedOut
+      ) {
         return;
       }
-      Sentry.captureException(error);
+      failureStreakRef.current += 1;
+      if (!timedOut) {
+        Sentry.captureException(error);
+      }
       // Keep the last good list on background polls so the page does not flash empty.
       if (!silent) {
         setClips([]);
@@ -263,38 +330,74 @@ const PorchClips: React.FC = () => {
       }
     } finally {
       window.clearTimeout(timeoutId);
-      if (!silent && generation === generationRef.current) {
+
+      // Silent refresh can replace the first request. Clear loading for that generation too.
+      if (generation === generationRef.current) {
         setLoading(false);
       }
     }
   }, []);
 
   useEffect(() => {
-    const run = (silent: boolean) => {
-      void loadClips({ silent });
+    let cancelled = false;
+    let pollTimer = 0;
+
+    const delayAfter = () => {
+      const streak = failureStreakRef.current;
+      if (streak === 0) {
+        return POLL_INTERVAL_MS;
+      }
+      return Math.min(
+        POLL_INTERVAL_MS * 2 ** (streak - 1),
+        MAX_POLL_INTERVAL_MS
+      );
+    };
+
+    const schedule = () => {
+      window.clearTimeout(pollTimer);
+      pollTimer = window.setTimeout(() => {
+        if (cancelled) {
+          return;
+        }
+        if (document.visibilityState !== 'visible') {
+          schedule();
+          return;
+        }
+        void loadClips({ silent: true }).finally(() => {
+          if (!cancelled) {
+            schedule();
+          }
+        });
+      }, delayAfter());
     };
 
     // Defer the first fetch so setState does not run synchronously inside the effect.
     const initialTimer = window.setTimeout(() => {
-      run(false);
+      void loadClips({ silent: false }).finally(() => {
+        if (!cancelled) {
+          schedule();
+        }
+      });
     }, 0);
 
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        run(true);
-      }
-    }, POLL_INTERVAL_MS);
-
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        run(true);
+      if (document.visibilityState !== 'visible' || cancelled) {
+        return;
       }
+      window.clearTimeout(pollTimer);
+      void loadClips({ silent: true }).finally(() => {
+        if (!cancelled) {
+          schedule();
+        }
+      });
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      cancelled = true;
+      generationRef.current += 1;
       window.clearTimeout(initialTimer);
-      window.clearInterval(intervalId);
+      window.clearTimeout(pollTimer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       abortRef.current?.abort();
     };
@@ -346,6 +449,9 @@ const PorchClips: React.FC = () => {
                       src={clip.playbackUrl}
                       ariaLabel={`Shelter visit recorded ${recordedLabel}`}
                       eager={index === 0}
+                      onPlaybackError={(url) => {
+                        failedPlaybackUrlsRef.current.add(url);
+                      }}
                     />
                     <div className={clipCardMetaClassName}>
                       <h2 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-cc-ink md:text-lg">

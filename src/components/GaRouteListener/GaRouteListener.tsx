@@ -11,15 +11,28 @@ type Gtag = (
 
 const GaRouteListener = ({ measurementId }: { measurementId: string }) => {
   const pathname = usePathname() || '/';
-  const skipFirst = useRef(true);
+  const lastSent = useRef<string | null>(null);
 
   useEffect(() => {
-    if (skipFirst.current) {
-      skipFirst.current = false;
-      return;
-    }
-    const gtag = (window as Window & { gtag?: Gtag }).gtag;
-    gtag?.('config', measurementId, { page_path: pathname });
+    let cancelled = false;
+    const send = () => {
+      if (cancelled || lastSent.current === pathname) {
+        return;
+      }
+      const gtag = (window as Window & { gtag?: Gtag }).gtag;
+      if (!gtag) {
+        return;
+      }
+      lastSent.current = pathname;
+      gtag('config', measurementId, { page_path: pathname });
+    };
+
+    send();
+    window.addEventListener('ga-ready', send);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('ga-ready', send);
+    };
   }, [measurementId, pathname]);
 
   return null;

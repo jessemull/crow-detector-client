@@ -20,7 +20,7 @@ Thresholds (do not lower them to go green):
 - `images.unoptimized: true` — size files in `public/` before adding them
 - Keep the first viewport to brand, short copy, and the primary CTA
 - Investigate bundle growth with `ENABLE_ANALYZER=true npm run build`; the webpack analyzer may not report Turbopack builds, so also compare `out/_next/static` sizes before and after
-- Polling and media must not reload unchanged content: PorchClips keeps signed URLs across polls when the clip set is unchanged so `<video key={src}>` does not remount
+- Polling and media must not reload unchanged content: PorchClips keeps the previous clip object across polls when the signed URL is still fresh. The video element has no `key`.
 - Hashed `/_next/static/` assets can be cached for a year; HTML must be short-lived or invalidated on deploy
 - `@lhci/cli` and direct `lighthouse` stay on the same major (see `docs/DEPENDENCIES.md`)
 

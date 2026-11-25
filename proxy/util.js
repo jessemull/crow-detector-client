@@ -55,20 +55,54 @@ const getSignedCookies = () => {
   }
 };
 
-/** Reject protocol-relative and absolute redirect targets. */
-const isSameOriginPath = (value) =>
-  typeof value === 'string' && value.startsWith('/') && !value.startsWith('//');
-
-const policyStillValid = (cookieValue) => {
+/**
+ * Accept only a path the URL parser keeps on 127.0.0.1.
+ * A backslash such as /\evil.example is an open redirect.
+ */
+const isSameOriginPath = (value) => {
+  if (
+    typeof value !== 'string' ||
+    !value.startsWith('/') ||
+    value.startsWith('//')
+  ) {
+    return false;
+  }
+  if (value.includes('\\') || value.includes('\0')) {
+    return false;
+  }
   try {
-    const padded = cookieValue
+    const parsed = new URL(value, 'http://127.0.0.1');
+    return parsed.hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+};
+
+const policyStillValid = (cookies, domain) => {
+  try {
+    const policyValue = cookies?.['CloudFront-Policy'];
+    const signature = cookies?.['CloudFront-Signature'];
+    const keyPairId = cookies?.['CloudFront-Key-Pair-Id'];
+    if (!policyValue || !signature || !keyPairId || !domain) {
+      return false;
+    }
+    const padded = policyValue
       .replace(/-/g, '+')
       .replace(/_/g, '=')
       .replace(/~/g, '/');
     const json = JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
-    const epoch =
-      json?.Statement?.[0]?.Condition?.DateLessThan?.['AWS:EpochTime'];
-    return typeof epoch === 'number' && epoch * 1000 > Date.now() + 60_000;
+    const statement = json?.Statement?.[0];
+    const epoch = statement?.Condition?.DateLessThan?.['AWS:EpochTime'];
+    const resource = statement?.Resource;
+    const expected = `https://${domain}/`;
+    const resourceMatches =
+      typeof resource === 'string' &&
+      (resource === `https://${domain}/*` || resource.startsWith(expected));
+    return (
+      resourceMatches &&
+      typeof epoch === 'number' &&
+      epoch * 1000 > Date.now() + 60_000
+    );
   } catch {
     return false;
   }

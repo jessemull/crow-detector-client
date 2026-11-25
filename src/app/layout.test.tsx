@@ -28,8 +28,16 @@ describe('RootLayout', () => {
   const originalConsent = process.env.NEXT_PUBLIC_GA_CONSENT;
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_GA_TRACKING_ID = originalId;
-    process.env.NEXT_PUBLIC_GA_CONSENT = originalConsent;
+    if (originalId === undefined) {
+      delete process.env.NEXT_PUBLIC_GA_TRACKING_ID;
+    } else {
+      process.env.NEXT_PUBLIC_GA_TRACKING_ID = originalId;
+    }
+    if (originalConsent === undefined) {
+      delete process.env.NEXT_PUBLIC_GA_CONSENT;
+    } else {
+      process.env.NEXT_PUBLIC_GA_CONSENT = originalConsent;
+    }
     jest.resetModules();
   });
 

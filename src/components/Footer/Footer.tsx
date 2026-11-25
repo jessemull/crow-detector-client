@@ -6,7 +6,9 @@ import { copyrightLine } from './copyright';
 
 const Footer: React.FC = () => {
   const pathname = usePathname() || '/';
+
   // Home / About own the copyright inside the hero (below the fold, on the photo).
+
   if (pathname === '/' || pathname === '/about') {
     return null;
   }

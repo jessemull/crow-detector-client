@@ -48,8 +48,11 @@ app.get('/healthcheck', (req, res) => {
 app.use(cookieParser());
 
 app.use((req, res, next) => {
-  const policy = req.cookies['CloudFront-Policy'];
-  if (policy && policyStillValid(policy)) {
+  if (!isSameOriginPath(req.originalUrl)) {
+    return res.status(400).send('Invalid redirect target');
+  }
+
+  if (policyStillValid(req.cookies, CLOUDFRONT_DOMAIN)) {
     return next();
   }
 
@@ -62,18 +65,14 @@ app.use((req, res, next) => {
   }
 
   Object.entries(signedCookies).forEach(([name, value]) => {
-    // The browser sends these cookies on asset requests. JavaScript does not read them.
+    // Host-only cookie so 127.0.0.1 and localhost each keep their own.
     res.cookie(name, value, {
       httpOnly: true,
       secure: true,
-      domain: 'localhost',
       maxAge: COOKIE_TTL,
     });
   });
 
-  if (!isSameOriginPath(req.originalUrl)) {
-    return res.status(400).send('Invalid redirect target');
-  }
   return res.redirect(307, req.originalUrl);
 });
 
@@ -102,7 +101,12 @@ app.use(
         }
       },
       proxyRes: (proxyRes, req) => {
-        if (ASSET_PATH.test(pathWithoutQuery(req.originalUrl))) {
+        const status = proxyRes.statusCode || 0;
+        if (
+          status >= 200 &&
+          status < 300 &&
+          ASSET_PATH.test(pathWithoutQuery(req.originalUrl))
+        ) {
           proxyRes.headers['cache-control'] =
             'public, max-age=31536000, immutable';
         }

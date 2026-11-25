@@ -2,7 +2,7 @@
 
 const urls = {
   production: 'https://www.crittercanteen.com',
-  test: 'http://localhost:8080',
+  test: 'http://127.0.0.1:8080',
 };
 
 const assertions = {
@@ -13,7 +13,7 @@ const assertions = {
     'categories:best-practices': ['error', { minScore: 0.9 }],
   },
   test: {
-    'categories:performance': ['warn', { minScore: 0.6 }],
+    'categories:performance': ['error', { minScore: 0.8 }],
     'categories:accessibility': ['error', { minScore: 0.9 }],
     'categories:seo': ['error', { minScore: 0.9 }],
     'categories:best-practices': ['error', { minScore: 0.9 }],
@@ -52,7 +52,7 @@ module.exports = {
     collect: {
       numberOfRuns: 3,
       settings: settings[process.env.NODE_ENV] || settings.test,
-      url: urls[process.env.NODE_ENV] || 'http://localhost:3000',
+      url: urls[process.env.NODE_ENV] || 'http://127.0.0.1:3000',
       ...(skipServerStart
         ? {}
         : {

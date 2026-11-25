@@ -6,9 +6,6 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 
-const root = path.resolve(process.argv[2] || 'out');
-const port = Number(process.env.PORT || 3000);
-
 const contentType = (filePath) => {
   if (filePath.endsWith('.html')) return 'text/html; charset=utf-8';
   if (filePath.endsWith('.js')) return 'text/javascript; charset=utf-8';
@@ -22,8 +19,18 @@ const contentType = (filePath) => {
   return 'application/octet-stream';
 };
 
-const resolveFile = (urlPath) => {
-  const clean = decodeURIComponent(urlPath.split('?')[0]);
+const insideRoot = (root, resolved) => {
+  const prefix = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
+  return resolved === root || resolved.startsWith(prefix);
+};
+
+const resolveFile = (root, urlPath) => {
+  let clean;
+  try {
+    clean = decodeURIComponent((urlPath || '/').split('?')[0]);
+  } catch {
+    return { error: 400 };
+  }
   const relative = clean.replace(/^\/+/, '');
   const candidates = [];
   if (relative === '') {
@@ -34,28 +41,41 @@ const resolveFile = (urlPath) => {
       candidates.push(path.join(root, `${relative}.html`));
     }
   }
-  return candidates.find((candidate) => {
+  const file = candidates.find((candidate) => {
     const resolved = path.resolve(candidate);
     return (
-      resolved.startsWith(root) &&
+      insideRoot(root, resolved) &&
       fs.existsSync(resolved) &&
       fs.statSync(resolved).isFile()
     );
   });
+  return file ? { file } : { error: 404 };
 };
 
-const server = http.createServer((req, res) => {
-  const file = resolveFile(req.url || '/');
-  if (!file) {
-    const missing = path.join(root, '404.html');
-    res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(fs.existsSync(missing) ? fs.readFileSync(missing) : 'Not found');
-    return;
-  }
-  res.writeHead(200, { 'content-type': contentType(file) });
-  res.end(fs.readFileSync(file));
-});
+const createServer = (root) =>
+  http.createServer((req, res) => {
+    const resolved = resolveFile(root, req.url || '/');
+    if (resolved.error === 400) {
+      res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('Bad request');
+      return;
+    }
+    if (!resolved.file) {
+      const missing = path.join(root, '404.html');
+      res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(fs.existsSync(missing) ? fs.readFileSync(missing) : 'Not found');
+      return;
+    }
+    res.writeHead(200, { 'content-type': contentType(resolved.file) });
+    res.end(fs.readFileSync(resolved.file));
+  });
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Serving ${root} at http://127.0.0.1:${port}`);
-});
+if (require.main === module) {
+  const root = path.resolve(process.argv[2] || 'out');
+  const port = Number(process.env.PORT || 3000);
+  createServer(root).listen(port, '127.0.0.1', () => {
+    console.log(`Serving ${root} at http://127.0.0.1:${port}`);
+  });
+}
+
+module.exports = { contentType, insideRoot, resolveFile, createServer };

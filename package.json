@@ -36,7 +36,6 @@
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.6",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-unused-imports": "^4.4.1",
@@ -70,7 +69,7 @@
   "private": true,
   "scripts": {
     "bastion": "node ./scripts/connect.js",
-    "build": "NODE_ENV=${NODE_ENV:-test} next build",
+    "build": "node ./scripts/build.js",
     "commit": "git-cz",
     "coverage:open": "open ./coverage/lcov-report/index.html",
     "dev": "next dev",
@@ -86,7 +85,7 @@
     "review:check": "node ./scripts/review/check-ledger.js",
     "review:eval": "node ./scripts/review/eval-case.js",
     "review:inventory": "node ./scripts/review/inventory.js",
-    "source-maps": "ENABLE_SOURCE_MAPS=true NODE_ENV=${NODE_ENV:-test} next build",
+    "source-maps": "ENABLE_SOURCE_MAPS=true next build",
     "start": "echo 'Production hosting serves the static out/ directory (S3/CloudFront). Use npm run build then serve out/, or npm run dev for local development. For the test CDN use npm run proxy.' && exit 1",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
@@ -97,7 +96,6 @@
     "@parcel/watcher@2.6.0": true,
     "cypress@15.21.2": true,
     "fsevents@2.3.3": true,
-    "@sentry/cli@2.58.6": true,
     "@sentry/cli@3.8.2": true
   }
 }

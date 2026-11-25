@@ -17,7 +17,24 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Shelter Cam - Critter Canteen',
     description: PORCH_DESCRIPTION,
+    type: 'website',
+    locale: 'en_US',
     url: 'https://www.crittercanteen.com/porch',
+    siteName: 'Critter Canteen',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Critter Canteen - Automated Crow Feeding & Imaging Station.',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Shelter Cam - Critter Canteen',
+    description: PORCH_DESCRIPTION,
+    images: ['/twitter-image.png'],
   },
 };
 

@@ -8,6 +8,7 @@ const customJestConfig = {
   collectCoverage: true,
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
+    '!src/**/*.test.{ts,tsx}',
     'scripts/review/**/*.js',
     '!scripts/review/**/*.test.js',
     '!scripts/review/test-utils/**',
@@ -33,7 +34,7 @@ const customJestConfig = {
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testEnvironment: 'jest-environment-jsdom',
-  testPathIgnorePatterns: ['/node_modules/', '/.next/', 'temp-original'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
 };
 
 module.exports = createJestConfig(customJestConfig);
