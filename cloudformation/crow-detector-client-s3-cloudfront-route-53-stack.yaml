@@ -15,12 +15,12 @@ Parameters:
     Description: The Hosted Zone ID for CloudFront alias record.
   Environment:
     Type: String
-    Default: 'test'
-    Description: 'The environment for the deployment (test or production). Matches the workflow inputs.'
+    Default: 'dev'
+    Description: 'The environment for the deployment (dev or prod). This value is part of the bucket name, so it stays dev or prod for the existing stacks.'
     AllowedValues:
-      - test
-      - production
-    ConstraintDescription: "Must be either 'test' or 'production'."
+      - dev
+      - prod
+    ConstraintDescription: "Must be either 'dev' or 'prod'."
   CreateDNSRecords:
     Type: String
     Default: 'true'
@@ -271,7 +271,7 @@ Resources:
         Enabled: true
         DefaultRootObject: index.html
         HttpVersion: http2
-        Ipv6Enabled: true
+        IPV6Enabled: true
         PriceClass: PriceClass_100
         Logging:
           Bucket: !GetAtt AccessLogBucket.DomainName
@@ -456,7 +456,7 @@ Resources:
       TreatMissingData: notBreaching
 
 Conditions:
-  IsProd: !Equals [!Ref Environment, 'production']
+  IsProd: !Equals [!Ref Environment, 'prod']
   CreateDNSRecordTrue: !Equals [!Ref CreateDNSRecords, 'true']
   EnableSignedCookiesCheckCondition:
     !Equals [!Ref EnableSignedCookiesCheck, 'true']
