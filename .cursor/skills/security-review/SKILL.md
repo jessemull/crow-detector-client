@@ -8,4 +8,4 @@ description: >-
 
 # Security Review
 
-Follow [security-scan](../security-scan/SKILL.md). That skill is the review: `make security` / `npm audit`, the pass-fail criteria, and the report shape in `docs/REVIEW.md`.
+Follow [security-scan](../security-scan/SKILL.md). That skill is the review: `make security` / `npm audit`, the pass-fail criteria, and the report sections defined in that skill.

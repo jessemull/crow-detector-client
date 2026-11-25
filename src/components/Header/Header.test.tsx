@@ -3,7 +3,8 @@ import React, {
   ImgHTMLAttributes,
   ReactNode,
 } from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import Header from './Header';
 
@@ -163,16 +164,51 @@ describe('Header', () => {
     ).toBeDisabled();
   });
 
-  it('supports keyboard activation of the menu toggle', () => {
+  it('supports keyboard activation of the menu toggle', async () => {
+    const user = userEvent.setup();
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
     menuButton.focus();
-    fireEvent.keyDown(menuButton, { key: 'Enter', code: 'Enter' });
-    fireEvent.click(menuButton);
+    await user.keyboard('{Enter}');
 
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
     expect(screen.getByLabelText('Mobile navigation')).toBeTruthy();
+  });
+
+  it('clears inert when the viewport crosses the desktop breakpoint', () => {
+    let matches = false;
+    const listeners = new Set<() => void>();
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+      get matches() {
+        return matches;
+      },
+      media: query,
+      addEventListener: (_name: string, listener: () => void) => {
+        listeners.add(listener);
+      },
+      removeEventListener: (_name: string, listener: () => void) => {
+        listeners.delete(listener);
+      },
+      dispatchEvent: () => false,
+    }));
+
+    render(
+      <>
+        <Header />
+        <main>Page</main>
+      </>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    expect(document.querySelector('main')).toHaveAttribute('inert', '');
+
+    act(() => {
+      matches = true;
+      listeners.forEach((listener) => listener());
+    });
+
+    expect(screen.queryByRole('button', { name: 'Close menu' })).toBeNull();
+    expect(document.querySelector('main')).not.toHaveAttribute('inert');
   });
 
   it('closes the mobile menu on Escape', () => {

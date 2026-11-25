@@ -9,6 +9,6 @@ alwaysApply: false
 
 - Layers: `app` routes → feature components → hooks/utils/constants
 - Shared chrome: Header, Footer
-- Static pages only; CloudFront signed-cookie access via `proxy/` for test CDN
-- Keep product surface small (Home / About) — no Cognito/SWR/admin without product approval
+- Home, About, and Shelter Cam (`/porch`). Shelter Cam fetches the porch API in the browser. CloudFront signed-cookie access via `proxy/` for the test CDN
+- Keep the product surface to those routes — no Cognito/SWR/admin without product approval
 - See `docs/ARCHITECTURE.md`

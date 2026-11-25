@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="mt-auto border-0 bg-cc-canvas py-6">
       <div className="mx-auto max-w-6xl px-6 text-center">
-        <p className="text-sm text-cc-ink/55">{copyrightLine()}</p>
+        <p className="text-sm text-cc-ink/75">{copyrightLine()}</p>
       </div>
     </footer>
   );

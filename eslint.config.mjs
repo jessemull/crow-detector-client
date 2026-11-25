@@ -39,6 +39,7 @@ const eslintConfig = defineConfig([
     'node_modules/**',
     'public/**',
     'next-env.d.ts',
+    '.review/**',
   ]),
 ]);
 

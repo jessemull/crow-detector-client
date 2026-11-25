@@ -8,7 +8,7 @@
 
 | Workflow                             | Trigger                               | Role                                                                                               |
 | ------------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `.github/workflows/pull-request.yml` | PR → `main`                           | Build, lint, typecheck, unit tests (≥80% via Jest), Cypress + Lighthouse on local `dev`            |
+| `.github/workflows/pull-request.yml` | PR → `main`                           | Build, lint, typecheck, unit tests (≥80% via Jest), Cypress + Lighthouse against the static export |
 | `.github/workflows/merge.yml`        | Push → `main`                         | Build → lint → typecheck → tests → S3 backup → deploy → E2E → Lighthouse → rollback on E2E/LH fail |
 | `.github/workflows/deploy.yml`       | `workflow_dispatch` (test/production) | Manual deploy with same post-deploy e2e/LH rollback pattern                                        |
 | `.github/workflows/rollback.yml`     | `workflow_dispatch`                   | Restore named S3 backup + CloudFront invalidate                                                    |
@@ -23,19 +23,19 @@ Do **not** rewrite these lightly. Document changes in the PR and treat as human-
 | Lint             | Yes       | `npm run lint`                                                                                                                                          |
 | Typecheck        | Yes       | `npm run typecheck`                                                                                                                                     |
 | Unit tests       | Yes       | Jest + ≥80% coverage (`jest.config` thresholds; authoritative gate)                                                                                     |
-| E2E & Lighthouse | Soft LH   | Cypress blocking; **LH may `continue-on-error` on PR** (intentional)                                                                                    |
+| E2E & Lighthouse | Yes       | Cypress and Lighthouse run against the static export served on 127.0.0.1:3000. Lighthouse is blocking.                                                  |
 
 ### Merge / deploy
 
-| Job                             | Notes                                                                        |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| Build + lint + typecheck + unit | Required before deploy                                                       |
-| Sentry source maps              | Uploaded on merge/deploy only; release = `${env}-${github.sha}`              |
-| S3 backup                       | Pre-deploy backup; `backup_dir` job output feeds rollback                    |
-| Deploy                          | `aws s3 sync` of `out/` + CloudFront invalidation (`data/*` preserved)       |
-| E2E                             | Via proxy against deployed/test URL; failure triggers S3 rollback            |
-| Lighthouse                      | Failure triggers S3 rollback on merge/deploy                                 |
-| Revert                          | Restores named backup + AWS creds + CloudFront invalidate; excludes `data/*` |
+| Job                             | Notes                                                                                                                                                          |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build + lint + typecheck + unit | Required before deploy                                                                                                                                         |
+| Sentry source maps              | Uploaded on merge/deploy only; release = `${env}-${github.sha}`                                                                                                |
+| S3 backup                       | Pre-deploy backup; `backup_dir` job output feeds rollback                                                                                                      |
+| Deploy                          | OIDC role, then hashed `/_next/*` before HTML. `aws s3 sync --delete` refuses an empty build and skips `data/*`. Invalidation waits until CloudFront finishes. |
+| E2E                             | Via proxy against deployed/test URL; failure triggers S3 rollback                                                                                              |
+| Lighthouse                      | Failure triggers S3 rollback on merge/deploy                                                                                                                   |
+| Revert                          | Restores a 14-digit backup key through the OIDC role and invalidates CloudFront. Excludes `data/*`. A failed deploy rolls back when the backup succeeded.      |
 
 Node **26** (`.nvmrc`, `engines.node`, `actions/setup-node`).
 

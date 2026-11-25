@@ -17,6 +17,7 @@
     "@eslint/eslintrc": "^3",
     "@lhci/cli": "^0.16.1",
     "@next/bundle-analyzer": "^16.3.0",
+    "@sentry/cli": "^3.8.2",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.0",
@@ -61,7 +62,7 @@
     "*.{ts,tsx,js,jsx,mjs,cjs}": [
       "eslint --fix"
     ],
-    "*.{json,css,md}": [
+    "*.{json,css,md,yml,yaml}": [
       "prettier --write"
     ]
   },
@@ -69,7 +70,7 @@
   "private": true,
   "scripts": {
     "bastion": "node ./scripts/connect.js",
-    "build": "ENABLE_SOURCE_MAPS=false NODE_ENV=${NODE_ENV:-test} next build",
+    "build": "NODE_ENV=${NODE_ENV:-test} next build",
     "commit": "git-cz",
     "coverage:open": "open ./coverage/lcov-report/index.html",
     "dev": "next dev",
@@ -91,5 +92,12 @@
     "test:watch": "jest --watch",
     "typecheck": "tsc --noEmit"
   },
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "cypress@15.21.2": true,
+    "fsevents@2.3.3": true,
+    "@sentry/cli@2.58.6": true,
+    "@sentry/cli@3.8.2": true
+  }
 }

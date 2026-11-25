@@ -21,7 +21,8 @@ const getSignedCookies = () => {
       );
     }
 
-    const privateKey = key || fs.readFileSync(privateKeyPath, 'utf8');
+    const rawKey = key || fs.readFileSync(privateKeyPath, 'utf8');
+    const privateKey = rawKey.replace(/\\n/g, '\n');
 
     const expireTime = Math.floor((Date.now() + 60 * 60 * 1000) / 1000);
 
@@ -49,10 +50,36 @@ const getSignedCookies = () => {
       'CloudFront-Signature': signatureBase64,
       'CloudFront-Key-Pair-Id': keyPairId,
     };
-  } catch (error) {
-    console.error('Signing cookies failed: ', error);
-    throw error;
+  } catch {
+    throw new Error('CloudFront cookie signing failed');
   }
 };
 
-module.exports = { getSignedCookies, toCloudFrontBase64 };
+/** Reject protocol-relative and absolute redirect targets. */
+const isSameOriginPath = (value) =>
+  typeof value === 'string' && value.startsWith('/') && !value.startsWith('//');
+
+const policyStillValid = (cookieValue) => {
+  try {
+    const padded = cookieValue
+      .replace(/-/g, '+')
+      .replace(/_/g, '=')
+      .replace(/~/g, '/');
+    const json = JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+    const epoch =
+      json?.Statement?.[0]?.Condition?.DateLessThan?.['AWS:EpochTime'];
+    return typeof epoch === 'number' && epoch * 1000 > Date.now() + 60_000;
+  } catch {
+    return false;
+  }
+};
+
+const pathWithoutQuery = (url) => (url || '').split('?')[0];
+
+module.exports = {
+  getSignedCookies,
+  toCloudFrontBase64,
+  isSameOriginPath,
+  policyStillValid,
+  pathWithoutQuery,
+};

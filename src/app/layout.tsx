@@ -3,11 +3,23 @@ import Script from 'next/script';
 import type { Metadata } from 'next';
 import { Inter, Urbanist } from 'next/font/google';
 import { Footer } from '@components/Footer';
+import { GaRouteListener } from '@components/GaRouteListener';
 import { Header } from '@components/Header';
+
+const GA_ID_PATTERN = /^G-[A-Z0-9]+$/;
+
+const gaTrackingId = (() => {
+  const id = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
+  const consent = process.env.NEXT_PUBLIC_GA_CONSENT;
+  if (consent !== 'granted' || !id || !GA_ID_PATTERN.test(id)) {
+    return null;
+  }
+  return id;
+})();
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['300', '400', '500'],
   display: 'swap',
   variable: '--font-inter',
 });
@@ -18,8 +30,6 @@ const urbanist = Urbanist({
   display: 'swap',
   variable: '--font-urbanist-family',
 });
-
-const NEXT_PUBLIC_GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
 
 export const metadata: Metadata = {
   alternates: {
@@ -81,24 +91,27 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
-        {NEXT_PUBLIC_GA_TRACKING_ID ? (
-          <Script id="gtag-load" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              (window.requestIdleCallback || function(cb) { setTimeout(cb, 0); })(() => {
-                const script = document.createElement('script');
-                script.src = 'https://www.googletagmanager.com/gtag/js?id=${NEXT_PUBLIC_GA_TRACKING_ID}';
-                script.async = true;
-                document.head.appendChild(script);
+        {gaTrackingId ? (
+          <>
+            <Script id="gtag-load" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                (window.requestIdleCallback || function(cb) { setTimeout(cb, 0); })(() => {
+                  const script = document.createElement('script');
+                  script.src = 'https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}';
+                  script.async = true;
+                  document.head.appendChild(script);
 
-                gtag('js', new Date());
-                gtag('config', '${NEXT_PUBLIC_GA_TRACKING_ID}', {
-                  page_path: window.location.pathname,
+                  gtag('js', new Date());
+                  gtag('config', '${gaTrackingId}', {
+                    page_path: window.location.pathname,
+                  });
                 });
-              });
-            `}
-          </Script>
+              `}
+            </Script>
+            <GaRouteListener measurementId={gaTrackingId} />
+          </>
         ) : null}
       </body>
     </html>

@@ -1,5 +1,6 @@
 'use client';
 
+import './globals.css';
 import * as Sentry from '@sentry/nextjs';
 import React, { useEffect } from 'react';
 import { Urbanist } from 'next/font/google';
@@ -13,9 +14,11 @@ const urbanist = Urbanist({
 
 interface Props {
   error: Error & { digest?: string };
+  reset: () => void;
+  retry: () => void;
 }
 
-const GlobalError: React.FC<Props> = ({ error }) => {
+const GlobalError: React.FC<Props> = ({ error, retry }) => {
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
@@ -27,6 +30,7 @@ const GlobalError: React.FC<Props> = ({ error }) => {
           standalone
           title="Something went wrong"
           description="We logged the issue. Fly back home and try again."
+          onRetry={retry}
         />
       </body>
     </html>

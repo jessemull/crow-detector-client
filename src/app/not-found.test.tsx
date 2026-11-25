@@ -20,7 +20,7 @@ jest.mock('next/link', () => {
 });
 
 describe('Not Found Page', () => {
-  it('renders the Earthon-style not found notice and home link', () => {
+  it('renders the not found notice and home link', () => {
     render(<NotFoundPage />);
     expect(
       screen.getByRole('heading', { level: 1, name: 'Oops! Page Not Found' })

@@ -7,12 +7,12 @@ import { Menu, X, Home, Info, Camera, Bird, Mail } from 'lucide-react';
 import { CONTACT_MAILTO } from '@constants/contact';
 import HeaderMark from './HeaderMark';
 
-/** Earthon Menu List pill: canvas, radius 244px, padding 5px */
+/** Menu list pill: canvas, radius 244px, padding 5px */
 const menuListClassName =
   'hidden lg:flex items-center justify-center rounded-[244px] bg-cc-canvas p-[5px] font-urbanist';
 
 /**
- * Earthon tab labels: Urbanist 16px / 500, letter-spacing -0.32px
+ * Tab labels: Urbanist 16px / 500, letter-spacing -0.32px
  * Contact CTA: Urbanist 16px / 600
  */
 const navIdleClassName =
@@ -112,6 +112,17 @@ const Header: React.FC = () => {
     }
   }, [isMenuOpen]);
 
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const closeOnDesktop = () => {
+      if (media.matches) {
+        setIsMenuOpen(false);
+      }
+    };
+    media.addEventListener('change', closeOnDesktop);
+    return () => media.removeEventListener('change', closeOnDesktop);
+  }, []);
+
   return (
     <header className="pointer-events-none absolute inset-x-0 top-8 z-50 bg-transparent font-urbanist">
       <nav
@@ -141,7 +152,7 @@ const Header: React.FC = () => {
           </span>
         </Link>
 
-        <div className={`${menuListClassName}`} aria-label="Desktop navigation">
+        <nav className={menuListClassName} aria-label="Desktop navigation">
           <Link
             href="/"
             className={isHome ? navActiveClassName : navIdleClassName}
@@ -171,7 +182,7 @@ const Header: React.FC = () => {
           >
             About
           </Link>
-        </div>
+        </nav>
 
         <a href={CONTACT_MAILTO} className={contactClassName}>
           Contact

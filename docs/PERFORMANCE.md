@@ -13,7 +13,7 @@
 | SEO            | ≥ 0.9                                                          |
 | Best practices | ≥ 0.9                                                          |
 
-Merge/deploy may **rollback** on LH failure. PR LH may be soft (`continue-on-error`) — see `docs/CI_CD.md`.
+Merge, deploy, and pull-request Lighthouse runs are blocking. A failed score rolls back a merge or deploy. See `docs/CI_CD.md`.
 
 ---
 

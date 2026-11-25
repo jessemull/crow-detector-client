@@ -6,7 +6,7 @@
 
 ## Requirements
 
-- `eslint-plugin-jsx-a11y` recommended rules
+- `eslint-config-next` enables six `eslint-plugin-jsx-a11y` rules as warnings. `npm run lint` does not pass `--max-warnings 0`, so those warnings do not fail the gate.
 - jest-axe for interactive UI (Header menu, HomePage)
 - Lighthouse accessibility score ≥ **0.9**
 

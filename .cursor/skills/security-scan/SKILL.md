@@ -69,7 +69,7 @@ git ls-files | grep -E '\.pem$|(^|/)\.env(\.|$)' | grep -vE '(^|/)\.env\.example
 Then read, when they are in the diff or this is a full scan:
 
 - `proxy/index.js` and `proxy/util.js` — fail-closed branches, redirects, cookie flags, proxy target
-- `env.example` and `.env.example` — placeholders only, and the two agree
+- `env.example` and `.env.example` — placeholders only. They list the same names; values stay empty.
 - `.github/workflows/` — secrets stay in `${{ secrets.* }}`, are not echoed, and are passed only to steps that need them; no `${{ }}` inside `run:`; `permissions:` and action pins
 - `cloudformation/` — bucket public access, origin access, response headers policy
 - `src/` — `NEXT_PUBLIC_`, `dangerouslySetInnerHTML`, URLs built from API data, and the inline GA script in `src/app/layout.tsx`

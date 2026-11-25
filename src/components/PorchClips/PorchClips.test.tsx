@@ -1,22 +1,27 @@
 import React from 'react';
 import { axe, toHaveNoViolations } from 'jest-axe';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import * as Sentry from '@sentry/nextjs';
 import PorchClips from './PorchClips';
 
 expect.extend(toHaveNoViolations);
 
+jest.mock('@sentry/nextjs', () => ({
+  captureException: jest.fn(),
+}));
+
 const originalApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+const recordedLabel = 'Saturday, Nov 14, 8:00 PM';
 
 describe('PorchClips', () => {
   const fetchMock = jest.fn();
   const recordedAt = '2026-11-14T20:00:00.000Z';
-  const recordedLabel = new Date(recordedAt).toLocaleString(undefined, {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api-dev.example.com';
@@ -35,7 +40,11 @@ describe('PorchClips', () => {
   });
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBase;
+    if (originalApiBase === undefined) {
+      delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    } else {
+      process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBase;
+    }
     fetchMock.mockReset();
     jest.useRealTimers();
   });
@@ -76,11 +85,9 @@ describe('PorchClips', () => {
 
     render(<PorchClips />);
 
-    const status = await screen.findByRole('status', {
-      name: 'Loading Shelter Cam',
-    });
-    expect(status.querySelectorAll('article')).toHaveLength(2);
-    expect(status.querySelector('.aspect-video')).toBeTruthy();
+    expect(await screen.findByText('Loading…')).toBeTruthy();
+    expect(document.querySelectorAll('article')).toHaveLength(2);
+    expect(document.querySelector('.aspect-video')).toBeTruthy();
     expect(screen.getByText('Loading…')).toBeTruthy();
     expect(
       screen.getByRole('heading', { level: 1, name: 'Shelter Cam' })
@@ -115,7 +122,7 @@ describe('PorchClips', () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          'Visits will appear here when the shelter camera is online.'
+          'Shelter Cam is not configured yet. Visits will show up after the camera service is connected.'
         )
       ).toBeTruthy();
     });
@@ -263,10 +270,11 @@ describe('PorchClips', () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          'Could not refresh visits. Showing the last loaded list.'
+          /Could not refresh visits\. Showing the last loaded list\./
         )
       ).toBeTruthy();
     });
+    expect(Sentry.captureException).toHaveBeenCalled();
     expect(screen.getByText(recordedLabel)).toBeTruthy();
   });
 
@@ -282,6 +290,47 @@ describe('PorchClips', () => {
     expect(
       screen.getByLabelText(`Shelter visit recorded ${recordedLabel}`)
     ).toHaveAttribute('preload', 'none');
+  });
+
+  it('rejects a porch payload that is not a list of clips', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ unexpected: true }),
+    });
+
+    render(<PorchClips />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Can't load visits right now.")).toBeTruthy();
+    });
+    expect(screen.queryByText('No visits yet.')).toBeNull();
+  });
+
+  it('aborts an in-flight porch request on unmount', async () => {
+    jest.useFakeTimers();
+    fetchMock.mockImplementation(() => new Promise(() => undefined));
+    const { unmount } = render(<PorchClips />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+
+    const signal = fetchMock.mock.calls[0]?.[1]?.signal as AbortSignal;
+    unmount();
+    expect(signal.aborted).toBe(true);
+  });
+
+  it('shows a playback error when the visit video fails', async () => {
+    render(<PorchClips />);
+    const video = await screen.findByLabelText(
+      `Shelter visit recorded ${recordedLabel}`
+    );
+    fireEvent.error(video);
+    expect(
+      screen.getByText(
+        'This visit can’t be played. It will be replaced on the next refresh.'
+      )
+    ).toBeTruthy();
   });
 
   it('has no accessibility violations after load', async () => {

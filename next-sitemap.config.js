@@ -3,4 +3,5 @@ module.exports = {
   generateRobotsTxt: true,
   // Static export deploys `out/`; write sitemap artifacts there directly.
   outDir: './out',
+  exclude: ['/porch'],
 };

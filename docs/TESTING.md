@@ -39,7 +39,7 @@ Do **not** lower the threshold. Do **not** delete tests solely to raise coverage
 ## Conventions
 
 - Colocate `*.test.ts(x)` next to source
-- Prefer `userEvent` + accessible roles/names
+- Prefer `userEvent` for keyboard and pointer actions. Use `fireEvent` only for events a person does not perform that way, such as an image `error`. Query by role, name, and text.
 - Setup lives in `jest.setup.ts`
 
 ---

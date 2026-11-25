@@ -51,9 +51,11 @@ describe('HomePage', () => {
 
   it('does not render placeholder system status', () => {
     render(<HomePage />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Critter Canteen' })
+    ).toBeTruthy();
     expect(screen.queryByText('System Status')).toBeNull();
-    expect(screen.queryByTestId('feeder-status')).toBeNull();
-    expect(screen.queryByTestId('camera-status')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Feeder' })).toBeDisabled();
   });
 
   it('renders the locked active hero image', () => {

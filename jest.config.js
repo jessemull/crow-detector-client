@@ -12,14 +12,7 @@ const customJestConfig = {
     '!scripts/review/**/*.test.js',
     '!scripts/review/test-utils/**',
   ],
-  coveragePathIgnorePatterns: [
-    '/src/app/layout.tsx',
-    '/src/components/.*/index.ts',
-    'src/instrumentation-client.ts',
-    'src/instrumentation.ts',
-    'src/app/global-error.tsx',
-    'src/types/.*',
-  ],
+  coveragePathIgnorePatterns: ['/src/components/.*/index.ts', 'src/types/.*'],
   coverageReporters: ['json', 'lcov', 'text', 'clover'],
   coverageThreshold: {
     global: {

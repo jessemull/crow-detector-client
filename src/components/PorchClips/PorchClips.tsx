@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export type PorchClip = {
@@ -14,6 +15,12 @@ const POLL_INTERVAL_MS = 45_000;
 
 /** Refresh a still-visible clip’s signed URL before CloudFront rejects it. */
 const URL_REFRESH_BUFFER_MS = 60_000;
+
+/** Give up on a hung porch request so a later poll can replace it. */
+const FETCH_TIMEOUT_MS = 15_000;
+
+const MISSING_API_MESSAGE =
+  'Shelter Cam is not configured yet. Visits will show up after the camera service is connected.';
 
 const clipCardClassName =
   'overflow-hidden rounded-[24px] bg-white shadow-[0_12px_40px_-16px_rgba(0,0,0,0.18)]';
@@ -33,13 +40,45 @@ const formatRecordedAt = (value: string): string => {
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString('en-US', {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: 'UTC',
   });
+};
+
+const isHttpsUrl = (value: string): boolean => {
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+const isPorchClip = (value: unknown): value is PorchClip => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const clip = value as Record<string, unknown>;
+  return (
+    typeof clip.name === 'string' &&
+    clip.name.length > 0 &&
+    typeof clip.recordedAt === 'string' &&
+    typeof clip.playbackUrl === 'string' &&
+    isHttpsUrl(clip.playbackUrl) &&
+    typeof clip.expiresAt === 'string'
+  );
+};
+
+/** Reject anything that is not a list of playable clips. */
+const parsePorchClips = (value: unknown): PorchClip[] | null => {
+  if (!Array.isArray(value) || !value.every(isPorchClip)) {
+    return null;
+  }
+  return value;
 };
 
 const sameClipIdentity = (a: PorchClip, b: PorchClip): boolean =>
@@ -84,6 +123,8 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(eager);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === src;
 
   useEffect(() => {
     if (shouldLoad) {
@@ -112,17 +153,23 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
 
   return (
     <div ref={containerRef} className="bg-black">
-      <video
-        key={src}
-        className="aspect-video w-full bg-black"
-        controls
-        playsInline
-        preload="none"
-        src={shouldLoad ? src : undefined}
-        aria-label={ariaLabel}
-      >
-        Your browser does not support video playback.
-      </video>
+      {failed ? (
+        <p className="flex aspect-video w-full items-center justify-center px-6 text-center text-sm text-white/80">
+          This visit can’t be played. It will be replaced on the next refresh.
+        </p>
+      ) : (
+        <video
+          className="aspect-video w-full bg-black"
+          controls
+          playsInline
+          preload="none"
+          src={shouldLoad ? src : undefined}
+          aria-label={ariaLabel}
+          onError={() => setFailedSrc(src)}
+        >
+          Your browser does not support video playback.
+        </video>
+      )}
     </div>
   );
 };
@@ -130,9 +177,9 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
 /** Same footprint as a loaded visit card so the list does not jump. */
 const ClipCardSkeleton: React.FC = () => (
   <article className={clipCardClassName} aria-hidden="true">
-    <div className="aspect-video w-full animate-pulse bg-black/[0.06]" />
+    <div className="aspect-video w-full animate-pulse bg-black/[0.06] motion-reduce:animate-none" />
     <div className={clipCardMetaClassName}>
-      <div className="h-5 w-44 animate-pulse rounded-md bg-black/[0.06] md:h-6 md:w-52" />
+      <div className="h-5 w-44 animate-pulse rounded-md bg-black/[0.06] motion-reduce:animate-none md:h-6 md:w-52" />
     </div>
   </article>
 );
@@ -143,17 +190,29 @@ const PorchClips: React.FC = () => {
   const [loading, setLoading] = useState(true);
   /** Background poll failed while an older list is still on screen. */
   const [refreshWarning, setRefreshWarning] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const generationRef = useRef(0);
 
   const loadClips = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
     const apiBaseUrl = getApiBaseUrl();
     if (!apiBaseUrl) {
-      setError('Visits will appear here when the shelter camera is online.');
+      setError(MISSING_API_MESSAGE);
       setClips([]);
       setRefreshWarning(null);
       setLoading(false);
       return;
     }
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const generation = generationRef.current + 1;
+    generationRef.current = generation;
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      FETCH_TIMEOUT_MS
+    );
 
     if (!silent) {
       setLoading(true);
@@ -162,18 +221,36 @@ const PorchClips: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/porch/clips`);
+      const response = await fetch(`${apiBaseUrl}/porch/clips`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (generation !== generationRef.current) {
+        return;
+      }
       if (!response.ok) {
         throw new Error('Could not load visits');
       }
-      const data = (await response.json()) as PorchClip[];
-      const next = Array.isArray(data) ? data : [];
+      const next = parsePorchClips(await response.json());
+      if (generation !== generationRef.current) {
+        return;
+      }
+      if (!next) {
+        throw new Error('Porch clips response had an unexpected shape');
+      }
       setClips((previous) =>
         silent ? mergeClipsForPlayback(previous, next, Date.now()) : next
       );
       setError(null);
       setRefreshWarning(null);
-    } catch {
+    } catch (error) {
+      if (generation !== generationRef.current) {
+        return;
+      }
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+      Sentry.captureException(error);
       // Keep the last good list on background polls so the page does not flash empty.
       if (!silent) {
         setClips([]);
@@ -185,19 +262,15 @@ const PorchClips: React.FC = () => {
         );
       }
     } finally {
-      if (!silent) {
+      window.clearTimeout(timeoutId);
+      if (!silent && generation === generationRef.current) {
         setLoading(false);
       }
     }
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
     const run = (silent: boolean) => {
-      if (cancelled) {
-        return;
-      }
       void loadClips({ silent });
     };
 
@@ -220,10 +293,10 @@ const PorchClips: React.FC = () => {
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      cancelled = true;
       window.clearTimeout(initialTimer);
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      abortRef.current?.abort();
     };
   }, [loadClips]);
 
@@ -252,20 +325,11 @@ const PorchClips: React.FC = () => {
               : clips.length === 0
                 ? 'No visits yet.'
                 : clipCountLabel}
+          {!loading && !error && refreshWarning ? ` ${refreshWarning}` : ''}
         </p>
 
-        {!loading && !error && refreshWarning ? (
-          <p className={statusLineClassName} role="status">
-            {refreshWarning}
-          </p>
-        ) : null}
-
         {loading ? (
-          <div
-            className="space-y-8 md:space-y-10"
-            role="status"
-            aria-label="Loading Shelter Cam"
-          >
+          <div className="space-y-8 md:space-y-10" aria-hidden="true">
             <ClipCardSkeleton />
             <ClipCardSkeleton />
           </div>

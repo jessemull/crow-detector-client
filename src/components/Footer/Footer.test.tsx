@@ -34,7 +34,7 @@ describe('Footer', () => {
     expect(footer.className).toContain('mt-auto');
     expect(screen.getByText(copyrightLine())).toBeTruthy();
     expect(screen.getByText(copyrightLine()).className).toContain(
-      'text-cc-ink/55'
+      'text-cc-ink/75'
     );
   });
 });

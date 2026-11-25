@@ -6,7 +6,7 @@
 
 ## Current
 
-- Google Analytics via `NEXT_PUBLIC_GA_TRACKING_ID` in root layout when set
+- Google Analytics in the root layout only when `NEXT_PUBLIC_GA_CONSENT` is `granted` and `NEXT_PUBLIC_GA_TRACKING_ID` matches `G-[A-Z0-9]+`
 - Sentry via `@sentry/nextjs` (client + build source-map flow)
 
 ---

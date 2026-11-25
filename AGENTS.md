@@ -22,7 +22,7 @@
 crow-detector-client/
 ├── src/
 │   ├── app/                 # Routes: /, /about, /porch (Shelter Cam)
-│   ├── components/          # Header, Footer, HomePage, About, PorchClips, UtilityNotice
+│   ├── components/          # Header, Footer, HomePage, About, PorchClips, SplashBackground, UtilityNotice
 │   ├── constants/           # Shared constants (when present)
 │   ├── hooks/               # Shared hooks (when present)
 │   ├── types/
@@ -134,7 +134,7 @@ Follow `docs/COMMENTS.md`. Prefer self-documenting names; comments explain **why
 
 ### Data
 
-- Static marketing/status UI only today. Do not hardcode environment API hosts if/when an API is added — use env / constants.
+- Marketing pages are static. Shelter Cam fetches `${NEXT_PUBLIC_API_BASE_URL}/porch/clips` in the browser. Do not hardcode that host — use the env var.
 
 ### State
 
