@@ -70,6 +70,7 @@ let gitPath;
 
 // Long PATHs (nvm adds an entry per shell) make every spawn's lookup slow, and
 // reviews spawn git once per file, so resolve it once.
+
 const resolveGit = () => {
   gitPath = gitPath || findExecutable('git');
   return gitPath;

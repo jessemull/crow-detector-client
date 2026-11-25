@@ -16,7 +16,10 @@ const PORT = 8080;
 const LOCAL_HOST = '127.0.0.1';
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN;
 const COOKIE_TTL = 60 * 60 * 1000;
-const ASSET_PATH = /\.(js|css|png|jpg|jpeg|gif|svg|woff2|webp|ico)$/;
+const IMMUTABLE_ASSET =
+  /\/_next\/.+\.(js|css|png|jpg|jpeg|gif|svg|woff2|webp|ico)$/;
+const AUTH_TRIES = 'cf-proxy-auth-tries';
+const MAX_AUTH_REDIRECTS = 2;
 
 if (!CLOUDFRONT_DOMAIN && require.main === module) {
   console.error(
@@ -53,6 +56,7 @@ app.use((req, res, next) => {
   }
 
   if (policyStillValid(req.cookies, CLOUDFRONT_DOMAIN)) {
+    res.clearCookie(AUTH_TRIES);
     return next();
   }
 
@@ -64,13 +68,25 @@ app.use((req, res, next) => {
     return res.status(500).send('CloudFront cookie signing misconfigured');
   }
 
+  const tries = Number(req.cookies?.[AUTH_TRIES] || 0);
+  if (tries >= MAX_AUTH_REDIRECTS) {
+    return res.status(508).send('Stopped retrying CloudFront cookie setup.');
+  }
+
   Object.entries(signedCookies).forEach(([name, value]) => {
     // Host-only cookie so 127.0.0.1 and localhost each keep their own.
+
     res.cookie(name, value, {
       httpOnly: true,
       secure: true,
       maxAge: COOKIE_TTL,
     });
+  });
+
+  res.cookie(AUTH_TRIES, String(tries + 1), {
+    httpOnly: true,
+    maxAge: 60_000,
+    sameSite: 'lax',
   });
 
   return res.redirect(307, req.originalUrl);
@@ -105,7 +121,7 @@ app.use(
         if (
           status >= 200 &&
           status < 300 &&
-          ASSET_PATH.test(pathWithoutQuery(req.originalUrl))
+          IMMUTABLE_ASSET.test(pathWithoutQuery(req.originalUrl))
         ) {
           proxyRes.headers['cache-control'] =
             'public, max-age=31536000, immutable';

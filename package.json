@@ -14,7 +14,6 @@
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
-    "@eslint/eslintrc": "^3",
     "@lhci/cli": "^0.16.1",
     "@next/bundle-analyzer": "^16.3.0",
     "@sentry/cli": "^3.8.2",
@@ -96,6 +95,7 @@
     "@parcel/watcher@2.6.0": true,
     "cypress@15.21.2": true,
     "fsevents@2.3.3": true,
+    "@sentry/cli@2.58.6": true,
     "@sentry/cli@3.8.2": true
   }
 }

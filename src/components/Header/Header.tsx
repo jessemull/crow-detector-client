@@ -40,6 +40,11 @@ const ROUTES = {
 const Header: React.FC = () => {
   const pathname = usePathname() || '/';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (pathname !== menuPath) {
+    setMenuPath(pathname);
+    setIsMenuOpen(false);
+  }
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);

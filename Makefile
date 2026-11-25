@@ -42,7 +42,7 @@ lighthouse: ## Quality@Lighthouse CI
 build: ## Quality@Next.js static export build
 	npm run build
 
-preflight: ## Quality@lint + typecheck + test + build
+preflight: ## Quality@prettier, lint, typecheck, test, and build
 	./scripts/preflight.sh
 
 security: ## Quality@npm audit

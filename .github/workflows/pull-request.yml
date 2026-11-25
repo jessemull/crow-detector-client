@@ -33,7 +33,7 @@ jobs:
       - name: Build Next.js
         run: |
           echo "Deploying to development environment"
-          NODE_ENV=test npm run build
+          NODE_ENV=production npm run build
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL_DEV }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ secrets.GA_TRACKING_ID_DEV }}
@@ -68,6 +68,9 @@ jobs:
 
       - name: Run Linting
         run: npm run lint
+
+      - name: Check formatting
+        run: npx prettier --check .
 
   typecheck:
     name: Typecheck
@@ -152,7 +155,6 @@ jobs:
       - name: Run Lighthouse Tests
         run: npx lhci autorun
         env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           LHCI_NO_SERVER: 'true'
 
   workflow_lint:
@@ -173,7 +175,7 @@ jobs:
         run: npm ci
 
       - name: Check formatting
-        run: npx prettier --check .github/workflows
+        run: npx prettier --check .
 
       - name: actionlint
         uses: rhysd/actionlint@03d0035246f3e81f36aed592ffb4bebf33a03106 # v1.7.7

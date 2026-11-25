@@ -33,7 +33,7 @@ Do **not** rewrite these lightly. Document changes in the PR and treat as human-
 | Sentry source maps              | Uploaded on merge/deploy only; release = `${env}-${github.sha}`                                                                                                |
 | S3 backup                       | Pre-deploy backup; `backup_dir` job output feeds rollback                                                                                                      |
 | Deploy                          | OIDC role, then hashed `/_next/*` before HTML. `aws s3 sync --delete` refuses an empty build and skips `data/*`. Invalidation waits until CloudFront finishes. |
-| E2E                             | Via proxy against deployed/test URL; failure triggers S3 rollback                                                                                              |
+| E2E                             | Test runs through the signed-cookie proxy. Production hits the live site. Failure triggers S3 rollback                                                         |
 | Lighthouse                      | Failure triggers S3 rollback on merge/deploy                                                                                                                   |
 | Revert                          | Restores a 14-digit backup key through the OIDC role and invalidates CloudFront. Excludes `data/*`. A failed deploy rolls back when the backup succeeded.      |
 
@@ -45,10 +45,10 @@ Node **26** (`.nvmrc`, `engines.node`, `actions/setup-node`).
 
 ## Local parity
 
-Husky runs `./scripts/preflight.sh` (lint + typecheck + test + build) on **every `git push`** via `.husky/pre-push`. Agents should run:
+Husky runs `./scripts/preflight.sh` (Husky install check, prettier, lint, typecheck, test, and build) on **every `git push`** via `.husky/pre-push`. Agents should run:
 
 ```bash
-make preflight   # lint + typecheck + test + build
+make preflight   # prettier, lint, typecheck, test, and build
 make typecheck
 make security    # npm audit. Local only. No workflow runs it.
 ```

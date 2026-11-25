@@ -159,9 +159,16 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
   onPlaybackError,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const failureRef = useRef<HTMLParagraphElement>(null);
   const [shouldLoad, setShouldLoad] = useState(eager);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const failed = failedSrc === src;
+
+  useEffect(() => {
+    if (failed) {
+      failureRef.current?.focus();
+    }
+  }, [failed]);
 
   useEffect(() => {
     if (shouldLoad) {
@@ -191,7 +198,12 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
   return (
     <div ref={containerRef} className="bg-black">
       {failed ? (
-        <p className="flex aspect-video w-full items-center justify-center px-6 text-center text-sm text-white/80">
+        <p
+          ref={failureRef}
+          tabIndex={-1}
+          role="alert"
+          className="flex aspect-video w-full items-center justify-center px-6 text-center text-sm text-white/80"
+        >
           This visit can’t be played. It will be replaced on the next refresh.
         </p>
       ) : (
@@ -236,6 +248,7 @@ const PorchClips: React.FC = () => {
   const generationRef = useRef(0);
   const failureStreakRef = useRef(0);
   const failedPlaybackUrlsRef = useRef(new Set<string>());
+  const loadedOnceRef = useRef(false);
 
   const loadClips = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
@@ -297,6 +310,7 @@ const PorchClips: React.FC = () => {
             )
           : next
       );
+      loadedOnceRef.current = true;
       setError(null);
       setRefreshWarning(null);
       failureStreakRef.current = 0;
@@ -304,14 +318,11 @@ const PorchClips: React.FC = () => {
       if (generation !== generationRef.current) {
         return;
       }
-      const timedOut =
-        error instanceof DOMException &&
-        error.name === 'AbortError' &&
-        controller.signal.reason === 'timeout';
+      const timedOut = controller.signal.reason === 'timeout';
       if (
+        !timedOut &&
         error instanceof DOMException &&
-        error.name === 'AbortError' &&
-        !timedOut
+        error.name === 'AbortError'
       ) {
         return;
       }
@@ -322,7 +333,7 @@ const PorchClips: React.FC = () => {
 
       // Keep the last good list on background polls so the page does not flash empty.
 
-      if (!silent) {
+      if (!silent || !loadedOnceRef.current) {
         setClips([]);
         setError("Can't load visits right now.");
         setRefreshWarning(null);
@@ -377,8 +388,10 @@ const PorchClips: React.FC = () => {
 
     // Defer the first fetch so setState does not run synchronously inside the effect.
 
+    let initialSettled = false;
     const initialTimer = window.setTimeout(() => {
       void loadClips({ silent: false }).finally(() => {
+        initialSettled = true;
         if (!cancelled) {
           schedule();
         }
@@ -386,7 +399,11 @@ const PorchClips: React.FC = () => {
     }, 0);
 
     const onVisibilityChange = () => {
-      if (document.visibilityState !== 'visible' || cancelled) {
+      if (
+        !initialSettled ||
+        document.visibilityState !== 'visible' ||
+        cancelled
+      ) {
         return;
       }
       window.clearTimeout(pollTimer);

@@ -67,14 +67,14 @@ require('dotenv').config({ path: envFile, quiet: true });
       release,
     ]);
     runSentryCli([
-      'releases',
+      'sourcemaps',
+      'upload',
       '--org',
       SENTRY_ORG,
       '--project',
       SENTRY_PROJECT,
-      'files',
+      '--release',
       release,
-      'upload-sourcemaps',
       '.next',
       '--url-prefix',
       '~/_next',

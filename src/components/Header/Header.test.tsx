@@ -252,7 +252,9 @@ describe('Header', () => {
     const homeLink = mobileNav.querySelector(
       'a[href="/"]'
     ) as HTMLAnchorElement | null;
+
     // Contact mailto is the last focusable control (Feeder stays disabled).
+
     const contactLink = mobileNav.querySelector(
       'a[href^="mailto:"]'
     ) as HTMLAnchorElement | null;
@@ -508,6 +510,18 @@ describe('Header', () => {
     expect(desktopNav).toBeTruthy();
     expect(desktopNav.className).toContain('hidden');
     expect(desktopNav.className).toContain('lg:flex');
+  });
+
+  it('closes the mobile menu when the path changes', async () => {
+    mockPathname.mockReturnValue('/');
+    const { rerender } = render(<Header />);
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    expect(screen.getByRole('dialog', { name: 'Mobile menu' })).toBeTruthy();
+
+    mockPathname.mockReturnValue('/about');
+    rerender(<Header />);
+
+    expect(screen.queryByRole('dialog', { name: 'Mobile menu' })).toBeNull();
   });
 
   it('renders mobile navigation with correct aria-label', async () => {

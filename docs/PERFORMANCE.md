@@ -6,12 +6,12 @@
 
 ## Lighthouse CI thresholds
 
-| Category       | Min                                                            |
-| -------------- | -------------------------------------------------------------- |
-| Performance    | ≥ 0.8 error (prod); ≥ 0.6 warn (test) — see `.lighthouserc.js` |
-| Accessibility  | ≥ 0.9                                                          |
-| SEO            | ≥ 0.9                                                          |
-| Best practices | ≥ 0.9                                                          |
+| Category       | Min                                                        |
+| -------------- | ---------------------------------------------------------- |
+| Performance    | ≥ 0.8 error (production and test) — see `.lighthouserc.js` |
+| Accessibility  | ≥ 0.9                                                      |
+| SEO            | ≥ 0.9                                                      |
+| Best practices | ≥ 0.9                                                      |
 
 Merge, deploy, and pull-request Lighthouse runs are blocking. A failed score rolls back a merge or deploy. See `docs/CI_CD.md`.
 

@@ -145,6 +145,25 @@ Resources:
           QueryStringsConfig:
             QueryStringBehavior: none
 
+  HeroCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub 'HeroCachePolicyCrowDetectorClient-${Environment}'
+        Comment: Splash images keep stable names. A day matches the S3 Cache-Control.
+        DefaultTTL: 86400
+        MinTTL: 0
+        MaxTTL: 86400
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
   # Apex DNS already pointed here, but aliases were www-only — TLS/host 403.
   # Redirect keeps www as the canonical host (matches site metadata).
   ApexToWwwRedirectFunction:
@@ -244,31 +263,6 @@ Resources:
             Status: Enabled
             ExpirationInDays: 90
 
-  AccessLogBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref AccessLogBucket
-      PolicyDocument:
-        Statement:
-          - Sid: CloudFrontLogDelivery
-            Effect: Allow
-            Principal:
-              Service: delivery.logs.amazonaws.com
-            Action: s3:PutObject
-            Resource: !Sub 'arn:aws:s3:::${BucketName}-logs-${Environment}/cloudfront/*'
-            Condition:
-              StringEquals:
-                aws:SourceAccount: !Ref AWS::AccountId
-          - Sid: CloudFrontLogDeliveryAcl
-            Effect: Allow
-            Principal:
-              Service: delivery.logs.amazonaws.com
-            Action: s3:GetBucketAcl
-            Resource: !Sub 'arn:aws:s3:::${BucketName}-logs-${Environment}'
-            Condition:
-              StringEquals:
-                aws:SourceAccount: !Ref AWS::AccountId
-
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -305,6 +299,15 @@ Resources:
             TargetOriginId: S3Origin
             ViewerProtocolPolicy: redirect-to-https
             CachePolicyId: !Ref HtmlCachePolicy
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+            Compress: true
+            AllowedMethods:
+              - GET
+              - HEAD
+          - PathPattern: '/images/hero/*'
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: !Ref HeroCachePolicy
             ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
             Compress: true
             AllowedMethods:

@@ -13,6 +13,8 @@ const assertions = {
     'categories:best-practices': ['error', { minScore: 0.9 }],
   },
   test: {
+    // Test runs use the same score gates as production.
+
     'categories:performance': ['error', { minScore: 0.8 }],
     'categories:accessibility': ['error', { minScore: 0.9 }],
     'categories:seo': ['error', { minScore: 0.9 }],

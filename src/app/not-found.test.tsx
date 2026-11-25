@@ -27,6 +27,14 @@ describe('Not Found Page', () => {
     expect(metadata.alternates?.canonical).toBe(
       'https://www.crittercanteen.com/404'
     );
+    expect(metadata.description).toBe(
+      'The page you requested does not exist. Check the address or return home.'
+    );
+    expect(metadata.openGraph?.title).toBe('Page not found - Critter Canteen');
+    expect(metadata.openGraph?.description).toBe(metadata.description);
+    expect(metadata.twitter?.title).toBe('Page not found - Critter Canteen');
+    expect(metadata.twitter?.description).toBe(metadata.description);
+    expect(metadata.robots).toEqual({ index: false, follow: false });
   });
 
   it('renders the not found notice and home link', async () => {

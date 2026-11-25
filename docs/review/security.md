@@ -38,7 +38,7 @@ Run the secret searches from the `security-scan` skill and record their output. 
 
 ### Cookies and the proxy
 
-- **SEC-13** (MUST) The signed-cookie policy stays minimal: resource scoped to the dev distribution host, short expiry, `Secure`, correct domain and path; `httpOnly: false` is justified by a real consumer; invalid or expired cookies are handled, not only missing ones. Verify: read `proxy/index.js` cookie options and `proxy/util.js` policy.
+- **SEC-13** (MUST) The signed-cookie policy stays minimal: resource scoped to the dev distribution host, short expiry, `Secure`, and `httpOnly: true` with no `Domain` so the cookie stays host-only. Invalid, forged, or expired cookies are handled, not only missing ones. Verify: read `proxy/index.js` cookie options and `proxy/util.js` policy.
 - **SEC-14** (SHOULD) The proxy stays local and narrow: fixed upstream target (no host taken from the request, so no SSRF), no CORS wildcard, listens on localhost when intended. Verify: read the `listen` call, the proxy target, and any CORS middleware.
 
 ### Privacy

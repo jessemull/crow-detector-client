@@ -8,6 +8,38 @@ const toCloudFrontBase64 = (value) =>
     .replace(/=/g, '_')
     .replace(/\//g, '~');
 
+const fromCloudFrontBase64 = (value) => {
+  const padded = String(value)
+    .replace(/-/g, '+')
+    .replace(/_/g, '=')
+    .replace(/~/g, '/');
+  return Buffer.from(padded, 'base64');
+};
+
+const readPrivateKey = () => {
+  const key = process.env.CLOUDFRONT_PRIVATE_KEY;
+  const privateKeyPath = process.env.CLOUDFRONT_PRIVATE_KEY_PATH;
+  if (!key && !privateKeyPath) {
+    return null;
+  }
+  const rawKey = key || fs.readFileSync(privateKeyPath, 'utf8');
+  return rawKey.replace(/\\n/g, '\n');
+};
+
+const signatureMatches = (policyText, signatureValue) => {
+  const privateKey = readPrivateKey();
+  if (!privateKey) {
+    return false;
+  }
+  try {
+    const verify = crypto.createVerify('RSA-SHA1');
+    verify.update(policyText);
+    return verify.verify(privateKey, fromCloudFrontBase64(signatureValue));
+  } catch {
+    return false;
+  }
+};
+
 const getSignedCookies = () => {
   try {
     const domain = process.env.CLOUDFRONT_DOMAIN;
@@ -21,8 +53,12 @@ const getSignedCookies = () => {
       );
     }
 
-    const rawKey = key || fs.readFileSync(privateKeyPath, 'utf8');
-    const privateKey = rawKey.replace(/\\n/g, '\n');
+    const privateKey = readPrivateKey();
+    if (!privateKey) {
+      throw new Error(
+        'Missing CloudFront signing config (CLOUDFRONT_DOMAIN, CLOUDFRONT_KEY_PAIR_ID, and private key)'
+      );
+    }
 
     const expireTime = Math.floor((Date.now() + 60 * 60 * 1000) / 1000);
 
@@ -86,11 +122,15 @@ const policyStillValid = (cookies, domain) => {
     if (!policyValue || !signature || !keyPairId || !domain) {
       return false;
     }
-    const padded = policyValue
-      .replace(/-/g, '+')
-      .replace(/_/g, '=')
-      .replace(/~/g, '/');
-    const json = JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+    const policyText = fromCloudFrontBase64(policyValue).toString('utf8');
+    const configuredKeyPair = process.env.CLOUDFRONT_KEY_PAIR_ID;
+    if (
+      (configuredKeyPair && keyPairId !== configuredKeyPair) ||
+      !signatureMatches(policyText, signature)
+    ) {
+      return false;
+    }
+    const json = JSON.parse(policyText);
     const statement = json?.Statement?.[0];
     const epoch = statement?.Condition?.DateLessThan?.['AWS:EpochTime'];
     const resource = statement?.Resource;

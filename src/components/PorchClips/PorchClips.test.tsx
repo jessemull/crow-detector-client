@@ -435,9 +435,7 @@ describe('PorchClips', () => {
       (_url: string, init?: RequestInit) =>
         new Promise((_resolve, reject) => {
           init?.signal?.addEventListener('abort', () => {
-            reject(
-              new DOMException('The operation was aborted.', 'AbortError')
-            );
+            reject(init.signal?.reason);
           });
         })
     );
@@ -779,6 +777,162 @@ describe('PorchClips', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('rejects an https playback host outside the allowlist', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          name: 'clip-1.mp4',
+          recordedAt,
+          playbackUrl: 'https://evil.example/clip-1.mp4',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<PorchClips />);
+
+    expect(
+      await screen.findByText("Can't load visits right now.")
+    ).toBeTruthy();
+  });
+
+  it('lists the newest visit first when the payload is oldest-first', async () => {
+    const older = '2026-11-14T18:00:00.000Z';
+    const newer = '2026-11-14T20:00:00.000Z';
+    const labelFor = (value: string) =>
+      new Date(value).toLocaleString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          name: 'old.mp4',
+          recordedAt: older,
+          playbackUrl: 'https://cdn.example.com/old.mp4',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+        {
+          name: 'new.mp4',
+          recordedAt: newer,
+          playbackUrl: 'https://cdn.example.com/new.mp4',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<PorchClips />);
+
+    const headings = await screen.findAllByRole('heading', { level: 2 });
+    expect(headings[0]).toHaveTextContent(labelFor(newer));
+    expect(headings[1]).toHaveTextContent(labelFor(older));
+  });
+
+  it('replaces a signed URL that expires inside the refresh window', async () => {
+    jest.useFakeTimers();
+    const soon = new Date(Date.now() + 30_000).toISOString();
+    const later = new Date(Date.now() + 3_600_000).toISOString();
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: 'https://cdn.example.com/clip-1.mp4?sig=old',
+            expiresAt: soon,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: 'https://cdn.example.com/clip-1.mp4?sig=new',
+            expiresAt: later,
+          },
+        ],
+      });
+
+    render(<PorchClips />);
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+    await waitFor(() => {
+      expect(document.querySelector('video')).toHaveAttribute(
+        'src',
+        'https://cdn.example.com/clip-1.mp4?sig=old'
+      );
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+
+    await waitFor(() => {
+      expect(document.querySelector('video')).toHaveAttribute(
+        'src',
+        'https://cdn.example.com/clip-1.mp4?sig=new'
+      );
+    });
+  });
+
+  it('does not abort the first load when the tab becomes visible', async () => {
+    jest.useFakeTimers();
+    let resolveFetch: (value: unknown) => void = () => {};
+    fetchMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        })
+    );
+
+    render(<PorchClips />);
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: 'https://cdn.example.com/clip-1.mp4?sig=1',
+            expiresAt: '2099-01-01T00:00:00.000Z',
+          },
+        ],
+      });
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: recordedLabel })
+    ).toBeTruthy();
+    expect(screen.queryByText('No visits yet.')).toBeNull();
+  });
+
+  it('moves focus to the message when a visit cannot play', async () => {
+    render(<PorchClips />);
+    const video = await screen.findByLabelText(/Shelter visit recorded/);
+    fireEvent.error(video);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('This visit can’t be played.');
+    expect(alert).toHaveFocus();
   });
 
   it('has no accessibility violations after load', async () => {

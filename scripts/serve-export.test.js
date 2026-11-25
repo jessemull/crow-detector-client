@@ -29,4 +29,14 @@ describe('serve-export paths', () => {
   it('serves index.html for /', () => {
     expect(resolveFile(root, '/').file).toBe(path.join(root, 'index.html'));
   });
+
+  it('does not follow a symlink out of the export', () => {
+    const outside = path.join(base, 'outside.html');
+    fs.writeFileSync(outside, 'secret');
+    fs.symlinkSync(outside, path.join(root, 'linked.html'));
+
+    const resolved = resolveFile(root, '/linked.html');
+    expect(resolved.file).toBeUndefined();
+    expect(resolved.error).toBe(404);
+  });
 });

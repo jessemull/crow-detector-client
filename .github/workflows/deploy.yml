@@ -22,6 +22,7 @@ concurrency:
 jobs:
   build:
     name: Build Next.js
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -40,7 +41,7 @@ jobs:
       - name: Build Next.js
         run: |
           echo "Deploying to $DEPLOY_ENVIRONMENT environment"
-          ENABLE_SOURCE_MAPS=true NODE_ENV="$DEPLOY_ENVIRONMENT" npm run build
+          ENABLE_SOURCE_MAPS=true NODE_ENV=production npm run build
           node ./scripts/source-maps.js
           find out -name '*.js' -exec sed -i '/sourceMappingURL/d' {} +
           find out -name '*.map' -delete
@@ -82,6 +83,9 @@ jobs:
 
       - name: Run Linting
         run: npm run lint
+
+      - name: Check formatting
+        run: npx prettier --check .
 
   typecheck:
     name: Typecheck
@@ -204,7 +208,7 @@ jobs:
             echo "Refusing to sync an empty build directory"
             exit 1
           fi
-          aws s3 sync next-build "s3://$AWS_S3_BUCKET" --exclude "*" --include "_next/*"
+          aws s3 sync next-build "s3://$AWS_S3_BUCKET" --exclude "*" --include "_next/*" --cache-control "public, max-age=31536000, immutable"
           aws s3 sync next-build "s3://$AWS_S3_BUCKET" --delete --exclude "data/*" --exclude "_next/*"
         env:
           AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
@@ -222,7 +226,7 @@ jobs:
           DISTRIBUTION: ${{ inputs.environment == 'test' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV || inputs.environment == 'production' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD }}
 
       - name: Delete replaced hashed chunks
-        run: aws s3 sync next-build "s3://$AWS_S3_BUCKET" --delete --exclude "*" --include "_next/*"
+        run: aws s3 sync next-build "s3://$AWS_S3_BUCKET" --delete --exclude "*" --include "_next/*" --cache-control "public, max-age=31536000, immutable"
         env:
           AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
 
@@ -283,7 +287,6 @@ jobs:
         run: NODE_ENV="$DEPLOY_ENVIRONMENT" npx lhci autorun --chrome-flags="--headless --disable-gpu --no-sandbox"
         env:
           DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           CLOUDFRONT_DOMAIN: ${{ inputs.environment == 'test' && secrets.CLOUDFRONT_DOMAIN || '' }}
           CLOUDFRONT_KEY_PAIR_ID: ${{ inputs.environment == 'test' && secrets.CLOUDFRONT_KEY_PAIR_ID || '' }}
           CLOUDFRONT_PRIVATE_KEY: ${{ inputs.environment == 'test' && secrets.CLOUDFRONT_PRIVATE_KEY || '' }}

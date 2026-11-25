@@ -13,7 +13,7 @@ Thresholds (do not lower them to go green):
 
 | Category                           | Production  | Test        |
 | ---------------------------------- | ----------- | ----------- |
-| Performance                        | ≥ 0.8 error | ≥ 0.6 warn  |
+| Performance                        | ≥ 0.8 error | ≥ 0.8 error |
 | Accessibility, SEO, best practices | ≥ 0.9 error | ≥ 0.9 error |
 
 - Merge/deploy can roll back on a Lighthouse failure

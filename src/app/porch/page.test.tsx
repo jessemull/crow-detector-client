@@ -1,12 +1,16 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import PorchPage from './page';
+import PorchPage, { metadata } from './page';
 
 jest.mock('@sentry/nextjs', () => ({
   captureException: jest.fn(),
 }));
 
 describe('Porch page', () => {
+  it('keeps Shelter Cam out of search indexes', () => {
+    expect(metadata.robots).toEqual({ index: false, follow: false });
+  });
+
   const originalApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
   const originalFetch = global.fetch;
 

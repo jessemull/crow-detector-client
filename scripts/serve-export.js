@@ -41,13 +41,21 @@ const resolveFile = (root, urlPath) => {
       candidates.push(path.join(root, `${relative}.html`));
     }
   }
+  let rootReal;
+  try {
+    rootReal = fs.realpathSync(root);
+  } catch {
+    return { error: 404 };
+  }
   const file = candidates.find((candidate) => {
     const resolved = path.resolve(candidate);
-    return (
-      insideRoot(root, resolved) &&
-      fs.existsSync(resolved) &&
-      fs.statSync(resolved).isFile()
-    );
+    let fileReal;
+    try {
+      fileReal = fs.realpathSync(resolved);
+    } catch {
+      return false;
+    }
+    return insideRoot(rootReal, fileReal) && fs.statSync(fileReal).isFile();
   });
   return file ? { file } : { error: 404 };
 };

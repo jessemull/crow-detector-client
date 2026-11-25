@@ -18,7 +18,7 @@
 
 1. Check whether an existing dependency already solves the need.
 2. Add with an exact or caret range consistent with the repo.
-3. Run `make preflight` (lint + typecheck + test + build).
+3. Run `make preflight` (prettier, lint, typecheck, test, and build).
 4. Run `make security` / `npm audit` and note residual risk.
 5. Document notable upgrades in the PR body / this holds table.
 

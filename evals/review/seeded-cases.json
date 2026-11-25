@@ -81,8 +81,8 @@
       "edits": [
         {
           "path": "src/components/PorchClips/PorchClips.test.tsx",
-          "find": "    await waitFor(() => {\n      expect(screen.getByText(\"Can't load visits right now.\")).toBeTruthy();\n    });",
-          "replace": "    await waitFor(() => {\n      expect(screen.queryByText('Loading…')).toBeNull();\n    });"
+          "find": "  it('shows a status line when the API fails', async () => {\n    fetchMock.mockResolvedValue({\n      ok: false,\n      status: 500,\n      json: async () => ({}),\n    });\n\n    const { container } = render(<PorchClips />);\n\n    await waitFor(() => {\n      expect(screen.getByText(\"Can't load visits right now.\")).toBeTruthy();\n    });",
+          "replace": "  it('shows a status line when the API fails', async () => {\n    fetchMock.mockResolvedValue({\n      ok: false,\n      status: 500,\n      json: async () => ({}),\n    });\n\n    const { container } = render(<PorchClips />);\n\n    await waitFor(() => {\n      expect(screen.queryByText('Loading…')).toBeNull();\n    });"
         }
       ],
       "expected": [
@@ -127,8 +127,8 @@
       "edits": [
         {
           "path": "src/components/PorchClips/PorchClips.tsx",
-          "find": "      const response = await fetch(`${apiBaseUrl}/porch/clips`);",
-          "replace": "      const response = await fetch(`${apiBaseUrl}/porch/clips`, {\n        headers: {\n          Authorization: `Bearer ${process.env.NEXT_PUBLIC_PORCH_API_KEY}`,\n        },\n      });"
+          "find": "      const response = await fetch(`${apiBaseUrl}/porch/clips`, {\n        cache: 'no-store',\n        signal: controller.signal,\n      });",
+          "replace": "      const response = await fetch(`${apiBaseUrl}/porch/clips`, {\n        cache: 'no-store',\n        signal: controller.signal,\n        headers: {\n          Authorization: `Bearer ${process.env.NEXT_PUBLIC_PORCH_API_KEY}`,\n        },\n      });"
         }
       ],
       "expected": [
@@ -203,8 +203,8 @@
         },
         {
           "path": ".env.example",
-          "find": "NEXT_PUBLIC_API_BASE_URL=https://api-dev.crittercanteen.com",
-          "replace": "NEXT_PUBLIC_PORCH_API_URL=https://api-dev.crittercanteen.com"
+          "find": "NEXT_PUBLIC_API_BASE_URL=",
+          "replace": "NEXT_PUBLIC_PORCH_API_URL="
         }
       ],
       "expected": [
@@ -289,8 +289,8 @@
       "edits": [
         {
           "path": ".lighthouserc.js",
-          "find": "    'categories:performance': ['warn', { minScore: 0.6 }],\n    'categories:accessibility': ['error', { minScore: 0.9 }],",
-          "replace": "    'categories:performance': ['warn', { minScore: 0.6 }],\n    'categories:accessibility': ['warn', { minScore: 0.5 }],"
+          "find": "    // Test runs use the same score gates as production.\n\n    'categories:performance': ['error', { minScore: 0.8 }],\n    'categories:accessibility': ['error', { minScore: 0.9 }],",
+          "replace": "    // Test runs use the same score gates as production.\n\n    'categories:performance': ['error', { minScore: 0.8 }],\n    'categories:accessibility': ['warn', { minScore: 0.5 }],"
         }
       ],
       "expected": [
@@ -309,8 +309,8 @@
       "edits": [
         {
           "path": ".github/workflows/merge.yml",
-          "find": "          args: --delete --exclude \"data/*\"\n",
-          "replace": "          args: --delete --exclude \"data/*\" --cache-control \"public, max-age=31536000, immutable\"\n"
+          "find": "          aws s3 sync next-build \"s3://$AWS_S3_BUCKET\" --delete --exclude \"data/*\" --exclude \"_next/*\"\n",
+          "replace": "          aws s3 sync next-build \"s3://$AWS_S3_BUCKET\" --delete --exclude \"data/*\" --exclude \"_next/*\" --cache-control \"public, max-age=31536000, immutable\"\n"
         }
       ],
       "expected": [
@@ -386,8 +386,8 @@
       "edits": [
         {
           "path": "src/components/PorchClips/PorchClips.tsx",
-          "find": "/** How often to re-fetch while the tab is visible. */\nconst POLL_INTERVAL_MS = 45_000;",
-          "replace": "/** How often to re-fetch while the tab is visible. */\nconst POLL_INTERVAL_MS = 2_000;"
+          "find": "/** How often to re-fetch while the tab is visible and the last poll succeeded. */\nconst POLL_INTERVAL_MS = 45_000;",
+          "replace": "/** How often to re-fetch while the tab is visible and the last poll succeeded. */\nconst POLL_INTERVAL_MS = 2_000;"
         }
       ],
       "expected": [

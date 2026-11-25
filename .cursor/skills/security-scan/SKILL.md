@@ -46,7 +46,7 @@ Fail the review (**MUST**) when any of these are true:
 
 **SHOULD** when:
 
-- The proxy, cookie flags, or env contract change and there is no regression note. This repo has no proxy unit suite; quote the fail-closed branch and say runtime was not executed
+- The proxy, cookie flags, or env contract change and there is no regression note. The proxy unit suite is `proxy/index.test.js`; quote the fail-closed branch and the tests that cover it
 - A new network, auth, or analytics dependency lands without a reason
 - `package.json` and `package-lock.json` disagree, or a hold in `docs/DEPENDENCIES.md` is silently broken
 - Cookie flags change (SEC-13). `proxy/index.js` sets `httpOnly: true` and omits `Domain`, so the cookie is host-only.
