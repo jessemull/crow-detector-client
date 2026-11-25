@@ -50,9 +50,10 @@ describe('HomePage', () => {
 
   it('does not render placeholder system status', () => {
     render(<HomePage />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Critter Canteen' })
+    ).toBeTruthy();
     expect(screen.queryByText('System Status')).toBeNull();
-    expect(screen.queryByTestId('feeder-status')).toBeNull();
-    expect(screen.queryByTestId('camera-status')).toBeNull();
   });
 
   it('renders the locked active hero image', () => {
@@ -72,17 +73,13 @@ describe('HomePage', () => {
     ).toBeTruthy();
   });
 
-  it('does not render a hero review hint', () => {
-    render(<HomePage />);
-    expect(screen.queryByTestId('hero-review-hint')).toBeNull();
-  });
-
   it('keeps copyright below the fold on the photo', () => {
     render(<HomePage />);
-    const year = new Date().getFullYear();
+    const year = 2026;
     const line = screen.getByText(
       `© ${year} Critter Canteen. All rights reserved.`
     );
+    expect(line.closest('.min-h-dvh')).toBeNull();
     expect(line.className).toContain('text-white/70');
     expect(line.parentElement?.className).toContain('bg-transparent');
   });

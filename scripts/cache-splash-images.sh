@@ -19,3 +19,4 @@ cache_type() {
 
 cache_type webp image/webp
 cache_type jpg image/jpeg
+cache_type jpeg image/jpeg

@@ -8,18 +8,18 @@ const customJestConfig = {
   collectCoverage: true,
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
+    '!src/**/*.test.{ts,tsx}',
+    'proxy/**/*.js',
+    '!proxy/**/*.test.js',
     'scripts/review/**/*.js',
     '!scripts/review/**/*.test.js',
     '!scripts/review/test-utils/**',
+    'scripts/source-maps.js',
+    'scripts/serve-export.js',
+    'scripts/connect.js',
+    'scripts/build.js',
   ],
-  coveragePathIgnorePatterns: [
-    '/src/app/layout.tsx',
-    '/src/components/.*/index.ts',
-    'src/instrumentation-client.ts',
-    'src/instrumentation.ts',
-    'src/app/global-error.tsx',
-    'src/types/.*',
-  ],
+  coveragePathIgnorePatterns: ['/src/components/.*/index.ts', 'src/types/.*'],
   coverageReporters: ['json', 'lcov', 'text', 'clover'],
   coverageThreshold: {
     global: {
@@ -40,7 +40,7 @@ const customJestConfig = {
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testEnvironment: 'jest-environment-jsdom',
-  testPathIgnorePatterns: ['/node_modules/', '/.next/', 'temp-original'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
 };
 
 module.exports = createJestConfig(customJestConfig);

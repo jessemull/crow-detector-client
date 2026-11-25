@@ -1,3 +1,8 @@
+/**
+ * Optional SSH helper. The CloudFormation stack does not create a bastion.
+ * Set SSH_HOST, SSH_USER, and SSH_PRIVATE_KEY_PATH only if an operator still
+ * has a host to reach. npm run bastion is the entry point.
+ */
 const { execFileSync } = require('child_process');
 
 const SSH_HOST = process.env.SSH_HOST;
@@ -14,7 +19,7 @@ try {
   execFileSync('ssh', ['-i', SSH_PRIVATE_KEY_PATH, `${SSH_USER}@${SSH_HOST}`], {
     stdio: 'inherit',
   });
-} catch (error) {
-  console.error('SSH connection failed:', error.message);
+} catch {
+  console.error('SSH connection failed');
   process.exit(1);
 }

@@ -33,12 +33,12 @@ Run the secret searches from the `security-scan` skill and record their output. 
 
 ### Browser security headers
 
-- **SEC-11** (SHOULD) Security headers exist and match what the page loads (ASVS V3): CSP with `script-src` covering Google Tag Manager and Sentry, `connect-src` covering the porch API, Sentry, and GA, `media-src` covering the video host, `frame-ancestors 'none'`; HSTS; `X-Content-Type-Options: nosniff`; `Referrer-Policy`; `Permissions-Policy`. A static export cannot set headers, so they belong in CloudFront. Any new external host needs a CSP update. Verify: read the CloudFormation response headers policy (currently absent) and list new external hosts in scope.
+- **SEC-11** (SHOULD) Security headers exist and match what the page loads (ASVS V3): CSP with `script-src` covering Google Tag Manager and Sentry, `connect-src` covering the porch API, Sentry, and GA, `media-src` covering the video host, `frame-ancestors 'none'`; HSTS; `X-Content-Type-Options: nosniff`; `Referrer-Policy`; `Permissions-Policy`. A static export cannot set headers, so they belong in CloudFront. Any new external host needs a CSP update. Verify: read `SecurityHeadersPolicy` in the CloudFormation template and list new external hosts in scope.
 - **SEC-12** (SHOULD) Third-party scripts are justified, loaded with the least privilege available, and use subresource integrity or a documented reason why they cannot. Verify: list every third-party origin in scope.
 
 ### Cookies and the proxy
 
-- **SEC-13** (MUST) The signed-cookie policy stays minimal: resource scoped to the dev distribution host, short expiry, `Secure`, correct domain and path; `httpOnly: false` is justified by a real consumer; invalid or expired cookies are handled, not only missing ones. Verify: read `proxy/index.js` cookie options and `proxy/util.js` policy.
+- **SEC-13** (MUST) The signed-cookie policy stays minimal: resource scoped to the dev distribution host, short expiry, `Secure`, and `httpOnly: true` with no `Domain` so the cookie stays host-only. Invalid, forged, or expired cookies are handled, not only missing ones. Verify: read `proxy/index.js` cookie options and `proxy/util.js` policy.
 - **SEC-14** (SHOULD) The proxy stays local and narrow: fixed upstream target (no host taken from the request, so no SSRF), no CORS wildcard, listens on localhost when intended. Verify: read the `listen` call, the proxy target, and any CORS middleware.
 
 ### Privacy

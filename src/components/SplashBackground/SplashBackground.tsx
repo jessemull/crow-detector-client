@@ -15,7 +15,8 @@ type SplashBackgroundProps = {
 };
 
 const SplashBackground = ({ image, frameClassName }: SplashBackgroundProps) => {
-  const [failed, setFailed] = useState(false);
+  const [failedId, setFailedId] = useState<string | null>(null);
+  const failed = failedId === image.id;
   const imageRef = useRef<HTMLImageElement>(null);
   const fallback = splashFallback(image);
 
@@ -25,12 +26,16 @@ const SplashBackground = ({ image, frameClassName }: SplashBackgroundProps) => {
     // A failed splash can finish before hydration, so onError never runs.
 
     if (element && splashImageMissing(element)) {
-      setFailed(true);
+      setFailedId(image.id);
     }
   }, [image.id]);
 
   if (failed) {
-    return null;
+    return (
+      <p role="status" className="sr-only">
+        The photograph could not be loaded.
+      </p>
+    );
   }
 
   return (
@@ -58,7 +63,7 @@ const SplashBackground = ({ image, frameClassName }: SplashBackgroundProps) => {
               image.objectPositionMobile ?? image.objectPosition,
           } as CSSProperties
         }
-        onError={() => setFailed(true)}
+        onError={() => setFailedId(image.id)}
         data-testid="splash-image"
       />
     </picture>

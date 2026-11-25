@@ -21,7 +21,7 @@ export type HeroImage = {
  * Widths encoded ahead of time.
  * Static export leaves `images.unoptimized` on, so the browser must choose among real files.
  */
-const HERO_IMAGES: Record<string, HeroImage> = {
+const HERO_IMAGES = {
   spencer: {
     id: 'spencer',
     objectPosition: '55% 30%',
@@ -49,7 +49,9 @@ const HERO_IMAGES: Record<string, HeroImage> = {
   narubono: {
     id: 'narubono',
     objectPosition: '50% 50%',
+
     // Phone cover: pin to upper sky so birds/branches fall under the copy, not through it.
+
     objectPositionMobile: '48% 8%',
     variants: [
       {
@@ -78,15 +80,15 @@ const HERO_IMAGES: Record<string, HeroImage> = {
       },
     ],
   },
-};
+} satisfies Record<string, HeroImage>;
 
 export const SPLASH_SIZES = '100vw';
 
 /** Locked home splash. */
-export const ACTIVE_HERO_ID = 'spencer';
+export const ACTIVE_HERO_ID = 'spencer' satisfies keyof typeof HERO_IMAGES;
 
 /** Locked About splash. */
-export const ABOUT_IMAGE_ID = 'narubono';
+export const ABOUT_IMAGE_ID = 'narubono' satisfies keyof typeof HERO_IMAGES;
 
 export const getActiveHero = (): HeroImage => HERO_IMAGES[ACTIVE_HERO_ID];
 

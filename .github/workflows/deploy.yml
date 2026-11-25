@@ -12,16 +12,25 @@ on:
           - test
           - production
 
+permissions:
+  contents: read
+
+concurrency:
+  group: critter-canteen-site-deploy
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build Next.js
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '26'
           cache: 'npm'
@@ -31,50 +40,40 @@ jobs:
 
       - name: Build Next.js
         run: |
-          echo "Deploying to ${{ inputs.environment }} environment"
-          NODE_ENV=${{ inputs.environment }} npm run build
+          echo "Deploying to $DEPLOY_ENVIRONMENT environment"
+          ENABLE_SOURCE_MAPS=true NODE_ENV=production npm run build
+          node ./scripts/source-maps.js
+          find out -name '*.js' -exec sed -i '/sourceMappingURL/d' {} +
+          find out -name '*.map' -delete
         env:
-          NEXT_PUBLIC_API_BASE_URL: ${{ inputs.environment == 'test' && secrets.NEXT_PUBLIC_API_BASE_URL_DEV || secrets.NEXT_PUBLIC_API_BASE_URL_PROD }}
-          NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || secrets.GA_TRACKING_ID_PROD }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+          NEXT_PUBLIC_API_BASE_URL: ${{ inputs.environment == 'test' && secrets.NEXT_PUBLIC_API_BASE_URL_DEV || inputs.environment == 'production' && secrets.NEXT_PUBLIC_API_BASE_URL_PROD }}
+          NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || inputs.environment == 'production' && secrets.GA_TRACKING_ID_PROD }}
+          NEXT_PUBLIC_GA_CONSENT: ${{ inputs.environment == 'test' && secrets.GA_CONSENT_DEV || inputs.environment == 'production' && secrets.GA_CONSENT_PROD }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-          NEXT_PUBLIC_SENTRY_RELEASE: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}-${{ github.sha }}
-          NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}
-
-      - name: Archive Build Output
-        uses: actions/upload-artifact@v7
-        with:
-          name: next-build
-          path: out
-          retention-days: 1
-      
-        # Sentry does not support source maps for static NextJS builds.
-        # The source maps must be uploaded manually.
-        # NextJS does not support generating source maps independently.
-        # To avoid uploading source maps in production NextJS must be built twice, once for each use case.
-
-      - name: Generate & Upload Sentry Source Maps
-        run: |
-          echo "Uploading source maps to Sentry.io..."
-          NODE_ENV=${{ inputs.environment }} npm run source-maps
-        env:
-          NEXT_PUBLIC_API_BASE_URL: ${{ inputs.environment == 'test' && secrets.NEXT_PUBLIC_API_BASE_URL_DEV || secrets.NEXT_PUBLIC_API_BASE_URL_PROD }}
-          NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || secrets.GA_TRACKING_ID_PROD }}
-          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-          NEXT_PUBLIC_SENTRY_RELEASE: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}-${{ github.sha }}
-          NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || secrets.SENTRY_ENVIRONMENT_PROD }}
+          NEXT_PUBLIC_SENTRY_RELEASE: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || inputs.environment == 'production' && secrets.SENTRY_ENVIRONMENT_PROD }}-${{ github.sha }}
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ inputs.environment == 'test' && secrets.SENTRY_ENVIRONMENT_TEST || inputs.environment == 'production' && secrets.SENTRY_ENVIRONMENT_PROD }}
           SENTRY_AUTH_TOKEN_SOURCE_MAPS: ${{ secrets.SENTRY_AUTH_TOKEN_SOURCE_MAPS }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
+      - name: Archive Build Output
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: next-build
+          path: out
+          retention-days: 1
+
   lint:
     name: Lint Code
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '26'
           cache: 'npm'
@@ -85,15 +84,19 @@ jobs:
       - name: Run Linting
         run: npm run lint
 
+      - name: Check formatting
+        run: npx prettier --check .
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '26'
           cache: 'npm'
@@ -108,12 +111,13 @@ jobs:
     name: Run Unit Tests
     needs: [build, lint, typecheck]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '26'
           cache: 'npm'
@@ -125,22 +129,32 @@ jobs:
         run: npm run test
 
       - name: Upload Coverage Report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage-report
           path: coverage
           retention-days: 7
 
-
   backup_s3:
     name: Backup S3
     needs: test
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 30
     outputs:
       backup_dir: ${{ steps.timestamp.outputs.backup_dir }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ inputs.environment == 'test' && secrets.AWS_ROLE_TO_ASSUME_DEV || inputs.environment == 'production' && secrets.AWS_ROLE_TO_ASSUME_PROD }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Generate Timestamp
         id: timestamp
@@ -150,23 +164,31 @@ jobs:
         run: |
           aws s3 sync s3://$AWS_S3_BUCKET s3://$AWS_S3_BACKUP_BUCKET/$BACKUP_DIR/ --exact-timestamps
         env:
-          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || secrets.AWS_S3_BUCKET_PROD }}
-          AWS_S3_BACKUP_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_BACKUP_DEV || secrets.AWS_S3_BUCKET_BACKUP_PROD }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
+          AWS_S3_BACKUP_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_BACKUP_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_BACKUP_PROD }}
           BACKUP_DIR: ${{ steps.timestamp.outputs.backup_dir }}
 
   deploy_to_s3:
     name: Deploy to S3
     needs: backup_s3
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ inputs.environment == 'test' && secrets.AWS_ROLE_TO_ASSUME_DEV || inputs.environment == 'production' && secrets.AWS_ROLE_TO_ASSUME_PROD }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '26'
           cache: 'npm'
@@ -175,49 +197,50 @@ jobs:
         run: npm ci
 
       - name: Download Build Output
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: next-build
           path: next-build
 
       - name: Deploy to S3
-        uses: jakejarvis/s3-sync-action@v0.5.0
-        with:
-          args: --delete --exclude "data/*"
+        run: |
+          if [ ! -d next-build ] || [ -z "$(find next-build -type f | head -n 1)" ]; then
+            echo "Refusing to sync an empty build directory"
+            exit 1
+          fi
+          aws s3 sync next-build "s3://$AWS_S3_BUCKET" --exclude "*" --include "_next/*" --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync next-build "s3://$AWS_S3_BUCKET" --delete --exclude "data/*" --exclude "_next/*"
         env:
-          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || secrets.AWS_S3_BUCKET_PROD }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          SOURCE_DIR: 'next-build'
+          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
 
       - name: Cache splash images
         run: ./scripts/cache-splash-images.sh
         env:
-          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || secrets.AWS_S3_BUCKET_PROD }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
 
       - name: Invalidate CloudFront Cache
-        uses: chetan/invalidate-cloudfront-action@v2
+        run: |
+          invalidation_id="$(aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" --paths "/*" --query 'Invalidation.Id' --output text)"
+          aws cloudfront wait invalidation-completed --distribution-id "$DISTRIBUTION" --id "$invalidation_id"
         env:
-          DISTRIBUTION: ${{ inputs.environment == 'test' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV || secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD }}
-          PATHS: "/*"
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          DISTRIBUTION: ${{ inputs.environment == 'test' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV || inputs.environment == 'production' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD }}
+
+      - name: Delete replaced hashed chunks
+        run: aws s3 sync next-build "s3://$AWS_S3_BUCKET" --delete --exclude "*" --include "_next/*" --cache-control "public, max-age=31536000, immutable"
+        env:
+          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
 
   e2e_tests:
     name: Run E2E Tests
     needs: deploy_to_s3
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '26'
           cache: 'npm'
@@ -228,26 +251,30 @@ jobs:
       - name: Start Proxy Server
         if: inputs.environment == 'test'
         run: |
-          NODE_ENV=${{ inputs.environment }} nohup npm run proxy &
-          npx wait-on http://localhost:8080/healthcheck
+          NODE_ENV="$DEPLOY_ENVIRONMENT" nohup npm run proxy &
+          npx wait-on -t 120000 http://127.0.0.1:8080/healthcheck
         env:
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
           CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}
           CLOUDFRONT_KEY_PAIR_ID: ${{ secrets.CLOUDFRONT_KEY_PAIR_ID }}
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
 
       - name: Run Cypress Tests
-        run: NODE_ENV=${{ inputs.environment }} npm run e2e
+        run: NODE_ENV="$DEPLOY_ENVIRONMENT" npm run e2e
+        env:
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
 
   lighthouse_tests:
     name: Run Lighthouse Tests
     needs: deploy_to_s3
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '26'
           cache: 'npm'
@@ -257,42 +284,55 @@ jobs:
 
       - name: Run Lighthouse Tests
         id: lighthouse
-        run: |
-          NODE_ENV=${{ inputs.environment }} npx lhci autorun --chrome-flags="--headless --disable-gpu --no-sandbox"
+        run: NODE_ENV="$DEPLOY_ENVIRONMENT" npx lhci autorun --chrome-flags="--headless --disable-gpu --no-sandbox"
         env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-          CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}
-          CLOUDFRONT_KEY_PAIR_ID: ${{ secrets.CLOUDFRONT_KEY_PAIR_ID }}
-          CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+          CLOUDFRONT_DOMAIN: ${{ inputs.environment == 'test' && secrets.CLOUDFRONT_DOMAIN || '' }}
+          CLOUDFRONT_KEY_PAIR_ID: ${{ inputs.environment == 'test' && secrets.CLOUDFRONT_KEY_PAIR_ID || '' }}
+          CLOUDFRONT_PRIVATE_KEY: ${{ inputs.environment == 'test' && secrets.CLOUDFRONT_PRIVATE_KEY || '' }}
 
   rollback:
     name: Revert S3 Deployment
-    needs: [lighthouse_tests, e2e_tests, backup_s3]
+    needs: [deploy_to_s3, lighthouse_tests, e2e_tests, backup_s3]
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
     if: >-
       ${{
         always() &&
         needs.backup_s3.result == 'success' &&
-        (needs.lighthouse_tests.result == 'failure' || needs.e2e_tests.result == 'failure')
+        (needs.deploy_to_s3.result == 'failure' || needs.deploy_to_s3.result == 'cancelled' || needs.lighthouse_tests.result == 'failure' || needs.lighthouse_tests.result == 'cancelled' || needs.e2e_tests.result == 'failure' || needs.e2e_tests.result == 'cancelled')
       }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ inputs.environment == 'test' && secrets.AWS_ROLE_TO_ASSUME_DEV || inputs.environment == 'production' && secrets.AWS_ROLE_TO_ASSUME_PROD }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Restore Latest Backup
         run: |
-          echo "Post-deploy tests failed. Reverting S3 deployment from backup directory: $BACKUP_DIR."
-          aws s3 sync s3://$AWS_S3_BACKUP_BUCKET/$BACKUP_DIR/ s3://$AWS_S3_BUCKET --delete --exclude "data/*"
+          case "$BACKUP_DIR" in
+            [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]) ;;
+            *) echo "Backup key must be 14 digits"; exit 1 ;;
+          esac
+          if ! aws s3 ls "s3://$AWS_S3_BACKUP_BUCKET/$BACKUP_DIR/" | grep -q .; then
+            echo "Refusing to restore an empty backup"
+            exit 1
+          fi
+          echo "Reverting S3 deployment from backup directory: $BACKUP_DIR."
+          aws s3 sync "s3://$AWS_S3_BACKUP_BUCKET/$BACKUP_DIR/" "s3://$AWS_S3_BUCKET" --delete --exclude "data/*"
         env:
-          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || secrets.AWS_S3_BUCKET_PROD }}
-          AWS_S3_BACKUP_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_BACKUP_DEV || secrets.AWS_S3_BUCKET_BACKUP_PROD }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
+          AWS_S3_BACKUP_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_BACKUP_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_BACKUP_PROD }}
           BACKUP_DIR: ${{ needs.backup_s3.outputs.backup_dir }}
 
       - name: Invalidate CloudFront Cache
-        uses: chetan/invalidate-cloudfront-action@v2
+        run: |
+          invalidation_id="$(aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" --paths "/*" --query 'Invalidation.Id' --output text)"
+          aws cloudfront wait invalidation-completed --distribution-id "$DISTRIBUTION" --id "$invalidation_id"
         env:
-          DISTRIBUTION: ${{ inputs.environment == 'test' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV || secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD }}
-          PATHS: "/*"
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          DISTRIBUTION: ${{ inputs.environment == 'test' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV || inputs.environment == 'production' && secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD }}

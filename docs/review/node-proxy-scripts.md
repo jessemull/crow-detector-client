@@ -7,7 +7,7 @@
 
 ## How to review
 
-These files are not typechecked and have no unit tests, so review them as if nothing else will catch a mistake. For every library call, open the installed package (`node_modules/<pkg>/README.md`, `dist/*.d.ts`) and confirm the option or method exists in this version; unknown options are usually ignored silently (for example `http-proxy-middleware` 4 reads `on: { proxyReq }`, not a top-level `onProxyReq`). For every shell or child-process call, check quoting and argument handling.
+These files are not typechecked. `proxy/index.test.js`, `scripts/serve-export.test.js`, and the `scripts/review` suites cover the proxy, the static file server, and the review tooling. Review every other file here as if nothing else will catch a mistake. For every library call, open the installed package (`node_modules/<pkg>/README.md`, `dist/*.d.ts`) and confirm the option or method exists in this version; unknown options are usually ignored silently (for example `http-proxy-middleware` 4 reads `on: { proxyReq }`, not a top-level `onProxyReq`). For every shell or child-process call, check quoting and argument handling.
 
 ## Criteria
 

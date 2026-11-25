@@ -41,4 +41,4 @@
 ## Sentry & analytics
 
 - Sentry via `@sentry/nextjs` — do not attach secrets to events.
-- Google Analytics via `NEXT_PUBLIC_GA_TRACKING_ID` when configured — treat measurement IDs as environment-specific, not secret.
+- Google Analytics is injected only when `NEXT_PUBLIC_GA_CONSENT` is `granted` and `NEXT_PUBLIC_GA_TRACKING_ID` matches `G-[A-Z0-9]+`. Treat measurement IDs as environment-specific, not secret. `GaRouteListener` sends a later page view on client navigations.

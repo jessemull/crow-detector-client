@@ -3,11 +3,23 @@ import Script from 'next/script';
 import type { Metadata } from 'next';
 import { Inter, Urbanist } from 'next/font/google';
 import { Footer } from '@components/Footer';
+import { GaRouteListener } from '@components/GaRouteListener';
 import { Header } from '@components/Header';
+
+const GA_ID_PATTERN = /^G-[A-Z0-9]+$/;
+
+const gaTrackingId = (() => {
+  const id = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
+  const consent = process.env.NEXT_PUBLIC_GA_CONSENT;
+  if (consent !== 'granted' || !id || !GA_ID_PATTERN.test(id)) {
+    return null;
+  }
+  return id;
+})();
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['300', '400', '500'],
   display: 'swap',
   variable: '--font-inter',
 });
@@ -19,15 +31,13 @@ const urbanist = Urbanist({
   variable: '--font-urbanist-family',
 });
 
-const NEXT_PUBLIC_GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
-
 export const metadata: Metadata = {
   alternates: {
     canonical: 'https://www.crittercanteen.com',
   },
   title: 'Critter Canteen - Crow Feeding Station',
   description:
-    'Automated crow feeding and imaging station. Watch our feathered friends enjoy their meals and view captured images in real-time!',
+    'Automated crow feeding and imaging station. A heated porch shelter, motion-sensing cameras, and recorded visits on Shelter Cam.',
   keywords:
     'crow feeding, automated feeder, wildlife camera, bird watching, IoT',
   authors: [{ name: 'Jesse Mull' }],
@@ -46,7 +56,7 @@ export const metadata: Metadata = {
     siteName: 'Critter Canteen',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Critter Canteen - Automated Crow Feeding & Imaging Station.',
@@ -54,11 +64,12 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    // Square asset for X summary card; keep landscape `/og-image.png` for Open Graph only.
+    // Square asset for X summary card; keep landscape `/og-image.jpg` for Open Graph only.
+
     card: 'summary',
     title: 'Critter Canteen - Crow Feeding Station',
     description: 'Automated crow feeding and imaging station.',
-    images: ['/twitter-image.png'],
+    images: ['/twitter-image.jpg'],
   },
 };
 
@@ -81,24 +92,23 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
-        {NEXT_PUBLIC_GA_TRACKING_ID ? (
-          <Script id="gtag-load" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              (window.requestIdleCallback || function(cb) { setTimeout(cb, 0); })(() => {
+        {gaTrackingId ? (
+          <>
+            <Script id="gtag-load" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                window.gtag = gtag;
+                gtag('js', new Date());
                 const script = document.createElement('script');
-                script.src = 'https://www.googletagmanager.com/gtag/js?id=${NEXT_PUBLIC_GA_TRACKING_ID}';
+                script.src = 'https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}';
                 script.async = true;
                 document.head.appendChild(script);
-
-                gtag('js', new Date());
-                gtag('config', '${NEXT_PUBLIC_GA_TRACKING_ID}', {
-                  page_path: window.location.pathname,
-                });
-              });
-            `}
-          </Script>
+                window.dispatchEvent(new Event('ga-ready'));
+              `}
+            </Script>
+            <GaRouteListener measurementId={gaTrackingId} />
+          </>
         ) : null}
       </body>
     </html>

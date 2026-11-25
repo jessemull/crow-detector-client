@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export type PorchClip = {
@@ -9,11 +10,20 @@ export type PorchClip = {
   expiresAt: string;
 };
 
-/** How often to re-fetch while the tab is visible. */
+/** How often to re-fetch while the tab is visible and the last poll succeeded. */
 const POLL_INTERVAL_MS = 45_000;
+
+/** Cap the wait after repeated failures so a down API is not polled every 45s. */
+const MAX_POLL_INTERVAL_MS = 6 * 60_000;
 
 /** Refresh a still-visible clip’s signed URL before CloudFront rejects it. */
 const URL_REFRESH_BUFFER_MS = 60_000;
+
+/** Give up on a hung porch request so a later poll can replace it. */
+const FETCH_TIMEOUT_MS = 15_000;
+
+const MISSING_API_MESSAGE =
+  'Shelter Cam is not configured yet. Visits will show up after the camera service is connected.';
 
 const clipCardClassName =
   'overflow-hidden rounded-[24px] bg-white shadow-[0_12px_40px_-16px_rgba(0,0,0,0.18)]';
@@ -28,18 +38,73 @@ const statusLineClassName =
 const getApiBaseUrl = (): string =>
   (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
 
+const recordedAtFormat: Intl.DateTimeFormatOptions = {
+  weekday: 'long',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+};
+
+/** Browser-local clock. Omitting timeZone is what makes that happen. */
 const formatRecordedAt = (value: string): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleString(undefined, {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  return date.toLocaleString('en-US', recordedAtFormat);
+};
+
+const PLAYBACK_HOST_SUFFIXES = ['.cloudfront.net', '.crittercanteen.com'];
+
+const configuredPlaybackHosts = (): string[] =>
+  (process.env.NEXT_PUBLIC_PLAYBACK_HOSTS || '')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter((host) => host.length > 0);
+
+const isAllowedPlaybackUrl = (value: string): boolean => {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:') {
+    return false;
+  }
+  const host = url.hostname.toLowerCase();
+  if (configuredPlaybackHosts().includes(host)) {
+    return true;
+  }
+  return PLAYBACK_HOST_SUFFIXES.some(
+    (suffix) => host.endsWith(suffix) && host.length > suffix.length
+  );
+};
+
+const isPorchClip = (value: unknown): value is PorchClip => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const clip = value as Record<string, unknown>;
+  return (
+    typeof clip.name === 'string' &&
+    clip.name.length > 0 &&
+    typeof clip.recordedAt === 'string' &&
+    typeof clip.playbackUrl === 'string' &&
+    isAllowedPlaybackUrl(clip.playbackUrl) &&
+    typeof clip.expiresAt === 'string'
+  );
+};
+
+/** Reject anything that is not a list of playable clips. */
+const parsePorchClips = (value: unknown): PorchClip[] | null => {
+  if (!Array.isArray(value) || !value.every(isPorchClip)) {
+    return null;
+  }
+  return [...value].sort(
+    (a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt)
+  );
 };
 
 const sameClipIdentity = (a: PorchClip, b: PorchClip): boolean =>
@@ -52,19 +117,28 @@ const sameClipIdentity = (a: PorchClip, b: PorchClip): boolean =>
 const mergeClipsForPlayback = (
   previous: PorchClip[],
   next: PorchClip[],
-  nowMs: number
+  nowMs: number,
+  failedPlaybackUrls: Set<string>
 ): PorchClip[] => {
   if (
     previous.length === next.length &&
     previous.every((clip, index) => sameClipIdentity(clip, next[index]))
   ) {
-    return previous.map((clip, index) => {
+    const merged = previous.map((clip, index) => {
       const expiresAtMs = Date.parse(clip.expiresAt);
       const needsFreshUrl =
         !Number.isFinite(expiresAtMs) ||
-        expiresAtMs - nowMs < URL_REFRESH_BUFFER_MS;
+        expiresAtMs - nowMs < URL_REFRESH_BUFFER_MS ||
+        failedPlaybackUrls.has(clip.playbackUrl);
+      if (failedPlaybackUrls.has(clip.playbackUrl)) {
+        failedPlaybackUrls.delete(clip.playbackUrl);
+      }
       return needsFreshUrl ? next[index] : clip;
     });
+    if (merged.every((clip, index) => clip === previous[index])) {
+      return previous;
+    }
+    return merged;
   }
 
   return next;
@@ -75,15 +149,26 @@ type LazyClipVideoProps = {
   ariaLabel: string;
   /** Load immediately (latest visit) instead of waiting for scroll. */
   eager?: boolean;
+  onPlaybackError?: (src: string) => void;
 };
 
 const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
   src,
   ariaLabel,
   eager = false,
+  onPlaybackError,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const failureRef = useRef<HTMLParagraphElement>(null);
   const [shouldLoad, setShouldLoad] = useState(eager);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === src;
+
+  useEffect(() => {
+    if (failed) {
+      failureRef.current?.focus();
+    }
+  }, [failed]);
 
   useEffect(() => {
     if (shouldLoad) {
@@ -112,17 +197,33 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
 
   return (
     <div ref={containerRef} className="bg-black">
-      <video
-        key={src}
-        className="aspect-video w-full bg-black"
-        controls
-        playsInline
-        preload="none"
-        src={shouldLoad ? src : undefined}
-        aria-label={ariaLabel}
-      >
-        Your browser does not support video playback.
-      </video>
+      {failed ? (
+        <p
+          ref={failureRef}
+          tabIndex={-1}
+          role="alert"
+          className="flex aspect-video w-full items-center justify-center px-6 text-center text-sm text-white/80"
+        >
+          This visit can’t be played. It will be replaced on the next refresh.
+        </p>
+      ) : (
+        // Wildlife clips have no speech, so a caption track does not apply.
+
+        <video
+          className="aspect-video w-full bg-black"
+          controls
+          playsInline
+          preload="none"
+          src={shouldLoad ? src : undefined}
+          aria-label={ariaLabel}
+          onError={() => {
+            setFailedSrc(src);
+            onPlaybackError?.(src);
+          }}
+        >
+          Your browser does not support video playback.
+        </video>
+      )}
     </div>
   );
 };
@@ -130,9 +231,9 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
 /** Same footprint as a loaded visit card so the list does not jump. */
 const ClipCardSkeleton: React.FC = () => (
   <article className={clipCardClassName} aria-hidden="true">
-    <div className="aspect-video w-full animate-pulse bg-black/[0.06]" />
+    <div className="aspect-video w-full animate-pulse bg-black/[0.06] motion-reduce:animate-none" />
     <div className={clipCardMetaClassName}>
-      <div className="h-5 w-44 animate-pulse rounded-md bg-black/[0.06] md:h-6 md:w-52" />
+      <div className="h-5 w-44 animate-pulse rounded-md bg-black/[0.06] motion-reduce:animate-none md:h-6 md:w-52" />
     </div>
   </article>
 );
@@ -143,17 +244,37 @@ const PorchClips: React.FC = () => {
   const [loading, setLoading] = useState(true);
   /** Background poll failed while an older list is still on screen. */
   const [refreshWarning, setRefreshWarning] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const generationRef = useRef(0);
+  const failureStreakRef = useRef(0);
+  const failedPlaybackUrlsRef = useRef(new Set<string>());
+  const loadedOnceRef = useRef(false);
 
   const loadClips = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
     const apiBaseUrl = getApiBaseUrl();
     if (!apiBaseUrl) {
-      setError('Visits will appear here when the shelter camera is online.');
+      if (!silent) {
+        Sentry.captureException(
+          new Error('NEXT_PUBLIC_API_BASE_URL is not set')
+        );
+      }
+      setError(MISSING_API_MESSAGE);
       setClips([]);
       setRefreshWarning(null);
       setLoading(false);
       return;
     }
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const generation = generationRef.current + 1;
+    generationRef.current = generation;
+    const timeoutId = window.setTimeout(
+      () => controller.abort('timeout'),
+      FETCH_TIMEOUT_MS
+    );
 
     if (!silent) {
       setLoading(true);
@@ -162,20 +283,57 @@ const PorchClips: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/porch/clips`);
+      const response = await fetch(`${apiBaseUrl}/porch/clips`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (generation !== generationRef.current) {
+        return;
+      }
       if (!response.ok) {
         throw new Error('Could not load visits');
       }
-      const data = (await response.json()) as PorchClip[];
-      const next = Array.isArray(data) ? data : [];
+      const next = parsePorchClips(await response.json());
+      if (generation !== generationRef.current) {
+        return;
+      }
+      if (!next) {
+        throw new Error('Porch clips response had an unexpected shape');
+      }
       setClips((previous) =>
-        silent ? mergeClipsForPlayback(previous, next, Date.now()) : next
+        silent
+          ? mergeClipsForPlayback(
+              previous,
+              next,
+              Date.now(),
+              failedPlaybackUrlsRef.current
+            )
+          : next
       );
+      loadedOnceRef.current = true;
       setError(null);
       setRefreshWarning(null);
-    } catch {
+      failureStreakRef.current = 0;
+    } catch (error) {
+      if (generation !== generationRef.current) {
+        return;
+      }
+      const timedOut = controller.signal.reason === 'timeout';
+      if (
+        !timedOut &&
+        error instanceof DOMException &&
+        error.name === 'AbortError'
+      ) {
+        return;
+      }
+      failureStreakRef.current += 1;
+      if (!timedOut) {
+        Sentry.captureException(error);
+      }
+
       // Keep the last good list on background polls so the page does not flash empty.
-      if (!silent) {
+
+      if (!silent || !loadedOnceRef.current) {
         setClips([]);
         setError("Can't load visits right now.");
         setRefreshWarning(null);
@@ -185,7 +343,11 @@ const PorchClips: React.FC = () => {
         );
       }
     } finally {
-      if (!silent) {
+      window.clearTimeout(timeoutId);
+
+      // Silent refresh can replace the first request. Clear loading for that generation too.
+
+      if (generation === generationRef.current) {
         setLoading(false);
       }
     }
@@ -193,37 +355,73 @@ const PorchClips: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    let pollTimer = 0;
 
-    const run = (silent: boolean) => {
-      if (cancelled) {
-        return;
+    const delayAfter = () => {
+      const streak = failureStreakRef.current;
+      if (streak === 0) {
+        return POLL_INTERVAL_MS;
       }
-      void loadClips({ silent });
+      return Math.min(
+        POLL_INTERVAL_MS * 2 ** (streak - 1),
+        MAX_POLL_INTERVAL_MS
+      );
+    };
+
+    const schedule = () => {
+      window.clearTimeout(pollTimer);
+      pollTimer = window.setTimeout(() => {
+        if (cancelled) {
+          return;
+        }
+        if (document.visibilityState !== 'visible') {
+          schedule();
+          return;
+        }
+        void loadClips({ silent: true }).finally(() => {
+          if (!cancelled) {
+            schedule();
+          }
+        });
+      }, delayAfter());
     };
 
     // Defer the first fetch so setState does not run synchronously inside the effect.
+
+    let initialSettled = false;
     const initialTimer = window.setTimeout(() => {
-      run(false);
+      void loadClips({ silent: false }).finally(() => {
+        initialSettled = true;
+        if (!cancelled) {
+          schedule();
+        }
+      });
     }, 0);
 
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        run(true);
-      }
-    }, POLL_INTERVAL_MS);
-
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        run(true);
+      if (
+        !initialSettled ||
+        document.visibilityState !== 'visible' ||
+        cancelled
+      ) {
+        return;
       }
+      window.clearTimeout(pollTimer);
+      void loadClips({ silent: true }).finally(() => {
+        if (!cancelled) {
+          schedule();
+        }
+      });
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       cancelled = true;
+      generationRef.current += 1;
       window.clearTimeout(initialTimer);
-      window.clearInterval(intervalId);
+      window.clearTimeout(pollTimer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      abortRef.current?.abort();
     };
   }, [loadClips]);
 
@@ -252,20 +450,11 @@ const PorchClips: React.FC = () => {
               : clips.length === 0
                 ? 'No visits yet.'
                 : clipCountLabel}
+          {!loading && !error && refreshWarning ? ` ${refreshWarning}` : ''}
         </p>
 
-        {!loading && !error && refreshWarning ? (
-          <p className={statusLineClassName} role="status">
-            {refreshWarning}
-          </p>
-        ) : null}
-
         {loading ? (
-          <div
-            className="space-y-8 md:space-y-10"
-            role="status"
-            aria-label="Loading Shelter Cam"
-          >
+          <div className="space-y-8 md:space-y-10" aria-hidden="true">
             <ClipCardSkeleton />
             <ClipCardSkeleton />
           </div>
@@ -282,6 +471,9 @@ const PorchClips: React.FC = () => {
                       src={clip.playbackUrl}
                       ariaLabel={`Shelter visit recorded ${recordedLabel}`}
                       eager={index === 0}
+                      onPlaybackError={(url) => {
+                        failedPlaybackUrlsRef.current.add(url);
+                      }}
                     />
                     <div className={clipCardMetaClassName}>
                       <h2 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-cc-ink md:text-lg">

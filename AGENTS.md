@@ -22,12 +22,12 @@
 crow-detector-client/
 ├── src/
 │   ├── app/                 # Routes: /, /about, /porch (Shelter Cam)
-│   ├── components/          # Header, Footer, HomePage, About, PorchClips, UtilityNotice
+│   ├── components/          # Header, Footer, HomePage, About, PorchClips, SplashBackground, UtilityNotice, GaRouteListener
 │   ├── constants/           # Shared constants (when present)
 │   ├── hooks/               # Shared hooks (when present)
 │   ├── types/
 │   └── utils/
-├── scripts/                 # bastion connect, source-maps, preflight, review/ (ledger tooling)
+├── scripts/                 # bastion connect, source-maps, preflight, serve-export, cache-splash-images, review/ (ledger tooling)
 ├── proxy/                   # Local CloudFront signed-cookie proxy
 ├── cloudformation/
 ├── cypress/
@@ -69,17 +69,17 @@ Prefer **`make`** targets (see `make help`). Equivalents use npm.
 
 ### Quality
 
-| Command           | Description                     |
-| ----------------- | ------------------------------- |
-| `make lint`       | ESLint check                    |
-| `make typecheck`  | `tsc --noEmit`                  |
-| `make format`     | Prettier write                  |
-| `make test`       | Jest with coverage              |
-| `make build`      | Next.js static export build     |
-| `make preflight`  | lint + typecheck + test + build |
-| `make security`   | `npm audit`                     |
-| `make e2e`        | Cypress                         |
-| `make lighthouse` | LHCI                            |
+| Command           | Description                                |
+| ----------------- | ------------------------------------------ |
+| `make lint`       | ESLint check                               |
+| `make typecheck`  | `tsc --noEmit`                             |
+| `make format`     | Prettier write                             |
+| `make test`       | Jest with coverage                         |
+| `make build`      | Next.js static export build                |
+| `make preflight`  | prettier, lint, typecheck, test, and build |
+| `make security`   | `npm audit`                                |
+| `make e2e`        | Cypress                                    |
+| `make lighthouse` | LHCI                                       |
 
 ### Review
 
@@ -134,7 +134,7 @@ Follow `docs/COMMENTS.md`. Prefer self-documenting names; comments explain **why
 
 ### Data
 
-- Static marketing/status UI only today. Do not hardcode environment API hosts if/when an API is added — use env / constants.
+- Marketing pages are static. Shelter Cam fetches `${NEXT_PUBLIC_API_BASE_URL}/porch/clips` in the browser. Do not hardcode that host — use the env var.
 
 ### State
 
