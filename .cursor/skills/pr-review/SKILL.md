@@ -145,7 +145,7 @@ Fix every problem it reports and run it again until it exits 0. Never edit the l
 
 ## Phase 10 — Report
 
-Write the report in chat following `docs/review/REPORT_TEMPLATE.md`, from the ledger. Include every finding at every severity, the gates table, everything `not-inspected`, the coverage summary from `check-ledger`, and the ledger path. Do not soften MUST or SHOULD items, and do not add findings that are not in the ledger.
+Write the report in chat following `docs/review/REPORT_TEMPLATE.md`, from the ledger. Open with the Decision counts: how many findings will be fixed, how many will not, and what a visitor hits if none of them are fixed. Then include every finding at every severity, the gates table, everything `not-inspected`, the coverage summary from `check-ledger`, and the ledger path. Do not soften MUST or SHOULD items, and do not add findings that are not in the ledger.
 
 Post to GitHub only when the user asks.
 
