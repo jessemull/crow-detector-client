@@ -92,9 +92,10 @@ describe('PorchClips', () => {
         })
     );
 
-    render(<PorchClips />);
+    const { container } = render(<PorchClips />);
 
     expect(await screen.findByText('Loading…')).toBeTruthy();
+    expect(await axe(container)).toHaveNoViolations();
     expect(document.querySelectorAll('article')).toHaveLength(2);
     expect(document.querySelector('.aspect-video')).toBeTruthy();
     expect(screen.getByText('Loading…')).toBeTruthy();
@@ -149,12 +150,13 @@ describe('PorchClips', () => {
       json: async () => ({}),
     });
 
-    render(<PorchClips />);
+    const { container } = render(<PorchClips />);
 
     await waitFor(() => {
       expect(screen.getByText("Can't load visits right now.")).toBeTruthy();
     });
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('shows an empty status line when there are no visits', async () => {
@@ -163,12 +165,13 @@ describe('PorchClips', () => {
       json: async () => [],
     });
 
-    render(<PorchClips />);
+    const { container } = render(<PorchClips />);
 
     await waitFor(() => {
       expect(screen.getByText('No visits yet.')).toBeTruthy();
     });
     expect(screen.queryByText('0 visits')).toBeNull();
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('polls for new visits while the tab is visible', async () => {
@@ -340,6 +343,442 @@ describe('PorchClips', () => {
         'This visit can’t be played. It will be replaced on the next refresh.'
       )
     ).toBeTruthy();
+  });
+
+  it('loads a later visit when it scrolls into view', async () => {
+    const instances: {
+      observe: jest.Mock;
+      disconnect: jest.Mock;
+      callback: IntersectionObserverCallback;
+    }[] = [];
+
+    class FakeIntersectionObserver {
+      observe = jest.fn();
+      disconnect = jest.fn();
+      unobserve = jest.fn();
+      takeRecords = () => [];
+      constructor(callback: IntersectionObserverCallback) {
+        instances.push({
+          observe: this.observe,
+          disconnect: this.disconnect,
+          callback,
+        });
+      }
+    }
+
+    const originalObserver = window.IntersectionObserver;
+    window.IntersectionObserver =
+      FakeIntersectionObserver as unknown as typeof IntersectionObserver;
+
+    const olderRecordedAt = '2026-11-13T18:00:00.000Z';
+    const olderLabel = new Date(olderRecordedAt).toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    const olderUrl = 'https://cdn.example.com/clip-2.mp4';
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          name: 'clip-1.mp4',
+          recordedAt,
+          playbackUrl: 'https://cdn.example.com/clip-1.mp4?sig=1',
+          expiresAt: '2026-11-14T20:05:00.000Z',
+        },
+        {
+          name: 'clip-2.mp4',
+          recordedAt: olderRecordedAt,
+          playbackUrl: olderUrl,
+          expiresAt: '2026-11-13T18:05:00.000Z',
+        },
+      ],
+    });
+
+    const { unmount } = render(<PorchClips />);
+
+    const later = await screen.findByLabelText(
+      `Shelter visit recorded ${olderLabel}`
+    );
+    expect(later).not.toHaveAttribute('src');
+    expect(instances).toHaveLength(1);
+    expect(instances[0]?.observe).toHaveBeenCalled();
+
+    act(() => {
+      instances[0]?.callback(
+        [{ isIntersecting: false } as IntersectionObserverEntry],
+        instances[0] as unknown as IntersectionObserver
+      );
+    });
+    expect(later).not.toHaveAttribute('src');
+
+    act(() => {
+      instances[0]?.callback(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        instances[0] as unknown as IntersectionObserver
+      );
+    });
+    expect(later).toHaveAttribute('src', olderUrl);
+
+    unmount();
+    expect(instances[0]?.disconnect).toHaveBeenCalled();
+    window.IntersectionObserver = originalObserver;
+  });
+
+  it('shows an error when the visit request times out', async () => {
+    jest.useFakeTimers();
+    (Sentry.captureException as jest.Mock).mockClear();
+    fetchMock.mockImplementation(
+      (_url: string, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(
+              new DOMException('The operation was aborted.', 'AbortError')
+            );
+          });
+        })
+    );
+
+    render(<PorchClips />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(15_000);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Can't load visits right now.")).toBeTruthy();
+    });
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('does not poll while the tab is hidden', async () => {
+    jest.useFakeTimers();
+    const descriptor = Object.getOwnPropertyDescriptor(
+      Document.prototype,
+      'visibilityState'
+    );
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+
+    render(<PorchClips />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'hidden',
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    if (descriptor) {
+      Object.defineProperty(Document.prototype, 'visibilityState', descriptor);
+    }
+    delete (document as { visibilityState?: string }).visibilityState;
+  });
+
+  it('waits longer after repeated refresh failures', async () => {
+    jest.useFakeTimers();
+    fetchMock.mockRejectedValue(new Error('network down'));
+
+    render(<PorchClips />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  it('shows an unparseable recorded time as-is', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          name: 'clip-1.mp4',
+          recordedAt: 'not-a-date',
+          playbackUrl: 'https://cdn.example.com/clip-1.mp4',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<PorchClips />);
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'not-a-date' })
+    ).toBeTruthy();
+  });
+
+  it('rejects clips whose playback URL is not an allowed https host', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          name: 'clip-1.mp4',
+          recordedAt,
+          playbackUrl: 'http://cdn.example.com/clip-1.mp4',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+        null,
+        {
+          name: 'clip-2.mp4',
+          recordedAt,
+          playbackUrl: 'not a url',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<PorchClips />);
+
+    expect(
+      await screen.findByText("Can't load visits right now.")
+    ).toBeTruthy();
+  });
+
+  it('plays a CloudFront visit', async () => {
+    const playbackUrl = 'https://d111111abcdef8.cloudfront.net/clip-1.mp4';
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          name: 'clip-1.mp4',
+          recordedAt,
+          playbackUrl,
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<PorchClips />);
+
+    expect(
+      await screen.findByLabelText(`Shelter visit recorded ${recordedLabel}`)
+    ).toHaveAttribute('src', playbackUrl);
+  });
+
+  it('replaces a failed visit when the next poll brings a new link', async () => {
+    jest.useFakeTimers();
+    const failedUrl = 'https://cdn.example.com/clip-1.mp4?sig=1';
+    const freshUrl = 'https://cdn.example.com/clip-1.mp4?sig=2';
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: failedUrl,
+            expiresAt: '2099-01-01T00:00:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: freshUrl,
+            expiresAt: '2099-01-01T00:05:00.000Z',
+          },
+        ],
+      });
+
+    render(<PorchClips />);
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+    const video = await screen.findByLabelText(
+      `Shelter visit recorded ${recordedLabel}`
+    );
+    fireEvent.error(video);
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(`Shelter visit recorded ${recordedLabel}`)
+      ).toHaveAttribute('src', freshUrl);
+    });
+  });
+
+  it('shows a newly recorded visit on the next poll', async () => {
+    jest.useFakeTimers();
+    const newerAt = '2026-11-14T21:00:00.000Z';
+    const newerLabel = new Date(newerAt).toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-1.mp4',
+            recordedAt,
+            playbackUrl: 'https://cdn.example.com/clip-1.mp4',
+            expiresAt: '2099-01-01T00:00:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            name: 'clip-2.mp4',
+            recordedAt: newerAt,
+            playbackUrl: 'https://cdn.example.com/clip-2.mp4',
+            expiresAt: '2099-01-01T00:05:00.000Z',
+          },
+        ],
+      });
+
+    render(<PorchClips />);
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+    expect(await screen.findByText(recordedLabel)).toBeTruthy();
+
+    await act(async () => {
+      jest.advanceTimersByTime(45_000);
+    });
+
+    expect(await screen.findByText(newerLabel)).toBeTruthy();
+  });
+
+  it('loads a later visit immediately when IntersectionObserver is missing', async () => {
+    const original = window.IntersectionObserver;
+    Object.defineProperty(window, 'IntersectionObserver', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    expect(typeof IntersectionObserver).toBe('undefined');
+
+    const olderRecordedAt = '2026-11-13T18:00:00.000Z';
+    const olderLabel = new Date(olderRecordedAt).toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    const olderUrl = 'https://cdn.example.com/clip-2.mp4';
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          name: 'clip-1.mp4',
+          recordedAt,
+          playbackUrl: 'https://cdn.example.com/clip-1.mp4',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+        {
+          name: 'clip-2.mp4',
+          recordedAt: olderRecordedAt,
+          playbackUrl: olderUrl,
+          expiresAt: '2099-01-01T00:05:00.000Z',
+        },
+      ],
+    });
+
+    render(<PorchClips />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(`Shelter visit recorded ${olderLabel}`)
+      ).toHaveAttribute('src', olderUrl);
+    });
+
+    Object.defineProperty(window, 'IntersectionObserver', {
+      configurable: true,
+      writable: true,
+      value: original,
+    });
+  });
+
+  it('ignores an abort that is not the request timeout', async () => {
+    jest.useFakeTimers();
+    (Sentry.captureException as jest.Mock).mockClear();
+    fetchMock.mockRejectedValue(
+      new DOMException('The operation was aborted.', 'AbortError')
+    );
+
+    render(<PorchClips />);
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+    expect(screen.queryByText("Can't load visits right now.")).toBeNull();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('refreshes when the tab becomes visible again', async () => {
+    jest.useFakeTimers();
+    render(<PorchClips />);
+    await act(async () => {
+      jest.advanceTimersByTime(0);
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('has no accessibility violations after load', async () => {

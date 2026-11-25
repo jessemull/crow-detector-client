@@ -37,6 +37,8 @@ Do **not** rewrite these lightly. Document changes in the PR and treat as human-
 | Lighthouse                      | Failure triggers S3 rollback on merge/deploy                                                                                                                   |
 | Revert                          | Restores a 14-digit backup key through the OIDC role and invalidates CloudFront. Excludes `data/*`. A failed deploy rolls back when the backup succeeded.      |
 
+After that sync, merge and deploy run `scripts/cache-splash-images.sh`. Hero files keep stable names, so the script recopies `images/hero/` onto itself with `Cache-Control: public, max-age=86400`.
+
 Node **26** (`.nvmrc`, `engines.node`, `actions/setup-node`).
 
 ---

@@ -196,6 +196,7 @@ const LazyClipVideo: React.FC<LazyClipVideoProps> = ({
         </p>
       ) : (
         // Wildlife clips have no speech, so a caption track does not apply.
+
         <video
           className="aspect-video w-full bg-black"
           controls
@@ -318,7 +319,9 @@ const PorchClips: React.FC = () => {
       if (!timedOut) {
         Sentry.captureException(error);
       }
+
       // Keep the last good list on background polls so the page does not flash empty.
+
       if (!silent) {
         setClips([]);
         setError("Can't load visits right now.");
@@ -332,6 +335,7 @@ const PorchClips: React.FC = () => {
       window.clearTimeout(timeoutId);
 
       // Silent refresh can replace the first request. Clear loading for that generation too.
+
       if (generation === generationRef.current) {
         setLoading(false);
       }
@@ -372,6 +376,7 @@ const PorchClips: React.FC = () => {
     };
 
     // Defer the first fetch so setState does not run synchronously inside the effect.
+
     const initialTimer = window.setTimeout(() => {
       void loadClips({ silent: false }).finally(() => {
         if (!cancelled) {

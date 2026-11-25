@@ -7,14 +7,9 @@ import { Menu, X, Home, Info, Camera, Bird, Mail } from 'lucide-react';
 import { CONTACT_MAILTO } from '@constants/contact';
 import HeaderMark from './HeaderMark';
 
-/** Menu list pill: canvas, radius 244px, padding 5px */
 const menuListClassName =
   'hidden lg:flex items-center justify-center rounded-[244px] bg-cc-canvas p-[5px] font-urbanist';
 
-/**
- * Tab labels: Urbanist 16px / 500, letter-spacing -0.32px
- * Contact CTA: Urbanist 16px / 600
- */
 const navIdleClassName =
   'inline-flex items-center justify-center rounded-[137px] bg-[rgba(13,13,13,0)] px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-cc-ink backdrop-blur-[45px] transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink';
 

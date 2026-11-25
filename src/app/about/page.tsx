@@ -5,7 +5,7 @@ const ABOUT_DESCRIPTION =
   'A backyard wildlife station with an automated feeder, a heated shelter, motion-sensing cameras, and cloud clips.';
 
 const ABOUT_OG_IMAGE = {
-  url: '/og-image.png',
+  url: '/og-image.jpg',
   width: 1200,
   height: 630,
   alt: 'Critter Canteen - Automated Crow Feeding & Imaging Station.',
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: 'summary',
     title: 'About Critter Canteen',
     description: ABOUT_DESCRIPTION,
-    images: ['/twitter-image.png'],
+    images: ['/twitter-image.jpg'],
   },
 };
 

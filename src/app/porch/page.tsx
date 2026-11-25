@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     siteName: 'Critter Canteen',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Critter Canteen - Automated Crow Feeding & Imaging Station.',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: 'summary',
     title: 'Shelter Cam - Critter Canteen',
     description: PORCH_DESCRIPTION,
-    images: ['/twitter-image.png'],
+    images: ['/twitter-image.jpg'],
   },
 };
 

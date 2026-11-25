@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     siteName: 'Critter Canteen',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Critter Canteen - Automated Crow Feeding & Imaging Station.',
@@ -64,11 +64,12 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    // Square asset for X summary card; keep landscape `/og-image.png` for Open Graph only.
+    // Square asset for X summary card; keep landscape `/og-image.jpg` for Open Graph only.
+
     card: 'summary',
     title: 'Critter Canteen - Crow Feeding Station',
     description: 'Automated crow feeding and imaging station.',
-    images: ['/twitter-image.png'],
+    images: ['/twitter-image.jpg'],
   },
 };
 

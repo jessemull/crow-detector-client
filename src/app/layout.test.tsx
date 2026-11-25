@@ -20,7 +20,9 @@ jest.mock('@components/Footer', () => ({
 }));
 
 jest.mock('@components/GaRouteListener', () => ({
-  GaRouteListener: () => null,
+  GaRouteListener: ({ measurementId }: { measurementId: string }) => (
+    <p>Listening for {measurementId}</p>
+  ),
 }));
 
 describe('RootLayout', () => {
@@ -41,34 +43,54 @@ describe('RootLayout', () => {
     jest.resetModules();
   });
 
-  it('renders the page without analytics when consent is missing', async () => {
-    delete process.env.NEXT_PUBLIC_GA_CONSENT;
-    process.env.NEXT_PUBLIC_GA_TRACKING_ID = 'not-an-id';
+  async function renderLayout() {
     jest.resetModules();
     const { default: RootLayout } = await import('./layout');
-
-    render(
+    return render(
       <RootLayout>
         <p>Home copy</p>
       </RootLayout>
     );
+  }
+
+  it('renders the page without analytics when consent is missing', async () => {
+    delete process.env.NEXT_PUBLIC_GA_CONSENT;
+    process.env.NEXT_PUBLIC_GA_TRACKING_ID = 'G-TEST123';
+
+    await renderLayout();
 
     expect(screen.getByText('Home copy')).toBeInTheDocument();
     expect(screen.queryByText(/gtag/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Listening for/)).not.toBeInTheDocument();
   });
 
-  it('injects analytics only for a granted measurement id', async () => {
+  it('renders the page without analytics when the measurement id is invalid', async () => {
+    process.env.NEXT_PUBLIC_GA_CONSENT = 'granted';
+    process.env.NEXT_PUBLIC_GA_TRACKING_ID = 'not-an-id';
+
+    await renderLayout();
+
+    expect(screen.queryByText(/gtag/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Listening for/)).not.toBeInTheDocument();
+  });
+
+  it('renders the page without analytics when the measurement id is missing', async () => {
+    process.env.NEXT_PUBLIC_GA_CONSENT = 'granted';
+    delete process.env.NEXT_PUBLIC_GA_TRACKING_ID;
+
+    await renderLayout();
+
+    expect(screen.queryByText(/gtag/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Listening for/)).not.toBeInTheDocument();
+  });
+
+  it('injects analytics and the route listener only for a granted measurement id', async () => {
     process.env.NEXT_PUBLIC_GA_CONSENT = 'granted';
     process.env.NEXT_PUBLIC_GA_TRACKING_ID = 'G-TEST123';
-    jest.resetModules();
-    const { default: RootLayout } = await import('./layout');
 
-    render(
-      <RootLayout>
-        <p>Home copy</p>
-      </RootLayout>
-    );
+    await renderLayout();
 
-    expect(screen.getByText(/G-TEST123/)).toBeInTheDocument();
+    expect(screen.getByText(/gtag\/js\?id=G-TEST123/)).toBeInTheDocument();
+    expect(screen.getByText('Listening for G-TEST123')).toBeInTheDocument();
   });
 });

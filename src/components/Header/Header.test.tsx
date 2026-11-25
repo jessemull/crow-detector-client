@@ -80,7 +80,7 @@ describe('Header', () => {
     }));
   });
 
-  it('renders the header with mark and title', () => {
+  it('renders the header with mark and title', async () => {
     render(<Header />);
 
     const mark = screen.getByTestId('header-mark');
@@ -91,7 +91,7 @@ describe('Header', () => {
     expect(title).toBeTruthy();
   });
 
-  it('keeps a dark brand mark on every page', () => {
+  it('keeps a dark brand mark on every page', async () => {
     mockPathname.mockReturnValue('/missing-route');
     render(<Header />);
 
@@ -99,7 +99,7 @@ describe('Header', () => {
     expect(logoLink.className).toContain('text-cc-ink');
   });
 
-  it('marks About as the active desktop tab', () => {
+  it('marks About as the active desktop tab', async () => {
     mockPathname.mockReturnValue('/about');
     render(<Header />);
 
@@ -108,7 +108,7 @@ describe('Header', () => {
     expect(aboutLink).toHaveAttribute('aria-current', 'page');
   });
 
-  it('marks Shelter Cam as the active desktop tab', () => {
+  it('marks Shelter Cam as the active desktop tab', async () => {
     mockPathname.mockReturnValue('/porch');
     render(<Header />);
 
@@ -117,7 +117,7 @@ describe('Header', () => {
     expect(shelterLink).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders desktop navigation links', () => {
+  it('renders desktop navigation links', async () => {
     render(<Header />);
 
     const desktopNav = screen.getByLabelText('Desktop navigation');
@@ -136,7 +136,7 @@ describe('Header', () => {
     expect(desktopNav.querySelector('a[href="/feeder"]')).toBeNull();
   });
 
-  it('renders mobile menu toggle button', () => {
+  it('renders mobile menu toggle button', async () => {
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
@@ -184,7 +184,7 @@ describe('Header', () => {
     expect(screen.getByLabelText('Mobile navigation')).toBeTruthy();
   });
 
-  it('clears inert when the viewport crosses the desktop breakpoint', () => {
+  it('clears inert when the viewport crosses the desktop breakpoint', async () => {
     let matches = false;
     const listeners = new Set<() => void>();
     window.matchMedia = jest.fn().mockImplementation((query: string) => ({
@@ -207,7 +207,7 @@ describe('Header', () => {
         <main>Page</main>
       </>
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
     expect(document.querySelector('main')).toHaveAttribute('inert', '');
 
     act(() => {
@@ -219,11 +219,11 @@ describe('Header', () => {
     expect(document.querySelector('main')).not.toHaveAttribute('inert');
   });
 
-  it('closes the mobile menu on Escape', () => {
+  it('closes the mobile menu on Escape', async () => {
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
-    fireEvent.click(menuButton);
+    await userEvent.click(menuButton);
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
 
     fireEvent.keyDown(document, { key: 'Escape' });
@@ -231,21 +231,21 @@ describe('Header', () => {
     expect(menuButton).toHaveFocus();
   });
 
-  it('restores focus to the menu toggle when the close button is clicked', () => {
+  it('restores focus to the menu toggle when the close button is clicked', async () => {
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
-    fireEvent.click(menuButton);
-    fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+    await userEvent.click(menuButton);
+    await userEvent.click(screen.getByRole('button', { name: 'Close menu' }));
 
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
     expect(menuButton).toHaveFocus();
   });
 
-  it('traps tab focus inside the mobile menu dialog', () => {
+  it('traps tab focus inside the mobile menu dialog', async () => {
     render(<Header />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
     const mobileNav = screen.getByLabelText('Mobile navigation');
@@ -270,10 +270,10 @@ describe('Header', () => {
     expect(contactLink).toHaveFocus();
   });
 
-  it('wraps Tab from the last menu item back to the close button', () => {
+  it('wraps Tab from the last menu item back to the close button', async () => {
     render(<Header />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
     const mobileNav = screen.getByLabelText('Mobile navigation');
@@ -288,14 +288,14 @@ describe('Header', () => {
     expect(document.activeElement).toBe(closeButton);
   });
 
-  it('marks background content inert while the mobile menu is open', () => {
+  it('marks background content inert while the mobile menu is open', async () => {
     const main = document.createElement('main');
     const footer = document.createElement('footer');
     document.body.append(main, footer);
 
     render(<Header />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
     const chrome = screen.getByLabelText('Primary');
     expect(chrome).toHaveAttribute('inert');
@@ -305,7 +305,7 @@ describe('Header', () => {
       screen.getByRole('dialog', { name: 'Mobile menu' })
     ).not.toHaveAttribute('inert');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Close menu' }));
     expect(chrome).not.toHaveAttribute('inert');
     expect(main).not.toHaveAttribute('inert');
     expect(footer).not.toHaveAttribute('inert');
@@ -314,10 +314,10 @@ describe('Header', () => {
     footer.remove();
   });
 
-  it('ignores non-Tab keys while the menu is open', () => {
+  it('ignores non-Tab keys while the menu is open', async () => {
     render(<Header />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
     closeButton.focus();
 
@@ -326,10 +326,10 @@ describe('Header', () => {
     expect(screen.getByRole('dialog', { name: 'Mobile menu' })).toBeTruthy();
   });
 
-  it('ignores Tab when the dialog has no focusable elements', () => {
+  it('ignores Tab when the dialog has no focusable elements', async () => {
     render(<Header />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
     const dialog = screen.getByRole('dialog', { name: 'Mobile menu' });
     const spy = jest
       .spyOn(dialog, 'querySelectorAll')
@@ -342,19 +342,19 @@ describe('Header', () => {
     spy.mockRestore();
   });
 
-  it('leaves page scroll enabled while the mobile menu is open', () => {
+  it('leaves page scroll enabled while the mobile menu is open', async () => {
     render(<Header />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
     expect(document.body.style.overflow).toBe('');
     expect(document.body.style.paddingRight).toBe('');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Close menu' }));
     expect(document.body.style.overflow).toBe('');
     expect(document.body.style.paddingRight).toBe('');
   });
 
-  it('exposes visible focus styles on the menu toggle', () => {
+  it('exposes visible focus styles on the menu toggle', async () => {
     render(<Header />);
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
     expect(menuButton.className).toContain('focus-visible:outline');
@@ -363,30 +363,30 @@ describe('Header', () => {
 
   it('has no accessibility violations when the mobile menu is open', async () => {
     const { container } = render(<Header />);
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('closes mobile menu when close button is clicked', () => {
+  it('closes mobile menu when close button is clicked', async () => {
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
 
-    fireEvent.click(menuButton);
+    await userEvent.click(menuButton);
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
 
     const closeButton = screen.getByRole('button', { name: 'Close menu' });
-    fireEvent.click(closeButton);
+    await userEvent.click(closeButton);
 
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
-  it('closes mobile menu when navigation links are clicked', () => {
+  it('closes mobile menu when navigation links are clicked', async () => {
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
 
-    fireEvent.click(menuButton);
+    await userEvent.click(menuButton);
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
 
     const mobileNav = screen.getByLabelText('Mobile navigation');
@@ -394,18 +394,18 @@ describe('Header', () => {
     expect(mobileHomeLink).toBeTruthy();
 
     if (mobileHomeLink) {
-      fireEvent.click(mobileHomeLink);
+      await userEvent.click(mobileHomeLink);
     }
 
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
-  it('closes mobile menu when About navigation link is clicked', () => {
+  it('closes mobile menu when About navigation link is clicked', async () => {
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
 
-    fireEvent.click(menuButton);
+    await userEvent.click(menuButton);
     expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
 
     const mobileNav = screen.getByLabelText('Mobile navigation');
@@ -413,17 +413,17 @@ describe('Header', () => {
     expect(mobileAboutLink).toBeTruthy();
 
     if (mobileAboutLink) {
-      fireEvent.click(mobileAboutLink);
+      await userEvent.click(mobileAboutLink);
     }
 
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
-  it('renders mobile menu with correct styling and content', () => {
+  it('renders mobile menu with correct styling and content', async () => {
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
-    fireEvent.click(menuButton);
+    await userEvent.click(menuButton);
 
     const mobileMenu = screen.getByLabelText('Mobile navigation');
     expect(mobileMenu).toBeTruthy();
@@ -449,22 +449,22 @@ describe('Header', () => {
     expect(contact.className).not.toContain('bg-cc-yellow');
   });
 
-  it('closes mobile menu when Shelter Cam is clicked', () => {
+  it('closes mobile menu when Shelter Cam is clicked', async () => {
     render(<Header />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
     const mobileNav = screen.getByLabelText('Mobile navigation');
     const shelterLink = mobileNav.querySelector('a[href="/porch"]');
     expect(shelterLink).toBeTruthy();
 
     if (shelterLink) {
-      fireEvent.click(shelterLink);
+      await userEvent.click(shelterLink);
     }
 
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeFalsy();
   });
 
-  it('renders Earthon-style floating header with light menu pill and no brown bar', () => {
+  it('renders Earthon-style floating header with light menu pill and no brown bar', async () => {
     render(<Header />);
 
     const header = screen.getByRole('banner');
@@ -481,7 +481,7 @@ describe('Header', () => {
     expect(homeLink).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders Contact as a yellow mailto CTA', () => {
+  it('renders Contact as a yellow mailto CTA', async () => {
     render(<Header />);
 
     const contact = screen.getByRole('link', { name: 'Contact' });
@@ -494,14 +494,14 @@ describe('Header', () => {
     expect(contact.className).not.toContain('opacity-70');
   });
 
-  it('renders logo link with correct href', () => {
+  it('renders logo link with correct href', async () => {
     render(<Header />);
 
     const logoLink = screen.getByRole('link', { name: /Critter Canteen/ });
     expect(logoLink.getAttribute('href')).toBe('/');
   });
 
-  it('renders desktop navigation with correct aria-label', () => {
+  it('renders desktop navigation with correct aria-label', async () => {
     render(<Header />);
 
     const desktopNav = screen.getByLabelText('Desktop navigation');
@@ -510,11 +510,11 @@ describe('Header', () => {
     expect(desktopNav.className).toContain('lg:flex');
   });
 
-  it('renders mobile navigation with correct aria-label', () => {
+  it('renders mobile navigation with correct aria-label', async () => {
     render(<Header />);
 
     const menuButton = screen.getByRole('button', { name: 'Toggle menu' });
-    fireEvent.click(menuButton);
+    await userEvent.click(menuButton);
 
     const mobileNav = screen.getByLabelText('Mobile navigation');
     expect(mobileNav).toBeTruthy();

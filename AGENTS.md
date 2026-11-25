@@ -27,7 +27,7 @@ crow-detector-client/
 │   ├── hooks/               # Shared hooks (when present)
 │   ├── types/
 │   └── utils/
-├── scripts/                 # bastion connect, source-maps, preflight, review/ (ledger tooling)
+├── scripts/                 # bastion connect, source-maps, preflight, serve-export, cache-splash-images, review/ (ledger tooling)
 ├── proxy/                   # Local CloudFront signed-cookie proxy
 ├── cloudformation/
 ├── cypress/

@@ -49,7 +49,9 @@ const HERO_IMAGES = {
   narubono: {
     id: 'narubono',
     objectPosition: '50% 50%',
+
     // Phone cover: pin to upper sky so birds/branches fall under the copy, not through it.
+
     objectPositionMobile: '48% 8%',
     variants: [
       {
