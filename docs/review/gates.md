@@ -13,7 +13,7 @@ Known blind spots (check by hand, do not assume the tools did):
 - `tsconfig.json` only includes `src/**`, so `proxy/`, `scripts/`, `next.config.ts`, `jest.setup.ts`, and `cypress/**` are not typechecked.
 - ESLint has no type-aware rules (`no-floating-promises`, `no-misused-promises`, `no-unsafe-*`, `switch-exhaustiveness-check` are off).
 - Only six `jsx-a11y` rules run, all as warnings, and `eslint .` does not fail on warnings.
-- Preflight does not check formatting; lint-staged does not touch YAML.
+- Preflight runs `npx prettier --check .`. lint-staged formats `yml` and `yaml`.
 - Coverage thresholds are global, so a single file can sit below 80%.
 
 ## Criteria

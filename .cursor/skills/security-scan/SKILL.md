@@ -46,10 +46,10 @@ Fail the review (**MUST**) when any of these are true:
 
 **SHOULD** when:
 
-- The proxy, cookie flags, or env contract change and there is no regression note. This repo has no proxy unit suite; quote the fail-closed branch and say runtime was not executed
+- The proxy, cookie flags, or env contract change and there is no regression note. The proxy unit suite is `proxy/index.test.js`; quote the fail-closed branch and the tests that cover it
 - A new network, auth, or analytics dependency lands without a reason
 - `package.json` and `package-lock.json` disagree, or a hold in `docs/DEPENDENCIES.md` is silently broken
-- Cookie flags change (SEC-13). `proxy/index.js` sets `httpOnly: false`, and its comment says Cypress and Lighthouse read the CloudFront cookies from `document.cookie`; nothing in the repo does that. Report the unsupported justification as a SHOULD (DOC-01, SEC-13) and let a dedicated fix PR decide the flag. Do not flip it as a drive-by fix
+- Cookie flags change (SEC-13). `proxy/index.js` sets `httpOnly: true` and omits `Domain`, so the cookie is host-only.
 - Workflow expressions are interpolated into `run:` scripts, actions are not SHA-pinned, or environment selection can fall through to production secrets (CI-01, CI-03, CI-06; CI-01 and CI-06 are MUST)
 - A request-controlled value reaches a redirect or proxy target (SEC-09, SEC-14, NODE-06)
 
@@ -69,7 +69,7 @@ git ls-files | grep -E '\.pem$|(^|/)\.env(\.|$)' | grep -vE '(^|/)\.env\.example
 Then read, when they are in the diff or this is a full scan:
 
 - `proxy/index.js` and `proxy/util.js` — fail-closed branches, redirects, cookie flags, proxy target
-- `env.example` and `.env.example` — placeholders only, and the two agree
+- `env.example` and `.env.example` list the same names. `env.example` includes sample region, bucket, domain, and site values. `.env.example` leaves secrets empty.
 - `.github/workflows/` — secrets stay in `${{ secrets.* }}`, are not echoed, and are passed only to steps that need them; no `${{ }}` inside `run:`; `permissions:` and action pins
 - `cloudformation/` — bucket public access, origin access, response headers policy
 - `src/` — `NEXT_PUBLIC_`, `dangerouslySetInnerHTML`, URLs built from API data, and the inline GA script in `src/app/layout.tsx`

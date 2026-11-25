@@ -83,10 +83,11 @@ describe('About', () => {
 
   it('keeps copyright below the fold on the photo', () => {
     render(<About />);
-    const year = new Date().getFullYear();
+    const year = 2026;
     const line = screen.getByText(
       `© ${year} Critter Canteen. All rights reserved.`
     );
+    expect(line.closest('.min-h-dvh')).toBeNull();
     expect(line.className).toContain('text-white/70');
     expect(line.parentElement?.className).toContain('bg-transparent');
   });

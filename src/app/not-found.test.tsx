@@ -1,6 +1,9 @@
 import React, { AnchorHTMLAttributes, ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
-import NotFoundPage from './not-found';
+import { axe, toHaveNoViolations } from 'jest-axe';
+import NotFoundPage, { metadata } from './not-found';
+
+expect.extend(toHaveNoViolations);
 
 jest.mock('next/link', () => {
   const MockLink = ({
@@ -20,8 +23,22 @@ jest.mock('next/link', () => {
 });
 
 describe('Not Found Page', () => {
-  it('renders the Earthon-style not found notice and home link', () => {
-    render(<NotFoundPage />);
+  it('points the canonical URL at the static 404 page', () => {
+    expect(metadata.alternates?.canonical).toBe(
+      'https://www.crittercanteen.com/404'
+    );
+    expect(metadata.description).toBe(
+      'The page you requested does not exist. Check the address or return home.'
+    );
+    expect(metadata.openGraph?.title).toBe('Page not found - Critter Canteen');
+    expect(metadata.openGraph?.description).toBe(metadata.description);
+    expect(metadata.twitter?.title).toBe('Page not found - Critter Canteen');
+    expect(metadata.twitter?.description).toBe(metadata.description);
+    expect(metadata.robots).toEqual({ index: false, follow: false });
+  });
+
+  it('renders the not found notice and home link', async () => {
+    const { container } = render(<NotFoundPage />);
     expect(
       screen.getByRole('heading', { level: 1, name: 'Oops! Page Not Found' })
     ).toBeTruthy();
@@ -30,5 +47,6 @@ describe('Not Found Page', () => {
       'href',
       '/'
     );
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

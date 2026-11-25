@@ -10,6 +10,7 @@ const { resolveGit } = require('../review-lib');
 // repository. Jest gives each test file its own copy of process.env, so the
 // cleaned copy must be passed to child processes explicitly; review-lib does
 // that by passing env: process.env.
+
 for (const key of Object.keys(process.env)) {
   if (key.startsWith('GIT_')) {
     delete process.env[key];

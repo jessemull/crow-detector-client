@@ -2,12 +2,12 @@
 
 const urls = {
   production: 'https://www.crittercanteen.com',
-  test: 'http://localhost:8080',
+  test: 'http://127.0.0.1:8080',
 };
 
 module.exports = {
   e2e: {
-    baseUrl: urls[process.env.NODE_ENV] || 'http://localhost:3000',
+    baseUrl: urls[process.env.NODE_ENV] || 'http://127.0.0.1:3000',
     supportFile: false,
   },
 };

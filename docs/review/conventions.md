@@ -16,7 +16,7 @@ Compare each changed file with its neighbors. Conventions are whatever the surro
 - **CONV-04** (SHOULD) Commit messages are Conventional and pass commitlint, including the 100-character body line limit. Verify: `npx --no-install commitlint --from <base> --to HEAD`.
 - **CONV-05** (NICE) Ordering conventions the code already uses (alphabetized config keys, prop order) are kept. Verify: compare with neighbors.
 - **CONV-06** (SHOULD) Styling uses theme tokens (`cc-*`) and existing class patterns rather than raw hex values. Verify: search `#[0-9a-fA-F]{3,6}` and `[` arbitrary values in scope.
-- **CONV-07** (SHOULD) YAML and other files outside lint-staged's globs are formatted like their neighbors. Verify: `npx prettier --check` on changed YAML.
+- **CONV-07** (SHOULD) YAML is formatted like its neighbors. lint-staged includes `yml` and `yaml`. Verify: `npx prettier --check` on changed YAML.
 
 ## Automatic-fail signals
 

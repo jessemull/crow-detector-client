@@ -39,10 +39,14 @@ Do **not** lower the threshold. Do **not** delete tests solely to raise coverage
 ## Conventions
 
 - Colocate `*.test.ts(x)` next to source
-- Prefer `userEvent` + accessible roles/names
+- Prefer `userEvent` for keyboard and pointer actions. Use `fireEvent` only for events a person does not perform that way, such as an image `error`. Query by role, name, and text.
 - Setup lives in `jest.setup.ts`
 
 ---
+
+## Mutation testing
+
+StrykerJS was considered for the porch timeout and silent-abort branches. Those branches are locked by unit tests in `PorchClips.test.tsx` (timeout, a non-timeout abort, a hidden tab, backoff, and a refresh when the tab is visible again). Stryker is not installed, and it is not part of `make preflight`.
 
 ## Commands
 

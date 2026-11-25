@@ -16,7 +16,7 @@ Parameters:
   Environment:
     Type: String
     Default: 'dev'
-    Description: 'The environment for the deployment (dev or prod).'
+    Description: 'The environment for the deployment (dev or prod). This value is part of the bucket name, so it stays dev or prod for the existing stacks.'
     AllowedValues:
       - dev
       - prod
@@ -39,38 +39,58 @@ Parameters:
     Description: 'The ID of an existing CloudFront Key Group to use for signed cookies.'
     Default: ''
 
+Rules:
+  SignedCookiesNeedKeyGroup:
+    Assertions:
+      - Assert: !Or
+          - !Equals [!Ref EnableSignedCookiesCheck, 'false']
+          - !Not [!Equals [!Ref CloudFrontKeyGroupId, '']]
+        AssertDescription: CloudFrontKeyGroupId is required when EnableSignedCookiesCheck is true.
+
 Resources:
   StaticWebsiteBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub '${BucketName}-${Environment}'
+      VersioningConfiguration:
+        Status: Enabled
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
-        BlockPublicPolicy: false
+        BlockPublicPolicy: true
         RestrictPublicBuckets: true
 
   BackupBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub '${BucketName}-backup-${Environment}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
-        BlockPublicPolicy: false
+        BlockPublicPolicy: true
         RestrictPublicBuckets: true
       LifecycleConfiguration:
         Rules:
+          # Rollback uses a backup from the last 30 days. Keep objects for 90
+          # so a prefix at the edge of that window is still restorable.
           - Id: ExpireOldBackups
             Status: Enabled
-            ExpirationInDays: 30
+            ExpirationInDays: 90
             Prefix: ''
 
-  CloudFrontOriginAccessIdentity:
-    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
     Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub 'CloudFront Origin Access Identity for the Crow Detector Client - ${Environment}'
+      OriginAccessControlConfig:
+        Name: !Sub 'OAC-CrowDetectorClient-${Environment}'
+        Description: !Sub 'Origin access control for Critter Canteen - ${Environment}'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
 
   StaticWebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -81,18 +101,59 @@ Resources:
           - Sid: AllowCloudFrontAccess
             Effect: Allow
             Principal:
-              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}'
+              Service: cloudfront.amazonaws.com
             Action: 's3:GetObject'
             Resource: !Sub 'arn:aws:s3:::${BucketName}-${Environment}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
 
-  CompressionCachePolicy:
+  HtmlCachePolicy:
     Type: AWS::CloudFront::CachePolicy
     Properties:
       CachePolicyConfig:
-        Name: !Sub 'CompressionCachePolicyCrowDetectorClient-${Environment}'
+        Name: !Sub 'HtmlCachePolicyCrowDetectorClient-${Environment}'
+        Comment: HTML must not be pinned for a day. Hashed assets use AssetCachePolicy.
+        DefaultTTL: 0
+        MinTTL: 0
+        MaxTTL: 60
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  AssetCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub 'AssetCachePolicyCrowDetectorClient-${Environment}'
         DefaultTTL: 31536000
-        MinTTL: 86400
+        MinTTL: 0
         MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  HeroCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub 'HeroCachePolicyCrowDetectorClient-${Environment}'
+        Comment: Splash images keep stable names. A day matches the S3 Cache-Control.
+        DefaultTTL: 86400
+        MinTTL: 0
+        MaxTTL: 86400
         ParametersInCacheKeyAndForwardedToOrigin:
           EnableAcceptEncodingGzip: true
           EnableAcceptEncodingBrotli: true
@@ -139,8 +200,68 @@ Resources:
               }
             };
           }
+          var uri = request.uri;
+          if (uri !== '/' && uri.indexOf('.') === -1) {
+            if (uri.charAt(uri.length - 1) === '/') {
+              uri = uri.slice(0, -1);
+            }
+            request.uri = uri + '.html';
+          }
           return request;
         }
+
+  SecurityHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub 'SecurityHeadersCrowDetectorClient-${Environment}'
+        Comment: CSP, HSTS, nosniff, and frame protection for the static site.
+        SecurityHeadersConfig:
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+            Override: true
+            Preload: false
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com https://*.cloudfront.net https://*.crittercanteen.com; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.ingest.sentry.io https://*.crittercanteen.com; media-src 'self' https://*.cloudfront.net https://*.crittercanteen.com"
+            Override: true
+        CustomHeadersConfig:
+          Items:
+            - Header: Permissions-Policy
+              Value: camera=(), microphone=(), geolocation=()
+              Override: true
+
+  AccessLogBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${BucketName}-logs-${Environment}'
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      # Standard CloudFront logs are written with a bucket ACL. These two
+      # blocks stay off for that ACL. BlockPublicPolicy and
+      # RestrictPublicBuckets stay on, so the bucket is not public.
+      AccessControl: LogDeliveryWrite
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireAccessLogs
+            Status: Enabled
+            ExpirationInDays: 90
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -150,23 +271,69 @@ Resources:
         Enabled: true
         DefaultRootObject: index.html
         HttpVersion: http2
+        IPV6Enabled: true
         PriceClass: PriceClass_100
+        Logging:
+          Bucket: !GetAtt AccessLogBucket.DomainName
+          IncludeCookies: false
+          Prefix: cloudfront/
         Origins:
           - Id: S3Origin
             DomainName: !GetAtt StaticWebsiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig:
-              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+              OriginAccessIdentity: ''
+        CacheBehaviors:
+          # Hashed /_next assets stay unsigned so a cached script does not
+          # need the viewer cookie. HTML is on the default behavior.
+          - PathPattern: '/403.html'
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: !Ref HtmlCachePolicy
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+            Compress: true
+            AllowedMethods:
+              - GET
+              - HEAD
+          - PathPattern: '/404.html'
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: !Ref HtmlCachePolicy
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+            Compress: true
+            AllowedMethods:
+              - GET
+              - HEAD
+          - PathPattern: '/images/hero/*'
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: !Ref HeroCachePolicy
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+            Compress: true
+            AllowedMethods:
+              - GET
+              - HEAD
+          - PathPattern: '/_next/*'
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: !Ref AssetCachePolicy
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+            Compress: true
+            AllowedMethods:
+              - GET
+              - HEAD
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           ViewerProtocolPolicy: redirect-to-https
-          CachePolicyId: !Ref CompressionCachePolicy
+          CachePolicyId: !Ref HtmlCachePolicy
+          ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
           Compress: true
           FunctionAssociations:
             - EventType: viewer-request
               FunctionARN: !GetAtt ApexToWwwRedirectFunction.FunctionARN
           TrustedKeyGroups:
             Fn::If:
-              - EnableSignedCookiesCheckCondition
+              - UseSignedCookies
               - [!Ref CloudFrontKeyGroupId]
               - !Ref 'AWS::NoValue'
           AllowedMethods:
@@ -233,11 +400,71 @@ Resources:
         DNSName: !GetAtt CloudFrontDistribution.DomainName
         HostedZoneId: !Ref CloudFrontHostedZoneId
 
+  MainSiteRecordIpv6:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNSRecordTrue
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !If
+        - IsProd
+        - 'www.crittercanteen.com'
+        - 'www.dev.crittercanteen.com'
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: !Ref CloudFrontHostedZoneId
+
+  RootDomainRedirectIpv6:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNSRecordTrue
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !If
+        - IsProd
+        - 'crittercanteen.com'
+        - 'dev.crittercanteen.com'
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: !Ref CloudFrontHostedZoneId
+
+  SiteErrorTopic:
+    Type: AWS::SNS::Topic
+    Condition: StackInUsEast1
+    Properties:
+      TopicName: !Sub 'critter-canteen-5xx-${Environment}'
+
+  SiteErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: StackInUsEast1
+    Properties:
+      AlarmDescription: CloudFront 5xx error rate. Metrics for this namespace are published in us-east-1.
+      AlarmActions:
+        - !Ref SiteErrorTopic
+      Namespace: AWS/CloudFront
+      MetricName: 5xxErrorRate
+      Dimensions:
+        - Name: DistributionId
+          Value: !Ref CloudFrontDistribution
+        - Name: Region
+          Value: Global
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
 Conditions:
   IsProd: !Equals [!Ref Environment, 'prod']
   CreateDNSRecordTrue: !Equals [!Ref CreateDNSRecords, 'true']
   EnableSignedCookiesCheckCondition:
     !Equals [!Ref EnableSignedCookiesCheck, 'true']
+  StackInUsEast1: !Equals [!Ref 'AWS::Region', 'us-east-1']
+  HasKeyGroup: !Not [!Equals [!Ref CloudFrontKeyGroupId, '']]
+  UseSignedCookies: !And
+    - !Condition EnableSignedCookiesCheckCondition
+    - !Condition HasKeyGroup
 
 Outputs:
   CloudFrontDistributionId:

@@ -7,14 +7,9 @@ import { Menu, X, Home, Info, Camera, Bird, Mail } from 'lucide-react';
 import { CONTACT_MAILTO } from '@constants/contact';
 import HeaderMark from './HeaderMark';
 
-/** Earthon Menu List pill: canvas, radius 244px, padding 5px */
 const menuListClassName =
   'hidden lg:flex items-center justify-center rounded-[244px] bg-cc-canvas p-[5px] font-urbanist';
 
-/**
- * Earthon tab labels: Urbanist 16px / 500, letter-spacing -0.32px
- * Contact CTA: Urbanist 16px / 600
- */
 const navIdleClassName =
   'inline-flex items-center justify-center rounded-[137px] bg-[rgba(13,13,13,0)] px-5 py-2 font-urbanist text-[16px] font-medium leading-[22.4px] tracking-[-0.32px] text-cc-ink backdrop-blur-[45px] transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink';
 
@@ -33,18 +28,32 @@ const mobileNavLinkClassName =
 const mobileDisabledNavClassName =
   'flex cursor-not-allowed items-center space-x-3 px-4 py-2.5 font-urbanist text-[16px] font-medium tracking-[-0.32px] text-cc-ink/60 md:py-3';
 
+/** Tailwind `lg` is 64rem, which is 1024px only when the root font is 16px. */
+const DESKTOP_NAV_QUERY = '(min-width: 64rem)';
+
+const ROUTES = {
+  home: '/',
+  porch: '/porch',
+  about: '/about',
+} as const;
+
 const Header: React.FC = () => {
   const pathname = usePathname() || '/';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (pathname !== menuPath) {
+    setMenuPath(pathname);
+    setIsMenuOpen(false);
+  }
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
   const wasMenuOpenRef = useRef(false);
 
-  const isHome = pathname === '/';
-  const isAbout = pathname === '/about';
-  const isPorch = pathname === '/porch';
+  const isHome = pathname === ROUTES.home;
+  const isAbout = pathname === ROUTES.about;
+  const isPorch = pathname === ROUTES.porch;
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -108,9 +117,25 @@ const Header: React.FC = () => {
 
     if (wasMenuOpenRef.current) {
       wasMenuOpenRef.current = false;
-      menuButtonRef.current?.focus();
+      const desktop = window.matchMedia(DESKTOP_NAV_QUERY).matches;
+      if (desktop) {
+        chromeRef.current?.querySelector('a')?.focus();
+      } else {
+        menuButtonRef.current?.focus();
+      }
     }
   }, [isMenuOpen]);
+
+  useEffect(() => {
+    const media = window.matchMedia(DESKTOP_NAV_QUERY);
+    const closeOnDesktop = () => {
+      if (media.matches) {
+        setIsMenuOpen(false);
+      }
+    };
+    media.addEventListener('change', closeOnDesktop);
+    return () => media.removeEventListener('change', closeOnDesktop);
+  }, []);
 
   return (
     <header className="pointer-events-none absolute inset-x-0 top-8 z-50 bg-transparent font-urbanist">
@@ -132,7 +157,7 @@ const Header: React.FC = () => {
         </button>
 
         <Link
-          href="/"
+          href={ROUTES.home}
           className="relative z-10 flex items-center gap-1.5 text-cc-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink max-lg:mx-auto"
         >
           <HeaderMark className="h-[27px] w-[27px] shrink-0" />
@@ -141,9 +166,13 @@ const Header: React.FC = () => {
           </span>
         </Link>
 
-        <div className={`${menuListClassName}`} aria-label="Desktop navigation">
+        <div
+          className={menuListClassName}
+          role="group"
+          aria-label="Desktop navigation"
+        >
           <Link
-            href="/"
+            href={ROUTES.home}
             className={isHome ? navActiveClassName : navIdleClassName}
             aria-current={isHome ? 'page' : undefined}
           >
@@ -158,14 +187,14 @@ const Header: React.FC = () => {
             Feeder
           </button>
           <Link
-            href="/porch"
+            href={ROUTES.porch}
             className={isPorch ? navActiveClassName : navIdleClassName}
             aria-current={isPorch ? 'page' : undefined}
           >
             Shelter Cam
           </Link>
           <Link
-            href="/about"
+            href={ROUTES.about}
             className={isAbout ? navActiveClassName : navIdleClassName}
             aria-current={isAbout ? 'page' : undefined}
           >
@@ -209,8 +238,9 @@ const Header: React.FC = () => {
             aria-label="Mobile navigation"
           >
             <Link
-              href="/"
+              href={ROUTES.home}
               className={mobileNavLinkClassName}
+              aria-current={isHome ? 'page' : undefined}
               onClick={() => setIsMenuOpen(false)}
             >
               <Home className="h-4 w-4" />
@@ -226,16 +256,18 @@ const Header: React.FC = () => {
               <span>Feeder</span>
             </button>
             <Link
-              href="/porch"
+              href={ROUTES.porch}
               className={mobileNavLinkClassName}
+              aria-current={isPorch ? 'page' : undefined}
               onClick={() => setIsMenuOpen(false)}
             >
               <Camera className="h-4 w-4" />
               <span>Shelter Cam</span>
             </Link>
             <Link
-              href="/about"
+              href={ROUTES.about}
               className={mobileNavLinkClassName}
+              aria-current={isAbout ? 'page' : undefined}
               onClick={() => setIsMenuOpen(false)}
             >
               <Info className="h-4 w-4" />

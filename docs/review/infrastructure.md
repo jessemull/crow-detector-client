@@ -7,7 +7,7 @@
 
 ## How to review
 
-Read the whole template. For each resource, ask what serves which request and what happens on error. Then check the template against reality: the live distribution has drifted before (production runs a URL-rewrite function the template does not contain, so a redeploy from the template would break direct links). Live checks need read-only evidence such as an AWS CLI `get-distribution-config` output or HTTP response headers; without that evidence, live-behavior claims are VERIFY.
+Read the whole template. For each resource, ask what serves which request and what happens on error. The template's viewer function redirects apex hosts to www and appends `.html` to extensionless paths. Live checks need read-only evidence such as an AWS CLI `get-distribution-config` output or HTTP response headers; without that evidence, live-behavior claims are VERIFY.
 
 ## Criteria
 

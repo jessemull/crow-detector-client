@@ -4,6 +4,7 @@ const {
   applyEdits,
   countOccurrences,
   main,
+  pathInside,
   resolveEdits,
   resolveExpected,
   scoreLedger,
@@ -187,6 +188,12 @@ describe('eval-case helpers', () => {
     const control = scoreLedger([], {});
     expect(control.recall).toBeNull();
     expect(control.unmatched).toEqual([]);
+  });
+
+  it('rejects a case path that leaves the worktree', () => {
+    expect(pathInside('/repo/work', '../../etc/passwd')).toBeNull();
+    expect(pathInside('/repo/work', '/etc/passwd')).toBeNull();
+    expect(pathInside('/repo/work', 'src/a.js')).toBe('/repo/work/src/a.js');
   });
 });
 

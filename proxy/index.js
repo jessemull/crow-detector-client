@@ -2,58 +2,94 @@ require('dotenv').config({ path: '.env.local', quiet: true });
 const cookieParser = require('cookie-parser');
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const { getSignedCookies } = require('./util');
+const {
+  getSignedCookies,
+  isSameOriginPath,
+  policyStillValid,
+  pathWithoutQuery,
+} = require('./util');
 
 const app = express();
+app.disable('x-powered-by');
 
 const PORT = 8080;
+const LOCAL_HOST = '127.0.0.1';
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN;
 const COOKIE_TTL = 60 * 60 * 1000;
+const IMMUTABLE_ASSET =
+  /\/_next\/.+\.(js|css|png|jpg|jpeg|gif|svg|woff2|webp|ico)$/;
+const AUTH_TRIES = 'cf-proxy-auth-tries';
+const MAX_AUTH_REDIRECTS = 2;
 
-if (!CLOUDFRONT_DOMAIN) {
+if (!CLOUDFRONT_DOMAIN && require.main === module) {
   console.error(
     'CLOUDFRONT_DOMAIN is required. Set it in .env.local before starting the proxy.'
   );
   process.exit(1);
 }
 
+const signingReady = () =>
+  Boolean(
+    process.env.CLOUDFRONT_DOMAIN &&
+    process.env.CLOUDFRONT_KEY_PAIR_ID &&
+    (process.env.CLOUDFRONT_PRIVATE_KEY ||
+      process.env.CLOUDFRONT_PRIVATE_KEY_PATH)
+  );
+
 app.get('/healthcheck', (req, res) => {
-  res.status(200).send('OK');
+  if (!signingReady()) {
+    return res.status(503).send('CloudFront signing is not configured');
+  }
+  try {
+    getSignedCookies();
+    return res.status(200).send('OK');
+  } catch {
+    return res.status(503).send('CloudFront signing is not configured');
+  }
 });
 
 app.use(cookieParser());
 
 app.use((req, res, next) => {
-  if (!req.cookies['CloudFront-Policy']) {
-    let signedCookies;
-    try {
-      signedCookies = getSignedCookies();
-    } catch (error) {
-      console.error('Failed to sign CloudFront cookies: ', error);
-      return res.status(500).send('CloudFront cookie signing misconfigured');
-    }
+  if (!isSameOriginPath(req.originalUrl)) {
+    return res.status(400).send('Invalid redirect target');
+  }
 
-    Object.entries(signedCookies).forEach(([name, value]) => {
-      // httpOnly must stay false: Cypress/LH and local debugging read these
-      // CloudFront signed cookies from document.cookie via the localhost proxy.
-      res.cookie(name, value, {
-        httpOnly: false,
-        secure: true,
-        domain: 'localhost',
-        maxAge: COOKIE_TTL,
-      });
+  if (policyStillValid(req.cookies, CLOUDFRONT_DOMAIN)) {
+    res.clearCookie(AUTH_TRIES);
+    return next();
+  }
+
+  let signedCookies;
+  try {
+    signedCookies = getSignedCookies();
+  } catch {
+    console.error('Failed to sign CloudFront cookies');
+    return res.status(500).send('CloudFront cookie signing misconfigured');
+  }
+
+  const tries = Number(req.cookies?.[AUTH_TRIES] || 0);
+  if (tries >= MAX_AUTH_REDIRECTS) {
+    return res.status(508).send('Stopped retrying CloudFront cookie setup.');
+  }
+
+  Object.entries(signedCookies).forEach(([name, value]) => {
+    // Host-only cookie so 127.0.0.1 and localhost each keep their own.
+
+    res.cookie(name, value, {
+      httpOnly: true,
+      secure: true,
+      maxAge: COOKIE_TTL,
     });
+  });
 
-    return res.redirect(307, req.originalUrl);
-  }
-  next();
-});
+  res.cookie(AUTH_TRIES, String(tries + 1), {
+    httpOnly: true,
+    maxAge: 60_000,
+    sameSite: 'lax',
+  });
 
-app.use((req, res, next) => {
-  if (req.url.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff2|webp|ico?)$/)) {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  }
-  next();
+  return res.redirect(307, req.originalUrl);
 });
 
 app.use((req, res, next) => {
@@ -62,9 +98,9 @@ app.use((req, res, next) => {
   const pathOnly = baseUrl.replace(/\/+$/, '') || '/';
 
   if (pathOnly === '/') {
-    req.url = '/index.html' + queryParams;
+    req.url = `/index.html${queryParams}`;
   } else if (!pathOnly.match(/\.[a-zA-Z0-9]+$/)) {
-    req.url = pathOnly + '.html' + queryParams;
+    req.url = `${pathOnly}.html${queryParams}`;
   }
   next();
 });
@@ -73,16 +109,37 @@ app.use(
   '/',
   createProxyMiddleware({
     changeOrigin: true,
-    http2: true,
     target: `https://${CLOUDFRONT_DOMAIN}`,
-    onProxyReq: (proxyReq, req, _res) => {
-      if (req.headers.cookie) {
-        proxyReq.setHeader('Cookie', req.headers.cookie);
-      }
+    on: {
+      proxyReq: (proxyReq, req) => {
+        if (req.headers.cookie) {
+          proxyReq.setHeader('Cookie', req.headers.cookie);
+        }
+      },
+      proxyRes: (proxyRes, req) => {
+        const status = proxyRes.statusCode || 0;
+        if (
+          status >= 200 &&
+          status < 300 &&
+          IMMUTABLE_ASSET.test(pathWithoutQuery(req.originalUrl))
+        ) {
+          proxyRes.headers['cache-control'] =
+            'public, max-age=31536000, immutable';
+        }
+      },
     },
   })
 );
 
-app.listen(PORT, () => {
-  console.log(`Proxy server running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, LOCAL_HOST, () => {
+    console.log(`Proxy server running at http://${LOCAL_HOST}:${PORT}`);
+  });
+}
+
+module.exports = {
+  app,
+  isSameOriginPath,
+  policyStillValid,
+  pathWithoutQuery,
+};

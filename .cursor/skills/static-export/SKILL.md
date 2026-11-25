@@ -15,7 +15,7 @@ This Next.js version differs from older training data. Check behavior in `node_m
 - `output: 'export'` must keep working; the deployed artifact is `out/`
 - No request-time server features: `cookies()`, `headers()`, draft mode, rewrites, redirects, middleware, dynamic route handlers, or ISR
 - Server components run at build time. Dates, env reads, and random values in them are frozen into the HTML; client components that read them during render can cause hydration mismatches
-- No `trailingSlash`, so routes build to `about.html` and `porch.html`. Direct loads of `/about` rely on a CloudFront rewrite that exists live but not in the template; keep that in mind for any route change (INF-01, INF-03)
+- No `trailingSlash`, so routes build to `about.html` and `porch.html`. The viewer-request function in the CloudFormation template appends `.html` for extensionless paths.
 - `images.unoptimized: true`: nothing resizes images on request
 - Turbopack is the default bundler; webpack-only `next.config.ts` options may do nothing
 - Metadata per page: title, description, canonical, Open Graph, and robots; `/porch` is `noindex`

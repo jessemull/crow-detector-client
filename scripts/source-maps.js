@@ -1,20 +1,21 @@
 const { execFileSync } = require('child_process');
+const path = require('path');
 
-let path = '.env.local';
+let envFile = '.env.local';
 
 switch (process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT) {
   case 'production':
-    path = '.env.production';
+    envFile = '.env.production';
     break;
   case 'test':
-    path = '.env.test';
+    envFile = '.env.test';
     break;
   default:
-    path = '.env.local';
+    envFile = '.env.local';
     break;
 }
 
-require('dotenv').config({ path, quiet: true });
+require('dotenv').config({ path: envFile, quiet: true });
 
 (() => {
   const env = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT;
@@ -33,11 +34,11 @@ require('dotenv').config({ path, quiet: true });
     return;
   }
 
-  const commitHash = execFileSync('git', ['rev-parse', 'HEAD'], {
-    encoding: 'utf8',
-  }).trim();
-  const release =
-    process.env.NEXT_PUBLIC_SENTRY_RELEASE || `${env}-${commitHash}`;
+  const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE;
+  if (!release || release.startsWith('undefined-')) {
+    console.error('NEXT_PUBLIC_SENTRY_RELEASE is required');
+    process.exit(1);
+  }
 
   console.log(
     `Uploading source maps for release ${release} in ${env} environment...`
@@ -49,7 +50,7 @@ require('dotenv').config({ path, quiet: true });
   };
 
   const runSentryCli = (args) => {
-    execFileSync('npx', ['sentry-cli', ...args], {
+    execFileSync(path.join('node_modules', '.bin', 'sentry-cli'), args, {
       stdio: 'inherit',
       env: cliEnv,
     });
@@ -66,14 +67,14 @@ require('dotenv').config({ path, quiet: true });
       release,
     ]);
     runSentryCli([
-      'releases',
+      'sourcemaps',
+      'upload',
       '--org',
       SENTRY_ORG,
       '--project',
       SENTRY_PROJECT,
-      'files',
+      '--release',
       release,
-      'upload-sourcemaps',
       '.next',
       '--url-prefix',
       '~/_next',

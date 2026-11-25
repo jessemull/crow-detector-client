@@ -94,14 +94,14 @@ CI also runs Cypress e2e and Lighthouse on PRs/merges — see `docs/CI_CD.md`.
 
 ## Repository Identity
 
-| Field       | Value                                                                       |
-| ----------- | --------------------------------------------------------------------------- |
-| **Project** | Critter Canteen — Next.js static client (`crow-detector-client`)            |
-| **Stack**   | Next.js 16 App Router, React 19, TypeScript 6, Tailwind 4, Sentry (Node 26) |
-| **Hosting** | Static export → S3 + CloudFront                                             |
-| **Domains** | Production `www.crittercanteen.com`; test CDN via signed-cookie proxy       |
-| **Auth**    | None in-client; test CDN gated by CloudFront signed cookies (`proxy/`)      |
-| **Data**    | Static pages only; no runtime API sibling in this tree                      |
+| Field       | Value                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Project** | Critter Canteen — Next.js static client (`crow-detector-client`)                                                                       |
+| **Stack**   | Next.js 16 App Router, React 19, TypeScript 6, Tailwind 4, Sentry (Node 26)                                                            |
+| **Hosting** | Static export → S3 + CloudFront                                                                                                        |
+| **Domains** | Production `www.crittercanteen.com`; test CDN via signed-cookie proxy                                                                  |
+| **Auth**    | None in-client; test CDN gated by CloudFront signed cookies (`proxy/`)                                                                 |
+| **Data**    | Marketing pages are static. Shelter Cam (`/porch`) fetches `/porch/clips` from `NEXT_PUBLIC_API_BASE_URL`. No API server in this repo. |
 
 ---
 

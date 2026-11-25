@@ -73,6 +73,8 @@ For the verifier sample, check at least 20% of `pass` rows (MUST criteria first)
 
 Write the report with `docs/review/REPORT_TEMPLATE.md`. `approve` means ready; `changes-required` means needs work.
 
+The first lines of the chat report are the Decision counts: how many findings will be fixed, how many will not, and what a visitor hits if none of them are fixed. Do not open with the verdict.
+
 Then add a **Remediation backlog** section: group findings into proposed fix PRs, each with a Conventional branch name, the finding IDs it closes, the files it touches, the tests it needs, and its risk. Order MUST groups first, then by blast radius (CI/CD and infrastructure, security, correctness, then the rest). Keep each PR small enough to review in one sitting.
 
 ## Measuring this skill

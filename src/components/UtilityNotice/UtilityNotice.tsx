@@ -8,6 +8,7 @@ type UtilityNoticeProps = {
   watermark?: string;
   /** Full-document crash page (no site header above). */
   standalone?: boolean;
+  onRetry?: () => void;
 };
 
 const UtilityNotice: React.FC<UtilityNoticeProps> = ({
@@ -16,18 +17,19 @@ const UtilityNotice: React.FC<UtilityNoticeProps> = ({
   ctaLabel = 'Back to Home',
   watermark,
   standalone = false,
+  onRetry,
 }) => {
   return (
     <section
       className={
         standalone
-          ? 'relative flex min-h-screen flex-col items-center justify-center bg-cc-canvas px-6 py-16 text-center md:px-10'
-          : 'relative flex min-h-screen flex-col items-center justify-center bg-cc-canvas px-6 pb-16 pt-28 text-center md:px-10 md:pt-32'
+          ? 'relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-cc-canvas px-6 py-16 text-center md:px-10'
+          : 'relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-cc-canvas px-6 pb-16 pt-28 text-center md:px-10 md:pt-32'
       }
     >
       {watermark ? (
         <p
-          className="pointer-events-none absolute left-[49.2%] top-[53%] -translate-x-1/2 -translate-y-1/2 text-center font-urbanist text-[clamp(17rem,63vw,34rem)] font-semibold leading-none tracking-[-0.08em] text-black/[0.045]"
+          className="pointer-events-none absolute left-[49.2%] top-[53%] max-w-full -translate-x-1/2 -translate-y-1/2 text-center font-urbanist text-[clamp(8rem,63vw,34rem)] font-semibold leading-none tracking-[-0.08em] text-black/[0.045]"
           aria-hidden="true"
         >
           {watermark}
@@ -41,12 +43,23 @@ const UtilityNotice: React.FC<UtilityNoticeProps> = ({
         <p className="mb-8 max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-cc-ink/70 md:text-lg">
           {description}
         </p>
-        <Link
-          href="/"
-          className="inline-flex h-12 items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink"
-        >
-          {ctaLabel}
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex h-12 items-center justify-center rounded-[50px] border border-cc-ink px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink"
+            >
+              Try again
+            </button>
+          ) : null}
+          <Link
+            href="/"
+            className="inline-flex h-12 items-center justify-center rounded-[50px] bg-cc-yellow px-6 font-urbanist text-[16px] font-semibold leading-[22.4px] tracking-[-0.32px] text-cc-ink transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-ink"
+          >
+            {ctaLabel}
+          </Link>
+        </div>
       </div>
     </section>
   );
