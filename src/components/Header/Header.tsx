@@ -27,6 +27,7 @@ const DESKTOP_NAV_QUERY = '(min-width: 64rem)';
 
 const ROUTES = {
   home: '/',
+  feeder: '/feeder',
   porch: '/porch',
   about: '/about',
 } as const;
@@ -46,6 +47,7 @@ const Header: React.FC = () => {
   const wasMenuOpenRef = useRef(false);
 
   const isHome = pathname === ROUTES.home;
+  const isFeeder = pathname === ROUTES.feeder;
   const isAbout = pathname === ROUTES.about;
   const isPorch = pathname === ROUTES.porch;
 
@@ -173,11 +175,9 @@ const Header: React.FC = () => {
             Home
           </Link>
           <Link
-            href="/feeder"
-            className={
-              pathname === '/feeder' ? navActiveClassName : navIdleClassName
-            }
-            aria-current={pathname === '/feeder' ? 'page' : undefined}
+            href={ROUTES.feeder}
+            className={isFeeder ? navActiveClassName : navIdleClassName}
+            aria-current={isFeeder ? 'page' : undefined}
           >
             Feeder
           </Link>
@@ -242,8 +242,9 @@ const Header: React.FC = () => {
               <span>Home</span>
             </Link>
             <Link
-              href="/feeder"
+              href={ROUTES.feeder}
               className={mobileNavLinkClassName}
+              aria-current={isFeeder ? 'page' : undefined}
               onClick={() => setIsMenuOpen(false)}
             >
               <Bird className="h-4 w-4" aria-hidden="true" />

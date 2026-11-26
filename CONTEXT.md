@@ -70,7 +70,7 @@ These constraints apply to **every change**. No exceptions without explicit huma
 ### Product & UI
 
 - Prefer existing shared chrome (`Header`, `Footer`) over copy-pasted shells.
-- Product surface stays small: Home, About, shared Header / Footer, and `/porch` (Shelter Cam). Do not invent Cognito admin, SWR feeds, forms, lightbox, or search menus unless product explicitly adds them.
+- Product surface stays small: Home, About, shared Header / Footer, `/porch` (Shelter Cam), and `/feeder` (Feeder Cam). Do not invent Cognito admin, SWR feeds, forms, lightbox, or search menus unless product explicitly adds them.
 - Preserve Critter Canteen visual language: light canvas (`#f5f5f5`), ink (`#0e0e0e`), yellow (`#fff017`), Urbanist; photo heroes stay dark imagery. Do not restyle to another product’s look.
 
 ---
@@ -94,14 +94,14 @@ CI also runs Cypress e2e and Lighthouse on PRs/merges — see `docs/CI_CD.md`.
 
 ## Repository Identity
 
-| Field       | Value                                                                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Project** | Critter Canteen — Next.js static client (`crow-detector-client`)                                                                       |
-| **Stack**   | Next.js 16 App Router, React 19, TypeScript 6, Tailwind 4, Sentry (Node 26)                                                            |
-| **Hosting** | Static export → S3 + CloudFront                                                                                                        |
-| **Domains** | Production `www.crittercanteen.com`; test CDN via signed-cookie proxy                                                                  |
-| **Auth**    | None in-client; test CDN gated by CloudFront signed cookies (`proxy/`)                                                                 |
-| **Data**    | Marketing pages are static. Shelter Cam (`/porch`) fetches `/porch/clips` from `NEXT_PUBLIC_API_BASE_URL`. No API server in this repo. |
+| Field       | Value                                                                                                                                                                                                       |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Project** | Critter Canteen — Next.js static client (`crow-detector-client`)                                                                                                                                            |
+| **Stack**   | Next.js 16 App Router, React 19, TypeScript 6, Tailwind 4, Sentry (Node 26)                                                                                                                                 |
+| **Hosting** | Static export → S3 + CloudFront                                                                                                                                                                             |
+| **Domains** | Production `www.crittercanteen.com`; test CDN via signed-cookie proxy                                                                                                                                       |
+| **Auth**    | None in-client; test CDN gated by CloudFront signed cookies (`proxy/`)                                                                                                                                      |
+| **Data**    | Marketing pages are static. Shelter Cam (`/porch`) fetches `/porch/clips`; Feeder Cam (`/feeder`) fetches `/feeder/feeds` and `/feeder/status` from `NEXT_PUBLIC_API_BASE_URL`. No API server in this repo. |
 
 ---
 

@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 const getApiBaseUrl = (): string =>
   (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
+
+/** Give up on hung feeder status/dispense requests. */
+const FETCH_TIMEOUT_MS = 15_000;
 
 type FeederStatus = {
   canFeed: boolean;
@@ -19,10 +22,21 @@ type DispenseCreateResponse = {
 type DispenseStatusResponse = {
   id: string;
   status: string;
-  proofClipUrl?: string;
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('The operation was aborted.', 'AbortError'));
+      return;
+    }
+    const timer = window.setTimeout(() => resolve(), ms);
+    const onAbort = () => {
+      window.clearTimeout(timer);
+      reject(new DOMException('The operation was aborted.', 'AbortError'));
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 
 const readJsonBody = async (
   response: Response
@@ -59,6 +73,80 @@ const parseCooldownEndsAt = (value: unknown): string | null => {
   return new Date(ms).toISOString();
 };
 
+const parseFeederStatus = (value: unknown): FeederStatus | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const body = value as Record<string, unknown>;
+  if (typeof body.canFeed !== 'boolean') {
+    return null;
+  }
+  if (body.cooldownEndsAt !== null && typeof body.cooldownEndsAt !== 'string') {
+    return null;
+  }
+  return {
+    canFeed: body.canFeed,
+    cooldownEndsAt: parseCooldownEndsAt(body.cooldownEndsAt),
+  };
+};
+
+const parseDispenseCreate = (
+  value: Record<string, unknown>
+): DispenseCreateResponse | null => {
+  if (typeof value.id !== 'string' || value.id.length === 0) {
+    return null;
+  }
+  return {
+    id: value.id,
+    status: typeof value.status === 'string' ? value.status : 'requested',
+    cooldownEndsAt:
+      typeof value.cooldownEndsAt === 'string'
+        ? value.cooldownEndsAt
+        : undefined,
+  };
+};
+
+const parseDispenseStatus = (value: unknown): DispenseStatusResponse | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const body = value as Record<string, unknown>;
+  if (typeof body.id !== 'string' || typeof body.status !== 'string') {
+    return null;
+  }
+  return { id: body.id, status: body.status };
+};
+
+const fetchWithTimeout = async (
+  input: string,
+  init: RequestInit | undefined,
+  timeoutMs: number,
+  externalSignal?: AbortSignal
+): Promise<Response> => {
+  const controller = new AbortController();
+  const onExternalAbort = () => controller.abort(externalSignal?.reason);
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      controller.abort(externalSignal.reason);
+    } else {
+      externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+    }
+  }
+  const timeoutId = window.setTimeout(
+    () => controller.abort('timeout'),
+    timeoutMs
+  );
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+    externalSignal?.removeEventListener('abort', onExternalAbort);
+  }
+};
+
 /** mm:ss remaining until endsAt, or null when elapsed. */
 export const formatCountdown = (
   endsAtIso: string,
@@ -93,30 +181,58 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
   const [cooldownEndsAt, setCooldownEndsAt] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [statusLoaded, setStatusLoaded] = useState(false);
+  /** True only after a successful /feeder/status parse (fail closed otherwise). */
+  const [statusOk, setStatusOk] = useState(false);
+  const statusAbortRef = useRef<AbortController | null>(null);
+  const dispenseAbortRef = useRef<AbortController | null>(null);
 
   const refreshStatus = useCallback(async () => {
     const apiBase = getApiBaseUrl();
     if (!apiBase) {
+      setStatusOk(false);
       setStatusLoaded(true);
       return;
     }
+    statusAbortRef.current?.abort();
+    const controller = new AbortController();
+    statusAbortRef.current = controller;
     try {
-      const response = await fetch(`${apiBase}/feeder/status`, {
-        cache: 'no-store',
-      });
+      const response = await fetchWithTimeout(
+        `${apiBase}/feeder/status`,
+        { cache: 'no-store' },
+        FETCH_TIMEOUT_MS,
+        controller.signal
+      );
       if (!response.ok) {
+        setStatusOk(false);
         return;
       }
-      const body = (await response.json()) as FeederStatus;
+      const body = parseFeederStatus(await response.json());
+      if (!body) {
+        setStatusOk(false);
+        return;
+      }
       if (body.canFeed) {
         setCooldownEndsAt(null);
       } else {
-        setCooldownEndsAt(parseCooldownEndsAt(body.cooldownEndsAt));
+        setCooldownEndsAt(body.cooldownEndsAt);
       }
-    } catch {
-      // Keep the last known cooldown when status cannot be reached.
+      setStatusOk(true);
+    } catch (error) {
+      // Unmount aborts our controller; fetchWithTimeout timeouts do not.
+      if (
+        error instanceof DOMException &&
+        error.name === 'AbortError' &&
+        controller.signal.aborted
+      ) {
+        return;
+      }
+      // Fail closed: do not enable the plunger without a known status.
+      setStatusOk(false);
     } finally {
-      setStatusLoaded(true);
+      if (statusAbortRef.current === controller) {
+        setStatusLoaded(true);
+      }
     }
   }, []);
 
@@ -125,7 +241,11 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
     const timer = window.setTimeout(() => {
       void refreshStatus();
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      statusAbortRef.current?.abort();
+      dispenseAbortRef.current?.abort();
+    };
   }, [refreshStatus]);
 
   useEffect(() => {
@@ -147,7 +267,9 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
     ? formatCountdown(cooldownEndsAt, nowMs)
     : null;
   const coolingDown = countdown !== null;
-  const disabled = busy || coolingDown;
+  const apiConfigured = Boolean(getApiBaseUrl());
+  const disabled =
+    busy || coolingDown || (apiConfigured && (!statusLoaded || !statusOk));
 
   const onClick = async () => {
     const apiBase = getApiBaseUrl();
@@ -155,15 +277,21 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
       setMessage('Feeder is not configured.');
       return;
     }
-    if (coolingDown) {
+    if (coolingDown || !statusOk) {
       return;
     }
+    dispenseAbortRef.current?.abort();
+    const controller = new AbortController();
+    dispenseAbortRef.current = controller;
     setBusy(true);
     setMessage(null);
     try {
-      const created = await fetch(`${apiBase}/feeder/dispense`, {
-        method: 'POST',
-      });
+      const created = await fetchWithTimeout(
+        `${apiBase}/feeder/dispense`,
+        { method: 'POST' },
+        FETCH_TIMEOUT_MS,
+        controller.signal
+      );
       const createdBody = await readJsonBody(created);
       if (!created.ok) {
         const conflictCooldown = parseCooldownEndsAt(
@@ -186,8 +314,8 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
         );
         return;
       }
-      const body = createdBody as unknown as DispenseCreateResponse;
-      if (typeof body.id !== 'string' || body.id.length === 0) {
+      const body = parseDispenseCreate(createdBody);
+      if (!body) {
         setMessage('The feeder could not start.');
         return;
       }
@@ -198,14 +326,20 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
       }
       const deadline = Date.now() + 60_000;
       while (Date.now() < deadline) {
-        await sleep(2000);
-        const statusResponse = await fetch(
-          `${apiBase}/feeder/dispense/${body.id}`
+        await sleep(2000, controller.signal);
+        const statusResponse = await fetchWithTimeout(
+          `${apiBase}/feeder/dispense/${body.id}`,
+          undefined,
+          FETCH_TIMEOUT_MS,
+          controller.signal
         );
         if (!statusResponse.ok) {
           continue;
         }
-        const status = (await statusResponse.json()) as DispenseStatusResponse;
+        const status = parseDispenseStatus(await statusResponse.json());
+        if (!status) {
+          continue;
+        }
         if (status.status === 'ready') {
           setMessage('Food dropped. The clip is in the feed below.');
           onFeedReady?.();
@@ -220,10 +354,20 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
         'Still waiting on the camera. Check the feed below in a moment.'
       );
       onFeedReady?.();
-    } catch {
+    } catch (error) {
+      // Unmount aborts our controller; fetchWithTimeout timeouts do not.
+      if (
+        error instanceof DOMException &&
+        error.name === 'AbortError' &&
+        controller.signal.aborted
+      ) {
+        return;
+      }
       setMessage('The feeder could not be reached.');
     } finally {
-      setBusy(false);
+      if (dispenseAbortRef.current === controller) {
+        setBusy(false);
+      }
     }
   };
 
@@ -240,11 +384,11 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
         onClick={() => {
           void onClick();
         }}
-        disabled={disabled || !statusLoaded}
+        disabled={disabled}
         className="feed-plunger"
         aria-label={label}
         aria-busy={busy}
-        aria-disabled={disabled || !statusLoaded}
+        aria-disabled={disabled}
       >
         <span className="feed-plunger__dome" aria-hidden="true">
           <span className="feed-plunger__label">

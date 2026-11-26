@@ -11,14 +11,14 @@ const configuredPlaybackHosts = (): string[] =>
     .map((host) => host.trim().toLowerCase())
     .filter((host) => host.length > 0);
 
-/** Virtual-hosted–style S3 object hosts only (not arbitrary *.amazonaws.com). */
-const isAmazonS3ObjectHost = (host: string): boolean => {
-  if (!host.endsWith('.amazonaws.com')) {
-    return false;
-  }
-  // bucket.s3.amazonaws.com | bucket.s3.us-west-2.amazonaws.com | bucket.s3-us-west-2.amazonaws.com
-  return host.includes('.s3.') || /\.s3-[a-z0-9-]+\.amazonaws\.com$/.test(host);
-};
+/**
+ * Virtual-hosted S3 object hosts that match CloudFront CSP media-src
+ * (us-west-2 dotted + hyphen forms, plus legacy bucket.s3.amazonaws.com).
+ */
+const isAmazonS3ObjectHost = (host: string): boolean =>
+  host.endsWith('.s3.amazonaws.com') ||
+  host.endsWith('.s3.us-west-2.amazonaws.com') ||
+  host.endsWith('.s3-us-west-2.amazonaws.com');
 
 export const isAllowedPlaybackUrl = (value: string): boolean => {
   let url: URL;

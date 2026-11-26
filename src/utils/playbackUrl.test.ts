@@ -26,6 +26,11 @@ describe('isAllowedPlaybackUrl', () => {
         'https://bucket.s3.amazonaws.com/feeder/clip.mp4?X-Amz-Signature=1'
       )
     ).toBe(true);
+    expect(
+      isAllowedPlaybackUrl(
+        'https://bucket.s3-us-west-2.amazonaws.com/feeder/clip.mp4?X-Amz-Signature=1'
+      )
+    ).toBe(true);
   });
 
   it('rejects non-https, bad hosts, and non-S3 amazonaws hosts', () => {
@@ -35,6 +40,11 @@ describe('isAllowedPlaybackUrl', () => {
     expect(isAllowedPlaybackUrl('not a url')).toBe(false);
     expect(
       isAllowedPlaybackUrl('https://lambda.us-west-2.amazonaws.com/clip.mp4')
+    ).toBe(false);
+    expect(
+      isAllowedPlaybackUrl(
+        'https://bucket.s3.eu-west-1.amazonaws.com/feeder/clip.mp4'
+      )
     ).toBe(false);
   });
 });

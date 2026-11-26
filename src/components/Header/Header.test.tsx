@@ -117,6 +117,23 @@ describe('Header', () => {
     expect(shelterLink).toHaveAttribute('aria-current', 'page');
   });
 
+  it('marks Feeder as the active desktop and mobile tab', async () => {
+    mockPathname.mockReturnValue('/feeder');
+    render(<Header />);
+
+    const desktopFeeder = within(
+      screen.getByLabelText('Desktop navigation')
+    ).getByRole('link', { name: 'Feeder' });
+    expect(desktopFeeder.className).toContain('bg-cc-ink');
+    expect(desktopFeeder).toHaveAttribute('aria-current', 'page');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const mobileFeeder = within(
+      screen.getByLabelText('Mobile navigation')
+    ).getByRole('link', { name: 'Feeder' });
+    expect(mobileFeeder).toHaveAttribute('aria-current', 'page');
+  });
+
   it('renders desktop navigation links', async () => {
     render(<Header />);
 

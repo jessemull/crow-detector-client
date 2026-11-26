@@ -16,7 +16,7 @@ See `CONTEXT.md`. Conflicts resolve upward: CONTEXT → GOVERNANCE → ARCHITECT
 - ≥80% Jest coverage; Conventional Commits + Husky
 - No hardcoded secrets; CloudFront signing stays in `proxy/`
 - No LLM SDKs or new global state managers without product approval
-- Keep the product surface small (Home / About / Header / Footer, plus `/porch` Shelter Cam) unless product expands it
+- Keep the product surface small (Home / About / Header / Footer, plus `/porch` Shelter Cam and `/feeder` Feeder Cam) unless product expands it
 
 ---
 
@@ -44,7 +44,7 @@ See `CONTEXT.md`. Conflicts resolve upward: CONTEXT → GOVERNANCE → ARCHITECT
 
 ## Product decision required
 
-- New product surfaces beyond Home / About / `/porch` (Shelter Cam)
+- New product surfaces beyond Home / About / `/porch` (Shelter Cam) / `/feeder` (Feeder Cam)
 - Privacy / analytics policy changes
 - AI/LLM features in the client
 - Introducing Cognito, SWR, forms, or an API sibling

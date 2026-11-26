@@ -21,16 +21,16 @@ Local `npm run proxy` (signed cookies) → test CloudFront domain
 
 ## Folder structure
 
-| Path                                                       | Role                                                                                                                      |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/`                                                 | Routes (`/`, `/about`, `/porch` Shelter Cam), root layout, globals                                                        |
-| `src/components/`                                          | Feature UI: `Header`, `Footer`, `HomePage`, `About`, `PorchClips`, `SplashBackground`, `UtilityNotice`, `GaRouteListener` |
-| `src/constants/`, `src/hooks/`, `src/types/`, `src/utils/` | Shared non-UI modules (as needed)                                                                                         |
-| `proxy/`                                                   | Express signed-cookie proxy for local test CDN                                                                            |
-| `scripts/`                                                 | Bastion SSH, Sentry source maps, preflight                                                                                |
-| `cloudformation/`                                          | S3 / CloudFront / Route 53 stack                                                                                          |
-| `cypress/`                                                 | E2E smoke                                                                                                                 |
-| `docs/`                                                    | Governance                                                                                                                |
+| Path                                                       | Role                                                                                                                                                   |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/app/`                                                 | Routes (`/`, `/about`, `/porch` Shelter Cam, `/feeder` Feeder Cam), root layout, globals                                                               |
+| `src/components/`                                          | Feature UI: `Header`, `Footer`, `HomePage`, `About`, `PorchClips`, `FeederClips`, `FeedButton`, `SplashBackground`, `UtilityNotice`, `GaRouteListener` |
+| `src/constants/`, `src/hooks/`, `src/types/`, `src/utils/` | Shared non-UI modules (as needed)                                                                                                                      |
+| `proxy/`                                                   | Express signed-cookie proxy for local test CDN                                                                                                         |
+| `scripts/`                                                 | Bastion SSH, Sentry source maps, preflight                                                                                                             |
+| `cloudformation/`                                          | S3 / CloudFront / Route 53 stack                                                                                                                       |
+| `cypress/`                                                 | E2E smoke                                                                                                                                              |
+| `docs/`                                                    | Governance                                                                                                                                             |
 
 ---
 
@@ -48,9 +48,9 @@ Local `npm run proxy` (signed cookies) → test CloudFront domain
 - `'use client'` only when hooks or browser APIs require it
 - No Route Handlers / server actions that must run on the static host
 - `images.unoptimized: true`
-- Public config only via `NEXT_PUBLIC_*` (porch page uses `NEXT_PUBLIC_API_BASE_URL`)
+- Public config only via `NEXT_PUBLIC_*` (Shelter Cam and Feeder Cam use `NEXT_PUBLIC_API_BASE_URL`)
 - Prefer `next/link` for in-app routes
-- `/porch` is Shelter Cam; linked from Home and Header (Feeder stays disabled in nav until wired)
+- `/porch` is Shelter Cam; `/feeder` is Feeder Cam; both linked from Home and Header
 
 ---
 

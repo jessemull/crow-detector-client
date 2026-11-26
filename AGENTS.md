@@ -21,7 +21,7 @@
 ```
 crow-detector-client/
 ├── src/
-│   ├── app/                 # Routes: /, /about, /porch (Shelter Cam)
+│   ├── app/                 # Routes: /, /about, /porch (Shelter Cam), /feeder (Feeder Cam)
 │   ├── components/          # Header, Footer, HomePage, About, PorchClips, SplashBackground, UtilityNotice, GaRouteListener
 │   ├── constants/           # Shared constants (when present)
 │   ├── hooks/               # Shared hooks (when present)
@@ -129,12 +129,12 @@ Follow `docs/COMMENTS.md`. Prefer self-documenting names; comments explain **why
 
 - **Routes** (`src/app`) → **feature components** → **hooks / util / constants**.
 - Shared chrome: prefer `Header`, `Footer`.
-- Keep the product surface small: Home, About, and `/porch` (Shelter Cam, linked from Home) unless product expands it further.
-- Shelter Cam capture assumptions: see `docs/DEVICES.md` (pointer to server `docs/DEVICES.md`). Do not assume an on-porch Pi CSI camera.
+- Keep the product surface small: Home, About, `/porch` (Shelter Cam), and `/feeder` (Feeder Cam), linked from Home, unless product expands it further.
+- Shelter Cam / Feeder Cam capture assumptions: see `docs/DEVICES.md` (pointer to server `docs/DEVICES.md`). Do not assume an on-porch Pi CSI camera.
 
 ### Data
 
-- Marketing pages are static. Shelter Cam fetches `${NEXT_PUBLIC_API_BASE_URL}/porch/clips` in the browser. Do not hardcode that host — use the env var.
+- Marketing pages are static. Shelter Cam fetches `${NEXT_PUBLIC_API_BASE_URL}/porch/clips`; Feeder Cam fetches `/feeder/feeds` and `/feeder/status` in the browser. Do not hardcode that host — use the env var.
 
 ### State
 

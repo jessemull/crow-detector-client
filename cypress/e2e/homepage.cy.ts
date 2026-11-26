@@ -16,14 +16,21 @@ describe('Homepage', () => {
     );
   });
 
-  it('should show a disabled Feeder control', () => {
-    cy.get('main button').contains('Feeder').should('be.disabled');
+  it('should link to Feeder Cam', () => {
+    cy.get('main a').contains('Feeder').should('have.attr', 'href', '/feeder');
   });
 
   it('should link to Shelter Cam', () => {
     cy.get('main a')
       .contains('Shelter Cam')
       .should('have.attr', 'href', '/porch');
+  });
+});
+
+describe('Feeder Cam', () => {
+  it('loads the feeder page', () => {
+    cy.visit('/feeder');
+    cy.get('main h1').should('contain', 'Feeder Cam');
   });
 });
 

@@ -171,18 +171,16 @@ const mergeProof = (
   if (!previous || !next) {
     return next;
   }
-  if (previous.playbackUrl === next.playbackUrl) {
-    const expiresAtMs = Date.parse(previous.expiresAt);
-    const needsFreshUrl =
-      !Number.isFinite(expiresAtMs) ||
-      expiresAtMs - nowMs < URL_REFRESH_BUFFER_MS ||
-      failedPlaybackUrls.has(previous.playbackUrl);
-    if (failedPlaybackUrls.has(previous.playbackUrl)) {
-      failedPlaybackUrls.delete(previous.playbackUrl);
-    }
-    return needsFreshUrl ? next : previous;
+  // Keep the mounted <video> src unless the signed URL is near expiry or failed.
+  const expiresAtMs = Date.parse(previous.expiresAt);
+  const needsFreshUrl =
+    !Number.isFinite(expiresAtMs) ||
+    expiresAtMs - nowMs < URL_REFRESH_BUFFER_MS ||
+    failedPlaybackUrls.has(previous.playbackUrl);
+  if (failedPlaybackUrls.has(previous.playbackUrl)) {
+    failedPlaybackUrls.delete(previous.playbackUrl);
   }
-  return next;
+  return needsFreshUrl ? next : previous;
 };
 
 /**
