@@ -87,7 +87,7 @@ describe('FeedButton', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: /Ready in \d+:\d{2}/ })
+        screen.getByRole('button', { name: /Feed Again in \d+:\d{2}/ })
       ).toBeDisabled();
     });
   });
@@ -129,14 +129,17 @@ describe('FeedButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: feedName }));
 
-    expect(await screen.findByText('Asking the feeder…')).toBeTruthy();
+    expect(screen.queryByText('Asking the feeder…')).toBeNull();
+    expect(
+      await screen.findByRole('button', { name: 'Feeding…' })
+    ).toBeTruthy();
 
     await act(async () => {
       await jest.advanceTimersByTimeAsync(2000);
     });
 
     expect(
-      await screen.findByText('Food dropped. Proof clip is in the feed below.')
+      await screen.findByText('Food dropped. The clip is in the feed below.')
     ).toBeTruthy();
     expect(onFeedReady).toHaveBeenCalled();
     expect(document.querySelector('video')).toBeNull();
@@ -178,7 +181,7 @@ describe('FeedButton', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: /Ready in \d+:\d{2}/ })
+        screen.getByRole('button', { name: /Feed Again in \d+:\d{2}/ })
       ).toBeDisabled();
     });
   });

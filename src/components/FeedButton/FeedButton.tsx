@@ -84,7 +84,7 @@ type FeedButtonProps = {
 };
 
 /**
- * Asks the API for a dispense. The feeder host records a short proof clip.
+ * Asks the API for a dispense. The feeder host records a short clip.
  * Lives on Feeder Cam; the home hero only links here.
  */
 const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
@@ -159,7 +159,7 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
       return;
     }
     setBusy(true);
-    setMessage('Asking the feeder…');
+    setMessage(null);
     try {
       const created = await fetch(`${apiBase}/feeder/dispense`, {
         method: 'POST',
@@ -207,7 +207,7 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
         }
         const status = (await statusResponse.json()) as DispenseStatusResponse;
         if (status.status === 'ready') {
-          setMessage('Food dropped. Proof clip is in the feed below.');
+          setMessage('Food dropped. The clip is in the feed below.');
           onFeedReady?.();
           return;
         }
@@ -230,7 +230,7 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
   const label = busy
     ? 'Feeding…'
     : coolingDown && countdown
-      ? `Ready in ${countdown}`
+      ? `Feed Again in ${countdown}`
       : 'Feed the Critters';
 
   return (
@@ -246,7 +246,13 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
         aria-disabled={disabled || !statusLoaded}
       >
         <span className="feed-plunger__dome" aria-hidden="true">
-          <span className="feed-plunger__label">{label}</span>
+          <span className="feed-plunger__label">
+            {/* Keep width stable across idle / Feeding… / cooldown labels. */}
+            <span className="feed-plunger__label-sizer" aria-hidden="true">
+              Feed Again in 99:99
+            </span>
+            <span className="feed-plunger__label-text">{label}</span>
+          </span>
         </span>
       </button>
       {message ? (

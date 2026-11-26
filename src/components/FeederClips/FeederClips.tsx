@@ -272,7 +272,7 @@ const ProofCard: React.FC<{
     <article className={clipCardClassName}>
       <LazyClipVideo
         src={proof.playbackUrl}
-        ariaLabel={`Feed proof recorded ${fedLabel}`}
+        ariaLabel={`Feed recorded ${fedLabel}`}
         eager={eager}
         onPlaybackError={onPlaybackError}
       />
@@ -281,7 +281,7 @@ const ProofCard: React.FC<{
           {fedLabel}
         </h3>
         <span className="rounded-full bg-cc-ink px-2.5 py-0.5 font-urbanist text-[0.65rem] font-medium uppercase tracking-[0.16em] text-white">
-          Proof
+          Feed
         </span>
       </div>
     </article>
@@ -478,19 +478,17 @@ const FeederClips: React.FC = () => {
     };
   }, [loadFeeds]);
 
-  const feedCount = payload.feeds.length;
-  const visitCount =
-    payload.feeds.reduce((sum, feed) => sum + feed.visits.length, 0) +
-    payload.ungroupedVisits.length;
-  const hasContent = feedCount > 0 || payload.ungroupedVisits.length > 0;
-  const hasCards = loading || (!error && hasContent);
+  const hasContent =
+    payload.feeds.length > 0 || payload.ungroupedVisits.length > 0;
   const statusLabel = loading
     ? 'Loading…'
     : error
       ? error
       : !hasContent
         ? 'No feeds yet.'
-        : `${feedCount} ${feedCount === 1 ? 'feed' : 'feeds'}, ${visitCount} ${visitCount === 1 ? 'visit' : 'visits'}`;
+        : refreshWarning
+          ? refreshWarning
+          : null;
 
   const onPlaybackError = (url: string) => {
     failedPlaybackUrlsRef.current.add(url);
@@ -499,39 +497,62 @@ const FeederClips: React.FC = () => {
   return (
     <section className="min-h-screen bg-cc-canvas">
       <div className="mx-auto max-w-3xl px-6 pb-16 pt-28 md:px-10 md:pb-24 md:pt-32">
-        <div className={`text-center ${hasCards ? 'mb-10 md:mb-14' : 'mb-4'}`}>
+        <div className="mb-10 text-center md:mb-14">
           <h1 className="mb-4 font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-cc-ink md:text-5xl md:leading-[1.05] lg:text-[56px] lg:tracking-[-1.12px]">
             Feeder Cam
           </h1>
-          <p className="mx-auto mb-6 max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-cc-ink/70 md:text-lg">
-            Press Feed to drop food, watch the proof clip, then see who showed
-            up afterward. The gallery updates on its own.
+          <p className="mx-auto mb-8 max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-cc-ink/70 md:text-lg">
+            Press Feed to drop food, watch the clip, then see who showed up
+            afterward. The gallery updates on its own.
           </p>
-          <ol className="mx-auto max-w-xl space-y-2 text-left font-urbanist text-sm font-medium leading-relaxed tracking-[-0.28px] text-cc-ink/70 md:text-base">
-            <li>1. Press the plunger when it is ready.</li>
-            <li>2. The feeder drops food and records a short proof clip.</li>
-            <li>3. That proof leads its feed section below.</li>
-            <li>
-              4. Motion visits (and animal labels when classify is on) collect
-              under that feed.
-            </li>
+          <div className="mb-8 flex flex-col items-center md:mb-10">
+            <FeedButton
+              onFeedReady={() => {
+                void loadFeeds({ silent: true });
+              }}
+            />
+            {statusLabel ? (
+              <p className={`mt-4 ${statusLineClassName}`} aria-live="polite">
+                {statusLabel}
+              </p>
+            ) : null}
+          </div>
+          <ol className="mx-auto w-fit max-w-xl list-none space-y-4 text-left font-urbanist md:text-base">
+            {(
+              [
+                {
+                  title: 'Trigger the Feeder',
+                  body: 'Press the button to dispense food.',
+                },
+                {
+                  title: 'Detect Wildlife',
+                  body: 'Motion triggers video, image recognition identifies critters.',
+                },
+                {
+                  title: 'Watch the Visitors',
+                  body: 'Recorded critter videos appear below.',
+                },
+              ] as const
+            ).map((step, index) => (
+              <li key={step.title} className="flex items-start gap-3">
+                <span
+                  className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cc-ink font-urbanist text-xs font-semibold text-white md:h-7 md:w-7 md:text-sm"
+                  aria-hidden="true"
+                >
+                  {index + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-semibold tracking-[-0.28px] text-cc-ink">
+                    {step.title}
+                  </p>
+                  <p className="mt-0.5 text-sm font-medium leading-relaxed tracking-[-0.28px] text-cc-ink/70 md:text-base">
+                    {step.body}
+                  </p>
+                </div>
+              </li>
+            ))}
           </ol>
         </div>
-
-        <div
-          className={`flex justify-center ${hasCards ? 'mb-10 md:mb-14' : 'mb-8'}`}
-        >
-          <FeedButton
-            onFeedReady={() => {
-              void loadFeeds({ silent: true });
-            }}
-          />
-        </div>
-
-        <p className={statusLineClassName} aria-live="polite">
-          {statusLabel}
-          {!loading && !error && refreshWarning ? ` ${refreshWarning}` : ''}
-        </p>
 
         {loading ? (
           <div className="space-y-8 md:space-y-10" aria-hidden="true">
@@ -567,25 +588,15 @@ const FeederClips: React.FC = () => {
                         />
                       </li>
                     ) : null}
-                    {feed.visits.length === 0 ? (
-                      <li>
-                        <p className="font-urbanist text-base font-medium text-cc-ink/60">
-                          No visitors yet.
-                        </p>
+                    {feed.visits.map((clip, index) => (
+                      <li key={`${clip.id}-${clip.recordedAt}`}>
+                        <VisitCard
+                          clip={clip}
+                          eager={feedIndex === 0 && !feed.proof && index === 0}
+                          onPlaybackError={onPlaybackError}
+                        />
                       </li>
-                    ) : (
-                      feed.visits.map((clip, index) => (
-                        <li key={`${clip.id}-${clip.recordedAt}`}>
-                          <VisitCard
-                            clip={clip}
-                            eager={
-                              feedIndex === 0 && !feed.proof && index === 0
-                            }
-                            onPlaybackError={onPlaybackError}
-                          />
-                        </li>
-                      ))
-                    )}
+                    ))}
                   </ul>
                 </section>
               );

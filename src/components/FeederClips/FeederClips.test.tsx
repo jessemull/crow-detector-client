@@ -85,21 +85,22 @@ describe('FeederClips', () => {
     fetchMock.mockReset();
   });
 
-  it('lists feed sections with proof first', async () => {
+  it('lists feed sections with the feed clip first', async () => {
     render(<FeederClips />);
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Feeder Cam' })
     ).toBeTruthy();
-    expect(screen.getByText(/Press the plunger when it is ready/)).toBeTruthy();
+    expect(screen.getByText('Trigger the Feeder')).toBeTruthy();
+    expect(screen.getByText('Watch the Visitors')).toBeTruthy();
 
     expect(
       await screen.findByRole('heading', { name: `Fed ${fedLabel}` })
     ).toBeTruthy();
     expect(
-      await screen.findByLabelText(`Feed proof recorded ${fedLabel}`)
+      await screen.findByLabelText(`Feed recorded ${fedLabel}`)
     ).toHaveAttribute('src', 'https://cdn.example.com/feeder/proof.mp4?sig=1');
-    expect(screen.getByText('Proof')).toBeTruthy();
+    expect(screen.getByText('Feed')).toBeTruthy();
     expect(
       screen.getByLabelText(`Feeder visit recorded ${recordedLabel}`)
     ).toBeTruthy();
@@ -109,7 +110,7 @@ describe('FeederClips', () => {
     );
   });
 
-  it('shows empty visits under a feed', async () => {
+  it('omits an empty-visits message under a feed', async () => {
     fetchMock.mockImplementation(async (url: RequestInfo) => {
       const href = String(url);
       if (href.endsWith('/feeder/status')) {
@@ -144,7 +145,10 @@ describe('FeederClips', () => {
 
     render(<FeederClips />);
 
-    expect(await screen.findByText('No visitors yet.')).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { name: `Fed ${fedLabel}` })
+    ).toBeTruthy();
+    expect(screen.queryByText('No visitors yet.')).toBeNull();
   });
 
   it('lists ungrouped visits separately', async () => {
@@ -290,9 +294,7 @@ describe('FeederClips', () => {
     const { container } = render(<FeederClips />);
 
     await waitFor(() => {
-      expect(
-        screen.getByLabelText(`Feed proof recorded ${fedLabel}`)
-      ).toBeTruthy();
+      expect(screen.getByLabelText(`Feed recorded ${fedLabel}`)).toBeTruthy();
     });
 
     expect(await axe(container)).toHaveNoViolations();
