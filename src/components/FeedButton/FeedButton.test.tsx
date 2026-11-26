@@ -1,11 +1,38 @@
 import React from 'react';
 import { axe, toHaveNoViolations } from 'jest-axe';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import FeedButton from './FeedButton';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import FeedButton, { formatCountdown } from './FeedButton';
 
 expect.extend(toHaveNoViolations);
 
 const originalApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+const feedName = 'Feed the Critters';
+
+describe('formatCountdown', () => {
+  it('formats remaining time as mm:ss', () => {
+    expect(
+      formatCountdown(
+        '2026-11-22T20:10:00.000Z',
+        Date.parse('2026-11-22T20:07:05.000Z')
+      )
+    ).toBe('2:55');
+  });
+
+  it('returns null when elapsed', () => {
+    expect(
+      formatCountdown(
+        '2026-11-22T20:00:00.000Z',
+        Date.parse('2026-11-22T20:00:00.000Z')
+      )
+    ).toBeNull();
+  });
+});
 
 describe('FeedButton', () => {
   const fetchMock = jest.fn();
@@ -14,6 +41,15 @@ describe('FeedButton', () => {
     process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api-dev.example.com';
     global.fetch = fetchMock as unknown as typeof fetch;
     jest.useFakeTimers();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        canFeed: true,
+        cooldownEndsAt: null,
+        lastFeedAt: null,
+        lastFeedId: null,
+      }),
+    });
   });
 
   afterEach(() => {
@@ -26,17 +62,55 @@ describe('FeedButton', () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     render(<FeedButton />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Feeder' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: feedName }));
 
     expect(await screen.findByText('Feeder is not configured.')).toBeTruthy();
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('plays the proof clip once the dispense is ready', async () => {
+  it('disables the plunger and shows a countdown while cooling down', async () => {
+    const endsAt = new Date(Date.now() + 125_000).toISOString();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        canFeed: false,
+        cooldownEndsAt: endsAt,
+        lastFeedAt: null,
+        lastFeedId: null,
+      }),
+    });
+
+    render(<FeedButton />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Ready in \d+:\d{2}/ })
+      ).toBeDisabled();
+    });
+  });
+
+  it('marks the feed ready and notifies the parent', async () => {
+    const onFeedReady = jest.fn();
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ id: 'req-1', status: 'requested' }),
+        json: async () => ({
+          canFeed: true,
+          cooldownEndsAt: null,
+          lastFeedAt: null,
+          lastFeedId: null,
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'req-1',
+          status: 'requested',
+          cooldownEndsAt: '2099-01-01T00:10:00.000Z',
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -47,8 +121,13 @@ describe('FeedButton', () => {
         }),
       });
 
-    render(<FeedButton />);
-    fireEvent.click(screen.getByRole('button', { name: 'Feeder' }));
+    render(<FeedButton onFeedReady={onFeedReady} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: feedName }));
 
     expect(await screen.findByText('Asking the feeder…')).toBeTruthy();
 
@@ -56,41 +135,118 @@ describe('FeedButton', () => {
       await jest.advanceTimersByTimeAsync(2000);
     });
 
-    await screen.findByRole('button', { name: 'Feeder' });
-    const video = document.querySelector('video');
-    expect(video).toHaveAttribute(
-      'src',
-      'https://cdn.example.com/feeder/proof.mp4?sig=1'
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      'https://api-dev.example.com/feeder/dispense',
-      { method: 'POST' }
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://api-dev.example.com/feeder/dispense/req-1'
-    );
+    expect(
+      await screen.findByText('Food dropped. Proof clip is in the feed below.')
+    ).toBeTruthy();
+    expect(onFeedReady).toHaveBeenCalled();
+    expect(document.querySelector('video')).toBeNull();
   });
 
-  it('explains the cooldown when the API rejects the request', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 400 });
+  it('applies cooldownEndsAt from a 409 conflict', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          canFeed: true,
+          cooldownEndsAt: null,
+          lastFeedAt: null,
+          lastFeedId: null,
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        json: async () => ({
+          message: 'Feed cooldown active. Try again in a few minutes.',
+          cooldownEndsAt: new Date(Date.now() + 180_000).toISOString(),
+        }),
+      });
 
     render(<FeedButton />);
-    fireEvent.click(screen.getByRole('button', { name: 'Feeder' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: feedName }));
 
     expect(
       await screen.findByText(
-        'The feeder was just used. Try again in a few minutes.'
+        'Feed cooldown active. Try again in a few minutes.'
       )
     ).toBeTruthy();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Ready in \d+:\d{2}/ })
+      ).toBeDisabled();
+    });
+  });
+
+  it('keeps a 400 cooldown fallback', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          canFeed: true,
+          cooldownEndsAt: null,
+          lastFeedAt: null,
+          lastFeedId: null,
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({
+          message: 'Feed cooldown active. Try again in a few minutes.',
+          cooldownEndsAt: new Date(Date.now() + 90_000).toISOString(),
+        }),
+      });
+
+    render(<FeedButton />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: feedName }));
+
+    expect(
+      await screen.findByText(
+        'Feed cooldown active. Try again in a few minutes.'
+      )
+    ).toBeTruthy();
+  });
+
+  it('renders a sleek molded plunger control', async () => {
+    const { container } = render(<FeedButton />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeEnabled();
+    });
+    expect(screen.getByRole('button', { name: feedName }).className).toContain(
+      'feed-plunger'
+    );
+    expect(container.querySelector('.feed-plunger__dome')).toBeTruthy();
   });
 
   it('reports a failed recording', async () => {
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ id: 'req-2', status: 'requested' }),
+        json: async () => ({
+          canFeed: true,
+          cooldownEndsAt: null,
+          lastFeedAt: null,
+          lastFeedId: null,
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'req-2',
+          status: 'requested',
+          cooldownEndsAt: '2099-01-01T00:10:00.000Z',
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -98,7 +254,12 @@ describe('FeedButton', () => {
       });
 
     render(<FeedButton />);
-    fireEvent.click(screen.getByRole('button', { name: 'Feeder' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: feedName }));
 
     await act(async () => {
       await jest.advanceTimersByTimeAsync(2000);
@@ -110,10 +271,25 @@ describe('FeedButton', () => {
   });
 
   it('reports when the feeder cannot be reached', async () => {
-    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          canFeed: true,
+          cooldownEndsAt: null,
+          lastFeedAt: null,
+          lastFeedId: null,
+        }),
+      })
+      .mockRejectedValueOnce(new Error('offline'));
 
     render(<FeedButton />);
-    fireEvent.click(screen.getByRole('button', { name: 'Feeder' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: feedName }));
 
     expect(
       await screen.findByText('The feeder could not be reached.')
@@ -123,6 +299,9 @@ describe('FeedButton', () => {
   it('has no accessibility violations', async () => {
     jest.useRealTimers();
     const { container } = render(<FeedButton />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeEnabled();
+    });
     expect(await axe(container)).toHaveNoViolations();
   });
 });

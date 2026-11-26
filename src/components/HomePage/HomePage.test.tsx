@@ -34,18 +34,17 @@ describe('HomePage', () => {
     expect(heading).toBeTruthy();
   });
 
-  it('links to Shelter Cam', () => {
+  it('links to Shelter Cam then Feeder', () => {
     render(<HomePage />);
-    const link = screen.getByRole('link', { name: 'Shelter Cam' });
-    expect(link).toHaveAttribute('href', '/porch');
-    expect(link.className).toContain('bg-cc-lime');
-  });
-
-  it('renders the feeder control', () => {
-    render(<HomePage />);
-    const button = screen.getByRole('button', { name: 'Feeder' });
-    expect(button).toHaveAttribute('type', 'button');
-    expect(button).toBeEnabled();
+    const shelter = screen.getByRole('link', { name: 'Shelter Cam' });
+    const feeder = screen.getByRole('link', { name: 'Feeder' });
+    expect(shelter).toHaveAttribute('href', '/porch');
+    expect(shelter.className).toContain('bg-white/10');
+    expect(feeder).toHaveAttribute('href', '/feeder');
+    expect(feeder.className).toContain('bg-cc-lime');
+    expect(
+      shelter.compareDocumentPosition(feeder) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   it('does not render placeholder system status', () => {

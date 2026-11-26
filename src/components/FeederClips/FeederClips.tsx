@@ -2,6 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import FeedButton from '@components/FeedButton/FeedButton';
 import {
   ClipCardSkeleton,
   LazyClipVideo,
@@ -19,6 +20,23 @@ export type FeederClip = {
   crowCount: number;
   playbackUrl: string;
   expiresAt: string;
+};
+
+export type FeederFeedProof = {
+  playbackUrl: string;
+  expiresAt: string;
+};
+
+export type FeederFeed = {
+  id: string;
+  fedAt: string;
+  proof: FeederFeedProof | null;
+  visits: FeederClip[];
+};
+
+export type FeederFeedsPayload = {
+  feeds: FeederFeed[];
+  ungroupedVisits: FeederClip[];
 };
 
 /** How often to re-fetch while the tab is visible and the last poll succeeded. */
@@ -58,24 +76,65 @@ const isFeederClip = (value: unknown): value is FeederClip => {
   );
 };
 
-/** Reject anything that is not a list of playable clips. */
-const parseFeederClips = (value: unknown): FeederClip[] | null => {
-  if (!Array.isArray(value) || !value.every(isFeederClip)) {
+const isFeederFeedProof = (value: unknown): value is FeederFeedProof => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const proof = value as Record<string, unknown>;
+  return (
+    typeof proof.playbackUrl === 'string' &&
+    isAllowedPlaybackUrl(proof.playbackUrl) &&
+    typeof proof.expiresAt === 'string'
+  );
+};
+
+const isFeederFeed = (value: unknown): value is FeederFeed => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const feed = value as Record<string, unknown>;
+  return (
+    typeof feed.id === 'string' &&
+    feed.id.length > 0 &&
+    typeof feed.fedAt === 'string' &&
+    (feed.proof === null || isFeederFeedProof(feed.proof)) &&
+    Array.isArray(feed.visits) &&
+    feed.visits.every(isFeederClip)
+  );
+};
+
+/** Reject anything that is not a feeds payload with playable URLs. */
+const parseFeederFeeds = (value: unknown): FeederFeedsPayload | null => {
+  if (!value || typeof value !== 'object') {
     return null;
   }
-  return [...value].sort(
-    (a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt)
-  );
+  const payload = value as Record<string, unknown>;
+  if (
+    !Array.isArray(payload.feeds) ||
+    !Array.isArray(payload.ungroupedVisits)
+  ) {
+    return null;
+  }
+  if (
+    !payload.feeds.every(isFeederFeed) ||
+    !payload.ungroupedVisits.every(isFeederClip)
+  ) {
+    return null;
+  }
+  return {
+    feeds: [...payload.feeds].sort(
+      (a, b) => Date.parse(b.fedAt) - Date.parse(a.fedAt)
+    ),
+    ungroupedVisits: [...payload.ungroupedVisits].sort(
+      (a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt)
+    ),
+  };
 };
 
 const sameClipIdentity = (a: FeederClip, b: FeederClip): boolean =>
   a.id === b.id && a.recordedAt === b.recordedAt;
 
-/**
- * Keep prior signed URLs when the clip set is unchanged so every <video>
- * does not remount and re-download on each poll.
- */
-const mergeClipsForPlayback = (
+const mergeClipList = (
   previous: FeederClip[],
   next: FeederClip[],
   nowMs: number,
@@ -101,12 +160,139 @@ const mergeClipsForPlayback = (
     }
     return merged;
   }
-
   return next;
 };
 
+const mergeProof = (
+  previous: FeederFeedProof | null,
+  next: FeederFeedProof | null,
+  nowMs: number,
+  failedPlaybackUrls: Set<string>
+): FeederFeedProof | null => {
+  if (!previous || !next) {
+    return next;
+  }
+  if (previous.playbackUrl === next.playbackUrl) {
+    const expiresAtMs = Date.parse(previous.expiresAt);
+    const needsFreshUrl =
+      !Number.isFinite(expiresAtMs) ||
+      expiresAtMs - nowMs < URL_REFRESH_BUFFER_MS ||
+      failedPlaybackUrls.has(previous.playbackUrl);
+    if (failedPlaybackUrls.has(previous.playbackUrl)) {
+      failedPlaybackUrls.delete(previous.playbackUrl);
+    }
+    return needsFreshUrl ? next : previous;
+  }
+  return next;
+};
+
+/**
+ * Keep prior signed URLs when the feed set is unchanged so every <video>
+ * does not remount and re-download on each poll.
+ */
+const mergeFeedsForPlayback = (
+  previous: FeederFeedsPayload,
+  next: FeederFeedsPayload,
+  nowMs: number,
+  failedPlaybackUrls: Set<string>
+): FeederFeedsPayload => {
+  if (
+    previous.feeds.length === next.feeds.length &&
+    previous.feeds.every((feed, index) => feed.id === next.feeds[index].id) &&
+    previous.ungroupedVisits.length === next.ungroupedVisits.length &&
+    previous.ungroupedVisits.every((clip, index) =>
+      sameClipIdentity(clip, next.ungroupedVisits[index])
+    )
+  ) {
+    return {
+      feeds: previous.feeds.map((feed, index) => ({
+        id: feed.id,
+        fedAt: next.feeds[index].fedAt,
+        proof: mergeProof(
+          feed.proof,
+          next.feeds[index].proof,
+          nowMs,
+          failedPlaybackUrls
+        ),
+        visits: mergeClipList(
+          feed.visits,
+          next.feeds[index].visits,
+          nowMs,
+          failedPlaybackUrls
+        ),
+      })),
+      ungroupedVisits: mergeClipList(
+        previous.ungroupedVisits,
+        next.ungroupedVisits,
+        nowMs,
+        failedPlaybackUrls
+      ),
+    };
+  }
+  return next;
+};
+
+const VisitCard: React.FC<{
+  clip: FeederClip;
+  eager?: boolean;
+  badge?: string;
+  onPlaybackError: (url: string) => void;
+}> = ({ clip, eager = false, badge, onPlaybackError }) => {
+  const recordedLabel = formatRecordedAt(clip.recordedAt);
+  return (
+    <article className={clipCardClassName}>
+      <LazyClipVideo
+        src={clip.playbackUrl}
+        ariaLabel={`Feeder visit recorded ${recordedLabel}`}
+        eager={eager}
+        onPlaybackError={onPlaybackError}
+      />
+      <div className={clipCardMetaClassName}>
+        <h3 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-cc-ink md:text-lg">
+          {recordedLabel}
+        </h3>
+        {badge ? (
+          <span className="rounded-full bg-cc-ink px-2.5 py-0.5 font-urbanist text-[0.65rem] font-medium uppercase tracking-[0.16em] text-white">
+            {badge}
+          </span>
+        ) : null}
+      </div>
+    </article>
+  );
+};
+
+const ProofCard: React.FC<{
+  proof: FeederFeedProof;
+  fedAt: string;
+  eager?: boolean;
+  onPlaybackError: (url: string) => void;
+}> = ({ proof, fedAt, eager = false, onPlaybackError }) => {
+  const fedLabel = formatRecordedAt(fedAt);
+  return (
+    <article className={clipCardClassName}>
+      <LazyClipVideo
+        src={proof.playbackUrl}
+        ariaLabel={`Feed proof recorded ${fedLabel}`}
+        eager={eager}
+        onPlaybackError={onPlaybackError}
+      />
+      <div className={clipCardMetaClassName}>
+        <h3 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-cc-ink md:text-lg">
+          {fedLabel}
+        </h3>
+        <span className="rounded-full bg-cc-ink px-2.5 py-0.5 font-urbanist text-[0.65rem] font-medium uppercase tracking-[0.16em] text-white">
+          Proof
+        </span>
+      </div>
+    </article>
+  );
+};
+
 const FeederClips: React.FC = () => {
-  const [clips, setClips] = useState<FeederClip[]>([]);
+  const [payload, setPayload] = useState<FeederFeedsPayload>({
+    feeds: [],
+    ungroupedVisits: [],
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   /** Background poll failed while an older list is still on screen. */
@@ -117,7 +303,7 @@ const FeederClips: React.FC = () => {
   const failedPlaybackUrlsRef = useRef(new Set<string>());
   const loadedOnceRef = useRef(false);
 
-  const loadClips = useCallback(async (options?: { silent?: boolean }) => {
+  const loadFeeds = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
     const apiBaseUrl = getApiBaseUrl();
     if (!apiBaseUrl) {
@@ -127,7 +313,7 @@ const FeederClips: React.FC = () => {
         );
       }
       setError(MISSING_API_MESSAGE);
-      setClips([]);
+      setPayload({ feeds: [], ungroupedVisits: [] });
       setRefreshWarning(null);
       setLoading(false);
       return;
@@ -150,7 +336,7 @@ const FeederClips: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/feeder/clips`, {
+      const response = await fetch(`${apiBaseUrl}/feeder/feeds`, {
         cache: 'no-store',
         signal: controller.signal,
       });
@@ -158,18 +344,18 @@ const FeederClips: React.FC = () => {
         return;
       }
       if (!response.ok) {
-        throw new Error('Could not load visits');
+        throw new Error('Could not load feeds');
       }
-      const next = parseFeederClips(await response.json());
+      const next = parseFeederFeeds(await response.json());
       if (generation !== generationRef.current) {
         return;
       }
       if (!next) {
-        throw new Error('Feeder clips response had an unexpected shape');
+        throw new Error('Feeder feeds response had an unexpected shape');
       }
-      setClips((previous) =>
+      setPayload((previous) =>
         silent
-          ? mergeClipsForPlayback(
+          ? mergeFeedsForPlayback(
               previous,
               next,
               Date.now(),
@@ -201,7 +387,7 @@ const FeederClips: React.FC = () => {
       // Keep the last good list on background polls so the page does not flash empty.
 
       if (!silent || !loadedOnceRef.current) {
-        setClips([]);
+        setPayload({ feeds: [], ungroupedVisits: [] });
         setError("Can't load visits right now.");
         setRefreshWarning(null);
       } else {
@@ -245,7 +431,7 @@ const FeederClips: React.FC = () => {
           schedule();
           return;
         }
-        void loadClips({ silent: true }).finally(() => {
+        void loadFeeds({ silent: true }).finally(() => {
           if (!cancelled) {
             schedule();
           }
@@ -257,7 +443,7 @@ const FeederClips: React.FC = () => {
 
     let initialSettled = false;
     const initialTimer = window.setTimeout(() => {
-      void loadClips({ silent: false }).finally(() => {
+      void loadFeeds({ silent: false }).finally(() => {
         initialSettled = true;
         if (!cancelled) {
           schedule();
@@ -274,7 +460,7 @@ const FeederClips: React.FC = () => {
         return;
       }
       window.clearTimeout(pollTimer);
-      void loadClips({ silent: true }).finally(() => {
+      void loadFeeds({ silent: true }).finally(() => {
         if (!cancelled) {
           schedule();
         }
@@ -290,11 +476,25 @@ const FeederClips: React.FC = () => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       abortRef.current?.abort();
     };
-  }, [loadClips]);
+  }, [loadFeeds]);
 
-  const clipCountLabel =
-    clips.length === 1 ? '1 visit' : `${clips.length} visits`;
-  const hasCards = loading || (!error && clips.length > 0);
+  const feedCount = payload.feeds.length;
+  const visitCount =
+    payload.feeds.reduce((sum, feed) => sum + feed.visits.length, 0) +
+    payload.ungroupedVisits.length;
+  const hasContent = feedCount > 0 || payload.ungroupedVisits.length > 0;
+  const hasCards = loading || (!error && hasContent);
+  const statusLabel = loading
+    ? 'Loading…'
+    : error
+      ? error
+      : !hasContent
+        ? 'No feeds yet.'
+        : `${feedCount} ${feedCount === 1 ? 'feed' : 'feeds'}, ${visitCount} ${visitCount === 1 ? 'visit' : 'visits'}`;
+
+  const onPlaybackError = (url: string) => {
+    failedPlaybackUrlsRef.current.add(url);
+  };
 
   return (
     <section className="min-h-screen bg-cc-canvas">
@@ -303,20 +503,33 @@ const FeederClips: React.FC = () => {
           <h1 className="mb-4 font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-cc-ink md:text-5xl md:leading-[1.05] lg:text-[56px] lg:tracking-[-1.12px]">
             Feeder Cam
           </h1>
-          <p className="mx-auto max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-cc-ink/70 md:text-lg">
-            Short visits at the feeder, newest first. The list updates on its
-            own. Playback links expire after a few minutes.
+          <p className="mx-auto mb-6 max-w-xl font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-cc-ink/70 md:text-lg">
+            Press Feed to drop food, watch the proof clip, then see who showed
+            up afterward. The gallery updates on its own.
           </p>
+          <ol className="mx-auto max-w-xl space-y-2 text-left font-urbanist text-sm font-medium leading-relaxed tracking-[-0.28px] text-cc-ink/70 md:text-base">
+            <li>1. Press the plunger when it is ready.</li>
+            <li>2. The feeder drops food and records a short proof clip.</li>
+            <li>3. That proof leads its feed section below.</li>
+            <li>
+              4. Motion visits (and animal labels when classify is on) collect
+              under that feed.
+            </li>
+          </ol>
+        </div>
+
+        <div
+          className={`flex justify-center ${hasCards ? 'mb-10 md:mb-14' : 'mb-8'}`}
+        >
+          <FeedButton
+            onFeedReady={() => {
+              void loadFeeds({ silent: true });
+            }}
+          />
         </div>
 
         <p className={statusLineClassName} aria-live="polite">
-          {loading
-            ? 'Loading…'
-            : error
-              ? error
-              : clips.length === 0
-                ? 'No visits yet.'
-                : clipCountLabel}
+          {statusLabel}
           {!loading && !error && refreshWarning ? ` ${refreshWarning}` : ''}
         </p>
 
@@ -327,36 +540,81 @@ const FeederClips: React.FC = () => {
           </div>
         ) : null}
 
-        {!loading && !error && clips.length > 0 ? (
-          <ul className="space-y-8 md:space-y-10">
-            {clips.map((clip, index) => {
-              const recordedLabel = formatRecordedAt(clip.recordedAt);
+        {!loading && !error && hasContent ? (
+          <div className="space-y-12 md:space-y-16">
+            {payload.feeds.map((feed, feedIndex) => {
+              const fedLabel = formatRecordedAt(feed.fedAt);
               return (
-                <li key={`${clip.id}-${clip.recordedAt}`}>
-                  <article className={clipCardClassName}>
-                    <LazyClipVideo
-                      src={clip.playbackUrl}
-                      ariaLabel={`Feeder visit recorded ${recordedLabel}`}
-                      eager={index === 0}
-                      onPlaybackError={(url) => {
-                        failedPlaybackUrlsRef.current.add(url);
-                      }}
-                    />
-                    <div className={clipCardMetaClassName}>
-                      <h2 className="font-urbanist text-base font-semibold tracking-[-0.32px] text-cc-ink md:text-lg">
-                        {recordedLabel}
-                      </h2>
-                      {index === 0 ? (
-                        <span className="rounded-full bg-cc-ink px-2.5 py-0.5 font-urbanist text-[0.65rem] font-medium uppercase tracking-[0.16em] text-white">
-                          Latest
-                        </span>
-                      ) : null}
-                    </div>
-                  </article>
-                </li>
+                <section
+                  key={feed.id}
+                  aria-labelledby={`feed-${feed.id}-heading`}
+                  className="space-y-6 md:space-y-8"
+                >
+                  <h2
+                    id={`feed-${feed.id}-heading`}
+                    className="font-urbanist text-xl font-medium tracking-[-0.04em] text-cc-ink md:text-2xl"
+                  >
+                    Fed {fedLabel}
+                  </h2>
+                  <ul className="space-y-8 md:space-y-10">
+                    {feed.proof ? (
+                      <li key={`${feed.id}-proof`}>
+                        <ProofCard
+                          proof={feed.proof}
+                          fedAt={feed.fedAt}
+                          eager={feedIndex === 0}
+                          onPlaybackError={onPlaybackError}
+                        />
+                      </li>
+                    ) : null}
+                    {feed.visits.length === 0 ? (
+                      <li>
+                        <p className="font-urbanist text-base font-medium text-cc-ink/60">
+                          No visitors yet.
+                        </p>
+                      </li>
+                    ) : (
+                      feed.visits.map((clip, index) => (
+                        <li key={`${clip.id}-${clip.recordedAt}`}>
+                          <VisitCard
+                            clip={clip}
+                            eager={
+                              feedIndex === 0 && !feed.proof && index === 0
+                            }
+                            onPlaybackError={onPlaybackError}
+                          />
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </section>
               );
             })}
-          </ul>
+
+            {payload.ungroupedVisits.length > 0 ? (
+              <section
+                aria-labelledby="ungrouped-visits-heading"
+                className="space-y-6 md:space-y-8"
+              >
+                <h2
+                  id="ungrouped-visits-heading"
+                  className="font-urbanist text-xl font-medium tracking-[-0.04em] text-cc-ink md:text-2xl"
+                >
+                  Other visits
+                </h2>
+                <ul className="space-y-8 md:space-y-10">
+                  {payload.ungroupedVisits.map((clip) => (
+                    <li key={`${clip.id}-${clip.recordedAt}`}>
+                      <VisitCard
+                        clip={clip}
+                        onPlaybackError={onPlaybackError}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </section>
