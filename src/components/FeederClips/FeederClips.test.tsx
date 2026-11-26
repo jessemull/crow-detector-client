@@ -5,10 +5,22 @@ import FeederClips from './FeederClips';
 
 expect.extend(toHaveNoViolations);
 
+jest.mock('@sentry/nextjs', () => ({
+  captureException: jest.fn(),
+}));
+
 const originalApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 describe('FeederClips', () => {
   const fetchMock = jest.fn();
+  const recordedAt = '2026-11-22T20:10:00.000Z';
+  const recordedLabel = new Date(recordedAt).toLocaleString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api-dev.example.com';
@@ -17,11 +29,11 @@ describe('FeederClips', () => {
       json: async () => [
         {
           id: 'visit-1',
-          recordedAt: '2026-11-22T20:10:00.000Z',
+          recordedAt,
           animalCount: 1,
           crowCount: 1,
           playbackUrl: 'https://cdn.example.com/feeder/visit-1.mp4?sig=1',
-          expiresAt: '2026-11-22T20:15:00.000Z',
+          expiresAt: '2099-01-01T00:00:00.000Z',
         },
       ],
     });
@@ -40,18 +52,43 @@ describe('FeederClips', () => {
       screen.getByRole('heading', { level: 1, name: 'Feeder Cam' })
     ).toBeTruthy();
 
-    await waitFor(() => {
-      expect(document.querySelector('video')).toBeTruthy();
-    });
-    const video = document.querySelector('video');
+    const video = await screen.findByLabelText(
+      `Feeder visit recorded ${recordedLabel}`
+    );
     expect(video).toHaveAttribute(
       'src',
       'https://cdn.example.com/feeder/visit-1.mp4?sig=1'
     );
     expect(video).toHaveAttribute('preload', 'none');
+    expect(screen.getByText('Latest')).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api-dev.example.com/feeder/clips'
+      'https://api-dev.example.com/feeder/clips',
+      expect.objectContaining({ cache: 'no-store' })
     );
+  });
+
+  it('plays an S3 signed feeder visit', async () => {
+    const playbackUrl =
+      'https://crow-detector-images-prod.s3.us-west-2.amazonaws.com/feeder/visit-1.mp4?X-Amz-Signature=abc';
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          id: 'visit-1',
+          recordedAt,
+          animalCount: 1,
+          crowCount: 0,
+          playbackUrl,
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<FeederClips />);
+
+    expect(
+      await screen.findByLabelText(`Feeder visit recorded ${recordedLabel}`)
+    ).toHaveAttribute('src', playbackUrl);
   });
 
   it('shows a status line when the API base is missing', async () => {
@@ -59,7 +96,9 @@ describe('FeederClips', () => {
     render(<FeederClips />);
 
     expect(
-      await screen.findByText('Feeder Cam is not configured.')
+      await screen.findByText(
+        'Feeder Cam is not configured yet. Visits will show up after the camera service is connected.'
+      )
     ).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -69,7 +108,9 @@ describe('FeederClips', () => {
 
     render(<FeederClips />);
 
-    expect(await screen.findByText('Feeder Cam could not load.')).toBeTruthy();
+    expect(
+      await screen.findByText("Can't load visits right now.")
+    ).toBeTruthy();
   });
 
   it('shows an empty status line when there are no visits', async () => {
@@ -80,14 +121,38 @@ describe('FeederClips', () => {
 
     render(<FeederClips />);
 
-    expect(await screen.findByText('No feeder visits yet.')).toBeTruthy();
+    expect(await screen.findByText('No visits yet.')).toBeTruthy();
+  });
+
+  it('rejects clips whose playback URL is not an allowed https host', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          id: 'visit-1',
+          recordedAt,
+          animalCount: 1,
+          crowCount: 0,
+          playbackUrl: 'https://evil.example/feeder/visit-1.mp4',
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<FeederClips />);
+
+    expect(
+      await screen.findByText("Can't load visits right now.")
+    ).toBeTruthy();
   });
 
   it('has no accessibility violations after load', async () => {
     const { container } = render(<FeederClips />);
 
     await waitFor(() => {
-      expect(document.querySelector('video')).toBeTruthy();
+      expect(
+        screen.getByLabelText(`Feeder visit recorded ${recordedLabel}`)
+      ).toBeTruthy();
     });
 
     expect(await axe(container)).toHaveNoViolations();

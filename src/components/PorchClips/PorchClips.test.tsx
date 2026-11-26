@@ -597,6 +597,28 @@ describe('PorchClips', () => {
     ).toHaveAttribute('src', playbackUrl);
   });
 
+  it('plays an S3 signed visit', async () => {
+    const playbackUrl =
+      'https://crow-detector-images-dev.s3.us-west-2.amazonaws.com/porch/clip-1.mp4?X-Amz-Signature=abc';
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          name: 'clip-1.mp4',
+          recordedAt,
+          playbackUrl,
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<PorchClips />);
+
+    expect(
+      await screen.findByLabelText(`Shelter visit recorded ${recordedLabel}`)
+    ).toHaveAttribute('src', playbackUrl);
+  });
+
   it('replaces a failed visit when the next poll brings a new link', async () => {
     jest.useFakeTimers();
     const failedUrl = 'https://cdn.example.com/clip-1.mp4?sig=1';
