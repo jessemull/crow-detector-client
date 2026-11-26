@@ -33,7 +33,7 @@ jobs:
       - name: Build Next.js
         run: |
           echo "Deploying to development environment"
-          NODE_ENV=production npm run build
+          NODE_ENV="production" npm run build
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL_DEV }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ secrets.GA_TRACKING_ID_DEV }}
@@ -158,7 +158,7 @@ jobs:
           LHCI_NO_SERVER: 'true'
 
   workflow_lint:
-    name: Lint workflows
+    name: Lint Workflows
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -177,8 +177,16 @@ jobs:
       - name: Check formatting
         run: npx prettier --check .
 
-      - name: actionlint
+      - name: Lint Workflows
         uses: rhysd/actionlint@03d0035246f3e81f36aed592ffb4bebf33a03106 # v1.7.7
 
-      - name: zizmor
+  workflow_security:
+    name: Workflow Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Workflow Security
         uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4 # v0.3.0

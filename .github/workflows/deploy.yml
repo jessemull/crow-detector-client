@@ -41,13 +41,15 @@ jobs:
       - name: Build Next.js
         run: |
           echo "Deploying to $DEPLOY_ENVIRONMENT environment"
-          ENABLE_SOURCE_MAPS=true NODE_ENV=production npm run build
+          ENABLE_SOURCE_MAPS=true NODE_ENV="production" npm run build
           node ./scripts/source-maps.js
           find out -name '*.js' -exec sed -i '/sourceMappingURL/d' {} +
           find out -name '*.map' -delete
         env:
           DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
           NEXT_PUBLIC_API_BASE_URL: ${{ inputs.environment == 'test' && secrets.NEXT_PUBLIC_API_BASE_URL_DEV || inputs.environment == 'production' && secrets.NEXT_PUBLIC_API_BASE_URL_PROD }}
+          # Prod host still records against api-dev; keep the public plunger off until the relay is live.
+          NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED: ${{ inputs.environment == 'production' && 'false' || 'true' }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || inputs.environment == 'production' && secrets.GA_TRACKING_ID_PROD }}
           NEXT_PUBLIC_GA_CONSENT: ${{ inputs.environment == 'test' && secrets.GA_CONSENT_DEV || inputs.environment == 'production' && secrets.GA_CONSENT_PROD }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
@@ -162,7 +164,7 @@ jobs:
 
       - name: Backup S3
         run: |
-          aws s3 sync s3://$AWS_S3_BUCKET s3://$AWS_S3_BACKUP_BUCKET/$BACKUP_DIR/ --exact-timestamps
+          aws s3 sync "s3://${AWS_S3_BUCKET}" "s3://${AWS_S3_BACKUP_BUCKET}/${BACKUP_DIR}/" --exact-timestamps
         env:
           AWS_S3_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_PROD }}
           AWS_S3_BACKUP_BUCKET: ${{ inputs.environment == 'test' && secrets.AWS_S3_BUCKET_BACKUP_DEV || inputs.environment == 'production' && secrets.AWS_S3_BUCKET_BACKUP_PROD }}

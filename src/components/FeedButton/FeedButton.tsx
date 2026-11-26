@@ -5,8 +5,19 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 const getApiBaseUrl = (): string =>
   (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
 
+/**
+ * Public dispense writes. Production is off until the feeder relay is soldered
+ * and the LAN host points at the prod API (see FEEDER_API_BASE_URL).
+ * Bake `NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED=false` on production builds.
+ */
+const isDispenseEnabled = (): boolean =>
+  process.env.NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED !== 'false';
+
 /** Give up on hung feeder status/dispense requests. */
 const FETCH_TIMEOUT_MS = 15_000;
+
+const OFFLINE_MESSAGE =
+  'The feeder is offline while hardware is being finished.';
 
 type FeederStatus = {
   canFeed: boolean;
@@ -263,15 +274,23 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
     return () => window.clearInterval(tick);
   }, [cooldownEndsAt, refreshStatus]);
 
+  const dispenseEnabled = isDispenseEnabled();
   const countdown = cooldownEndsAt
     ? formatCountdown(cooldownEndsAt, nowMs)
     : null;
   const coolingDown = countdown !== null;
   const apiConfigured = Boolean(getApiBaseUrl());
   const disabled =
-    busy || coolingDown || (apiConfigured && (!statusLoaded || !statusOk));
+    !dispenseEnabled ||
+    busy ||
+    coolingDown ||
+    (apiConfigured && (!statusLoaded || !statusOk));
+  const statusMessage = !dispenseEnabled ? OFFLINE_MESSAGE : message;
 
   const onClick = async () => {
+    if (!dispenseEnabled) {
+      return;
+    }
     const apiBase = getApiBaseUrl();
     if (!apiBase) {
       setMessage('Feeder is not configured.');
@@ -404,12 +423,12 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
           </span>
         </span>
       </button>
-      {message ? (
+      {statusMessage ? (
         <p
           className="max-w-md text-center font-urbanist text-base font-medium text-cc-ink"
           role="status"
         >
-          {message}
+          {statusMessage}
         </p>
       ) : null}
     </div>

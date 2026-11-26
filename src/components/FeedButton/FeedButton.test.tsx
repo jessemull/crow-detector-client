@@ -41,8 +41,12 @@ describe('formatCountdown', () => {
 describe('FeedButton', () => {
   const fetchMock = jest.fn();
 
+  const originalDispenseEnabled =
+    process.env.NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED;
+
   beforeEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api-dev.example.com';
+    delete process.env.NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED;
     global.fetch = fetchMock as unknown as typeof fetch;
     jest.useFakeTimers();
     fetchMock.mockResolvedValue({
@@ -58,8 +62,27 @@ describe('FeedButton', () => {
 
   afterEach(() => {
     process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBase;
+    if (originalDispenseEnabled === undefined) {
+      delete process.env.NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED;
+    } else {
+      process.env.NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED = originalDispenseEnabled;
+    }
     fetchMock.mockReset();
     jest.useRealTimers();
+  });
+
+  it('stays disabled when dispense is turned off', async () => {
+    process.env.NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED = 'false';
+    render(<FeedButton />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: feedName })).toBeDisabled();
+    });
+    expect(
+      screen.getByText(
+        'The feeder is offline while hardware is being finished.'
+      )
+    ).toBeTruthy();
   });
 
   it('says the feeder is not configured when the API base is missing', async () => {
