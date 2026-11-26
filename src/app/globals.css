@@ -138,11 +138,37 @@ body {
 .feed-plunger__label-sizer,
 .feed-plunger__label-text {
   grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
 }
 
 .feed-plunger__label-sizer {
   visibility: hidden;
   pointer-events: none;
+}
+
+.feed-plunger__spinner {
+  box-sizing: border-box;
+  width: 1.05em;
+  height: 1.05em;
+  flex-shrink: 0;
+  border: 0.14em solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-right-color: #fff;
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .feed-plunger__spinner {
+    animation: feed-plunger-spin 0.75s linear infinite;
+  }
+}
+
+@keyframes feed-plunger-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .feed-plunger:hover:not(:disabled) .feed-plunger__dome {

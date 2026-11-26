@@ -9,7 +9,6 @@ import {
   clipCardClassName,
   clipCardMetaClassName,
   formatRecordedAt,
-  statusLineClassName,
 } from '@components/VisitClips';
 import { isAllowedPlaybackUrl } from '@utils/playbackUrl';
 
@@ -480,8 +479,9 @@ const FeederClips: React.FC = () => {
 
   const hasContent =
     payload.feeds.length > 0 || payload.ungroupedVisits.length > 0;
+  // Loading uses skeletons only — no "Loading…" status line.
   const statusLabel = loading
-    ? 'Loading…'
+    ? null
     : error
       ? error
       : !hasContent
@@ -489,6 +489,9 @@ const FeederClips: React.FC = () => {
         : refreshWarning
           ? refreshWarning
           : null;
+  // Refresh warning sits above cards — slightly tighter gap. Empty/error have
+  // no gallery, so they keep the larger section spacing.
+  const statusAboveGallery = Boolean(statusLabel) && hasContent;
 
   const onPlaybackError = (url: string) => {
     failedPlaybackUrlsRef.current.add(url);
@@ -497,7 +500,9 @@ const FeederClips: React.FC = () => {
   return (
     <section className="min-h-screen bg-cc-canvas">
       <div className="mx-auto max-w-3xl px-6 pb-16 pt-28 md:px-10 md:pb-24 md:pt-32">
-        <div className="mb-10 text-center md:mb-14">
+        <div
+          className={`text-center ${statusAboveGallery ? 'mb-9 md:mb-12' : 'mb-10 md:mb-14'}`}
+        >
           <h1 className="mb-4 font-urbanist text-4xl font-medium leading-tight tracking-[-0.04em] text-cc-ink md:text-5xl md:leading-[1.05] lg:text-[56px] lg:tracking-[-1.12px]">
             Feeder Cam
           </h1>
@@ -505,17 +510,12 @@ const FeederClips: React.FC = () => {
             Press Feed to drop food, watch the clip, then see who showed up
             afterward. The gallery updates on its own.
           </p>
-          <div className="mb-8 flex flex-col items-center md:mb-10">
+          <div className="mb-8 flex justify-center md:mb-10">
             <FeedButton
               onFeedReady={() => {
                 void loadFeeds({ silent: true });
               }}
             />
-            {statusLabel ? (
-              <p className={`mt-4 ${statusLineClassName}`} aria-live="polite">
-                {statusLabel}
-              </p>
-            ) : null}
           </div>
           <ol className="mx-auto w-fit max-w-xl list-none space-y-4 text-left font-urbanist md:text-base">
             {(
@@ -552,6 +552,14 @@ const FeederClips: React.FC = () => {
               </li>
             ))}
           </ol>
+          {statusLabel ? (
+            <p
+              className={`mx-auto mt-8 max-w-xl text-center font-urbanist text-base font-medium leading-relaxed tracking-[-0.32px] text-cc-ink/70 md:text-lg ${statusAboveGallery ? 'mb-0' : 'mb-6'}`}
+              aria-live="polite"
+            >
+              {statusLabel}
+            </p>
+          ) : null}
         </div>
 
         {loading ? (

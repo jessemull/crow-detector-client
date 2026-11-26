@@ -243,15 +243,20 @@ const FeedButton: React.FC<FeedButtonProps> = ({ onFeedReady }) => {
         disabled={disabled || !statusLoaded}
         className="feed-plunger"
         aria-label={label}
+        aria-busy={busy}
         aria-disabled={disabled || !statusLoaded}
       >
         <span className="feed-plunger__dome" aria-hidden="true">
           <span className="feed-plunger__label">
             {/* Keep width stable across idle / Feeding… / cooldown labels. */}
-            <span className="feed-plunger__label-sizer" aria-hidden="true">
+            <span className="feed-plunger__label-sizer">
+              <span className="feed-plunger__spinner" />
               Feed Again in 99:99
             </span>
-            <span className="feed-plunger__label-text">{label}</span>
+            <span className="feed-plunger__label-text">
+              {busy ? <span className="feed-plunger__spinner" /> : null}
+              {label}
+            </span>
           </span>
         </span>
       </button>
