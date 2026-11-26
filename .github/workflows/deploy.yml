@@ -48,6 +48,8 @@ jobs:
         env:
           DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
           NEXT_PUBLIC_API_BASE_URL: ${{ inputs.environment == 'test' && secrets.NEXT_PUBLIC_API_BASE_URL_DEV || inputs.environment == 'production' && secrets.NEXT_PUBLIC_API_BASE_URL_PROD }}
+          # Prod host still records against api-dev; keep the public plunger off until the relay is live.
+          NEXT_PUBLIC_FEEDER_DISPENSE_ENABLED: ${{ inputs.environment == 'production' && 'false' || 'true' }}
           NEXT_PUBLIC_GA_TRACKING_ID: ${{ inputs.environment == 'test' && secrets.GA_TRACKING_ID_DEV || inputs.environment == 'production' && secrets.GA_TRACKING_ID_PROD }}
           NEXT_PUBLIC_GA_CONSENT: ${{ inputs.environment == 'test' && secrets.GA_CONSENT_DEV || inputs.environment == 'production' && secrets.GA_CONSENT_PROD }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
