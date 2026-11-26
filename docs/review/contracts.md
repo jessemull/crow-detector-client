@@ -18,6 +18,7 @@ Contracts in this repo that reviewers must trace:
 
 - `NEXT_PUBLIC_API_BASE_URL`: `PorchClips.tsx`, `.env.example`, workflows (`_DEV`/`_PROD` secrets), `docs/SECURITY.md`, `docs/ARCHITECTURE.md`, `docs/CI_CD.md`.
 - Porch API: `GET /porch/clips` returning `{ name, recordedAt, playbackUrl, expiresAt }[]`, newest first; test fixtures; `crow-detector-server`.
+- Feeder API: `GET /feeder/feeds` (feeds + ungroupedVisits), `GET /feeder/status`, `POST /feeder/dispense`, `GET /feeder/dispense/:id`; `crow-detector-server`.
 - Sentry release and environment strings: workflows, `src/instrumentation-client.ts`, `scripts/source-maps.js`, `env.example`.
 - Proxy readiness: `/healthcheck` and the "Proxy server running" log line, used by `wait-on` and `.lighthouserc.js`.
 - Signed cookies: cookie names in `proxy/util.js`, `CLOUDFRONT_*` secrets, the key group in CloudFormation, the `CLOUDFRONT_DOMAIN` host versus CloudFront's apex redirect.

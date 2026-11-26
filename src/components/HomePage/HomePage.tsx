@@ -46,20 +46,17 @@ const HomePage: React.FC = () => {
             whoever else stops by.
           </p>
           <div className="flex flex-row items-center gap-3">
-            <button
-              type="button"
-              disabled
-              className="inline-flex cursor-not-allowed items-center justify-center rounded-full border border-white/35 bg-white/10 px-8 py-3 text-sm font-medium text-cc-cream/75 opacity-80 backdrop-blur-sm"
-              aria-disabled="true"
-              title="Feeding controls are not connected yet"
-            >
-              Feeder
-            </button>
             <Link
               href="/porch"
-              className="inline-flex items-center justify-center rounded-full bg-cc-lime px-8 py-3 text-sm font-medium text-cc-ink transition-colors hover:bg-cc-lime-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-cream"
+              className="inline-flex items-center justify-center rounded-full border border-white/35 bg-white/10 px-8 py-3 text-sm font-medium text-cc-cream backdrop-blur-sm transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-cream"
             >
               Shelter Cam
+            </Link>
+            <Link
+              href="/feeder"
+              className="inline-flex items-center justify-center rounded-full bg-cc-lime px-8 py-3 text-sm font-medium text-cc-ink transition-colors hover:bg-cc-lime-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cc-cream"
+            >
+              Feeder
             </Link>
           </div>
         </div>

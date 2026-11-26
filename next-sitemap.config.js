@@ -5,5 +5,5 @@ module.exports = {
   // Static export deploys `out/`; write sitemap artifacts there directly.
 
   outDir: './out',
-  exclude: ['/porch'],
+  exclude: ['/porch', '/feeder'],
 };

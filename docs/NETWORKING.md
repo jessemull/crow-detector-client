@@ -9,7 +9,7 @@
 - Production serves static assets from S3 via CloudFront (`www.crittercanteen.com`).
 - Apex `crittercanteen.com` (and `dev.crittercanteen.com`) resolve to the same distribution and **301 to `www…`** via a CloudFront Function. Prefer `www` in links and canonicals.
 - Do not hardcode environment hosts in client code; use env / config.
-- Shelter Cam fetches `${NEXT_PUBLIC_API_BASE_URL}/porch/clips` with the default credentials mode. The API must send `Access-Control-Allow-Origin` for `https://www.crittercanteen.com`, `https://www.dev.crittercanteen.com`, and local dev origins or the browser will not read the JSON.
+- Shelter Cam fetches `${NEXT_PUBLIC_API_BASE_URL}/porch/clips` with the default credentials mode. Feeder Cam fetches `/feeder/feeds`, `/feeder/status`, and `POST /feeder/dispense` the same way. The API must send `Access-Control-Allow-Origin` for `https://www.crittercanteen.com`, `https://www.dev.crittercanteen.com`, and local dev origins or the browser will not read the JSON.
 
 ---
 
